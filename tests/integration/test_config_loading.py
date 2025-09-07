@@ -167,6 +167,7 @@ environment = "development"
         _, global_root = complex_project_structure
 
         import os
+        from unittest.mock import patch
 
         os.environ["HOME"] = str(global_root)
 
@@ -174,22 +175,26 @@ environment = "development"
             # Create config service AFTER setting HOME so it picks up the right path
             from specify_cli.services.config_service import TomlConfigService
 
-            config_service = TomlConfigService()
+            # Mock Path.home() to respect the HOME environment variable on all platforms
+            with patch("pathlib.Path.home", return_value=global_root):
+                config_service = TomlConfigService()
 
-            # Load global configuration
-            global_config = config_service.load_global_config()
+                # Load global configuration
+                global_config = config_service.load_global_config()
 
-            if global_config is not None:  # Implementation may return None
-                assert isinstance(global_config, ProjectConfig)
-                assert global_config.template_settings.ai_assistant == "claude"
-                assert (
-                    global_config.template_settings.template_variables["author"]
-                    == "Global Test User"
-                )
-                assert (
-                    global_config.template_settings.template_variables["organization"]
-                    == "user-org"
-                )
+                if global_config is not None:  # Implementation may return None
+                    assert isinstance(global_config, ProjectConfig)
+                    assert global_config.template_settings.ai_assistant == "claude"
+                    assert (
+                        global_config.template_settings.template_variables["author"]
+                        == "Global Test User"
+                    )
+                    assert (
+                        global_config.template_settings.template_variables[
+                            "organization"
+                        ]
+                        == "user-org"
+                    )
 
         finally:
             if "HOME" in os.environ:
