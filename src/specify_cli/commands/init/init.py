@@ -54,7 +54,7 @@ def init_command(
     ),
 ):
     """
-    Initialize a new Specify-X project using the modular service architecture.
+    Initialize a new SpecifyX project using the modular service architecture.
 
     This command uses the ProjectManager service to orchestrate:
     - Project structure creation
@@ -98,7 +98,7 @@ def init_command(
 
     console.print(
         Panel.fit(
-            "[bold cyan]Specify-X Project Setup[/bold cyan]\n"
+            "[bold cyan]SpecifyX Project Setup[/bold cyan]\n"
             f"{'Initializing in current directory:' if here else 'Creating new project:'} [green]{project_path.name}[/green]"
             + (f"\n[dim]Path: {project_path}[/dim]" if here else ""),
             border_style="cyan",
@@ -143,7 +143,7 @@ def init_command(
     project_manager = get_project_manager()
 
     # Use StepTracker for enhanced progress display
-    with StepTracker.create_default("Specify-X Project Setup") as tracker:
+    with StepTracker.create_default("SpecifyX Project Setup") as tracker:
         try:
             tracker.add_step("validate", "Validate project settings")
             tracker.start_step("validate")

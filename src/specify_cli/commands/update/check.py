@@ -22,11 +22,12 @@ def check_update_command(
     # Use force flag to bypass cache
     update_info = update_service.check_for_updates(use_cache=not force)
 
+    # TODO: Use strong typing such as typed dict or pydantic model
     if update_info["has_update"]:
         current = update_info["current_version"]
         latest = update_info["latest_version"]
-        method = update_info["installation_method"]
-        can_auto_update = update_info["can_auto_update"]
+        method = update_info["method"]
+        can_auto_update = update_info["supports_auto_update"]
 
         console.print("[yellow]Update available![/yellow]")
         console.print(f"Current version: [blue]{current}[/blue]")

@@ -11,8 +11,11 @@ console = Console()
 
 
 def update_command(
-    version: Optional[str] = typer.Option(
-        None, "--version", "-v", help="Specific version to install (default: latest)"
+    target_version: Optional[str] = typer.Option(
+        None,
+        "--target-version",
+        "-t",
+        help="Specific version to install (default: latest)",
     ),
     force: bool = typer.Option(
         False, "--force", "-f", help="Force update even if already up to date"
@@ -31,11 +34,14 @@ def update_command(
         console.print("[yellow]Dry run mode - showing what would be done[/yellow]")
         console.print()
 
-    # Check if we can auto-update
-    if not update_service.installer.can_auto_update():
+    # Check if we can auto-update (skip during dry run)
+    if not dry_run and not update_service.installer.can_auto_update():
         console.print(
             "[yellow]⚠[/yellow] Automatic update not supported for your installation method."
         )
+        # Apply no-cache behavior before showing installation info
+        if no_cache:
+            update_service.clear_cache()
         update_service.show_installation_info()
         console.print("\nPlease update manually using the command shown above.")
         raise typer.Exit(1)
@@ -52,17 +58,17 @@ def update_command(
 
         current = update_info["current_version"]
         latest = update_info["latest_version"]
-        target_version = version or latest
+        target = target_version or latest
 
         if not dry_run:
             console.print(
-                f"Updating from [blue]{current}[/blue] to [green]{target_version}[/green]"
+                f"Updating from [blue]{current}[/blue] to [green]{target}[/green]"
             )
             console.print()
 
     # Perform the update
     success = update_service.perform_update(
-        target_version=version, force=force, dry_run=dry_run
+        target_version=target_version, force=force, dry_run=dry_run
     )
 
     if dry_run:

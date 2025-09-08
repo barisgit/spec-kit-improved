@@ -14,7 +14,7 @@
 # ///
 
 """
-Specify-X CLI - Setup tool for Specify-X projects
+SpecifyX CLI - Setup tool for SpecifyX projects
 
 Usage:
     uvx specify-cli.py init <project-name>

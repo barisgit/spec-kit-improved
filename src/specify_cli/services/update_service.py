@@ -23,7 +23,9 @@ class UpdateService:
         Check for available updates.
 
         Returns:
-            Dict containing update status information
+            Dict containing update status information with canonical keys:
+            - method: installation method identifier
+            - supports_auto_update: whether automatic update is supported
         """
         has_update, current_version, latest_version = (
             self.version_checker.check_for_updates(use_cache)
@@ -33,8 +35,8 @@ class UpdateService:
             "has_update": has_update,
             "current_version": current_version,
             "latest_version": latest_version,
-            "installation_method": self.detector.detect_installation_method(),
-            "can_auto_update": self.installer.can_auto_update(),
+            "method": self.detector.detect_installation_method(),
+            "supports_auto_update": self.installer.can_auto_update(),
         }
 
     def show_update_notification(
@@ -60,8 +62,8 @@ class UpdateService:
         # Create update notification
         current = update_info["current_version"]
         latest = update_info["latest_version"]
-        method = update_info["installation_method"]
-        can_auto_update = update_info["can_auto_update"]
+        method = update_info["method"]
+        can_auto_update = update_info["supports_auto_update"]
 
         message_lines = [
             "[yellow]Update available![/yellow]",
@@ -72,7 +74,7 @@ class UpdateService:
         if can_auto_update:
             message_lines.extend(
                 [
-                    "Run [bold cyan]specifyx update[/bold cyan] to update automatically",
+                    "Run [bold cyan]specifyx update perform[/bold cyan] to update automatically",
                     f"Installation method: [dim]{method}[/dim]",
                 ]
             )
@@ -156,7 +158,14 @@ Command that would be executed:
         return dry_run_info["supports_auto_update"]
 
     def get_installation_info(self) -> Dict[str, Any]:
-        """Get detailed installation and update information."""
+        """
+        Get detailed installation and update information.
+
+        Returns a combined dict containing canonical keys including:
+        - method
+        - supports_auto_update
+        along with version and environment details.
+        """
         update_info = self.check_for_updates()
         installation_info = self.detector.get_installation_info()
         cache_info = self.version_checker.get_cache_info()

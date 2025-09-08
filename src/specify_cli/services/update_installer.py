@@ -176,9 +176,15 @@ class UpdateInstaller:
         task = progress.add_task("Updating with pipx...", total=1)
 
         try:
-            cmd = ["pipx", "install", package_spec]
-            if force:
-                cmd.append("--force")
+            # Use upgrade for regular unpinned package when not forcing; otherwise install --force
+            def _is_pinned_or_url(spec: str) -> bool:
+                indicators = ["==", "@", ".whl", "http://", "https://", "git+", "file:"]
+                return any(token in spec for token in indicators)
+
+            if not force and not _is_pinned_or_url(package_spec):
+                cmd = ["pipx", "upgrade", "specifyx"]
+            else:
+                cmd = ["pipx", "install", package_spec, "--force"]
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             progress.update(task, completed=1)
@@ -204,8 +210,13 @@ class UpdateInstaller:
         task = progress.add_task("Updating with uv tool...", total=1)
 
         try:
-            if force:
-                # For force updates, reinstall
+
+            def _is_pinned_or_url(spec: str) -> bool:
+                indicators = ["==", "@", ".whl", "http://", "https://", "git+", "file:"]
+                return any(token in spec for token in indicators)
+
+            # If a target version is supplied (pinned spec) or forcing, do explicit install with --force
+            if force or _is_pinned_or_url(package_spec):
                 cmd = ["uv", "tool", "install", package_spec, "--force"]
             else:
                 cmd = ["uv", "tool", "upgrade", "specifyx"]
@@ -234,7 +245,7 @@ class UpdateInstaller:
         task = progress.add_task("Updating with pip...", total=1)
 
         try:
-            cmd = ["pip", "install", "--upgrade", package_spec]
+            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", package_spec]
             if force:
                 cmd.append("--force-reinstall")
 

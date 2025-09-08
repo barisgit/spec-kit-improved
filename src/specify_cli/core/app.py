@@ -1,7 +1,7 @@
 """Core CLI application setup and configuration.
 
 This module contains the Typer app setup, Rich console configuration,
-and main entry point for the Specify-X CLI tool.
+and main entry point for the SpecifyX CLI tool.
 """
 
 import sys
@@ -91,7 +91,7 @@ def show_banner():
 # Main Typer app instance
 app = typer.Typer(
     name="specify",
-    help="Setup tool for Specify-X spec-driven development projects",
+    help="Setup tool for SpecifyX spec-driven development projects",
     add_completion=True,
     invoke_without_command=True,
     cls=BannerGroup,
@@ -187,6 +187,6 @@ def register_commands():
 
 
 def main():
-    """Main entry point for the Specify-X CLI."""
+    """Main entry point for the SpecifyX CLI."""
     register_commands()
     app()
