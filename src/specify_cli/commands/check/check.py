@@ -47,7 +47,7 @@ def check_command():
         console, "gemini", "Install from: https://github.com/google-gemini/gemini-cli"
     )
 
-    console.print("\n[green]✓ Specify-X CLI is ready to use![/green]")
+    console.print("\n[green]✓ SpecifyX CLI is ready to use![/green]")
     if not git_ok:
         console.print(
             "[yellow]Consider installing git for repository management[/yellow]"

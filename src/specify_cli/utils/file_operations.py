@@ -232,3 +232,11 @@ class FileOperations:
                     FileOperations.safe_write_file(item_path, content)
 
         _create_recursive(base, structure)
+
+
+def ensure_directory(path: Union[str, Path]) -> Path:
+    """Top-level helper to ensure a directory exists.
+
+    Delegates to FileOperations.ensure_directory for backward compatibility.
+    """
+    return FileOperations.ensure_directory(path)

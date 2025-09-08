@@ -1,7 +1,7 @@
 """Core CLI application setup and configuration.
 
 This module contains the Typer app setup, Rich console configuration,
-and main entry point for the Specify-X CLI tool.
+and main entry point for the SpecifyX CLI tool.
 """
 
 import sys
@@ -91,7 +91,7 @@ def show_banner():
 # Main Typer app instance
 app = typer.Typer(
     name="specify",
-    help="Setup tool for Specify-X spec-driven development projects",
+    help="Setup tool for SpecifyX spec-driven development projects",
     add_completion=True,
     invoke_without_command=True,
     cls=BannerGroup,
@@ -104,16 +104,61 @@ def callback(
     show_version: bool = typer.Option(
         False, "--version", "-V", help="Show version and exit"
     ),
+    no_update_check: bool = typer.Option(
+        False, "--no-update-check", help="Skip automatic update check"
+    ),
 ):
     """Show banner when no subcommand is provided."""
     # Handle version flag
     if show_version:
         try:
-            pkg_version = version("specify-cli")
+            pkg_version = version("specifyx")  # TODO: Move package name to constants.py
         except Exception:
             pkg_version = "unknown"
-        console.print(f"Specify-X CLI [bold cyan]v{pkg_version}[/bold cyan]")
+
+        # Show version with update information
+        version_text = f"SpecifyX CLI [bold cyan]v{pkg_version}[/bold cyan]"
+
+        # Check for updates when showing version (unless disabled)
+        if not no_update_check:
+            try:
+                from specify_cli.services.update_service import UpdateService
+
+                update_service = UpdateService()
+                update_info = update_service.check_for_updates()
+
+                if update_info["has_update"]:
+                    latest = update_info["latest_version"]
+                    version_text += f" [yellow]→ {latest} available[/yellow]"
+                    console.print(version_text)
+                    console.print("[dim]Run 'specifyx update perform' to upgrade[/dim]")
+                else:
+                    console.print(version_text)
+            except Exception:
+                # If update check fails, just show version
+                console.print(version_text)
+        else:
+            console.print(version_text)
+
         raise typer.Exit()
+
+    # Auto-update check for non-help, non-version commands (unless disabled)
+    if (
+        not no_update_check
+        and ctx.invoked_subcommand is not None
+        and ctx.invoked_subcommand not in ("update", "help")
+        and "--help" not in sys.argv
+        and "-h" not in sys.argv
+    ):
+        try:
+            from specify_cli.services.update_service import UpdateService
+
+            update_service = UpdateService()
+            # Show update notification quietly (only if update available)
+            update_service.show_update_notification(quiet=True)
+        except Exception:
+            # Update check should never break the main functionality
+            pass
 
     # Show banner only when no subcommand and no help flag
     # (help is handled by BannerGroup)
@@ -131,14 +176,17 @@ def callback(
 
 def register_commands():
     """Register commands with the main app."""
-    from specify_cli.commands import check_command, init_command
+    from specify_cli.commands import check_command, init_command, update_app
 
     # Register commands directly on main app
     app.command("init")(init_command)
     app.command("check")(check_command)
 
+    # Register update group
+    app.add_typer(update_app, name="update")
+
 
 def main():
-    """Main entry point for the Specify-X CLI."""
+    """Main entry point for the SpecifyX CLI."""
     register_commands()
     app()
