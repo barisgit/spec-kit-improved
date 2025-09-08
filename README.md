@@ -13,7 +13,7 @@ SpecifyX is a modern, Python-installable CLI tool for spec-driven development th
 
 ### Key Benefits for Users (envisioned - not implemented yet)
 
-- **Easy Installation**: Install with `uv add specifyx` or `pip install specifyx` - no complex setup required
+- **Easy Installation**: Install with `uv tool install specifyx` or `pip install specifyx` - no complex setup required
 - **Powerful Templating**: Use Jinja2 templates with variables, conditionals, and loops for complex project generation
 - **Flexible Branch Naming**: Customize branch patterns like `feature/{name}` or `task/{id}-{name}` instead of fixed formats
 - **Enhanced User Experience**: Interactive menus, progress tracking, and better error messages
@@ -23,7 +23,7 @@ SpecifyX is a modern, Python-installable CLI tool for spec-driven development th
 
 ### Using uv (recommended)
 ```bash
-uv add specifyx
+uv tool install specifyx
 ```
 
 ### Using pipx (for CLI tools)
@@ -38,7 +38,7 @@ pip install specifyx
 
 ### From git (development version)
 ```bash
-uv add git+https://github.com/barisgit/spec-kit-improved
+uv tool install --from git+https://github.com/barisgit/spec-kit-improved
 ```
 
 ## Quick Start

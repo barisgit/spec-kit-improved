@@ -107,7 +107,7 @@ jobs:
 
         **Using uv (recommended):**
         ```bash
-        uv add specifyx
+        uv tool install specifyx
         ```
 
         **Using pipx (for CLI tools):**
@@ -122,7 +122,7 @@ jobs:
 
         **From git (development version):**
         ```bash
-        uv add git+https://github.com/yourusername/spec-kit-improved
+        uv tool install --from git+https://github.com/yourusername/spec-kit-improved
         ```
 
         ### Usage
