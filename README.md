@@ -26,6 +26,14 @@ SpecifyX is a modern, Python-installable CLI tool for spec-driven development th
 uv tool install specifyx
 ```
 
+#### Alternative it you don't want to install
+
+```bash
+uvx specifyx
+```
+
+> Note: `uvx` is a shortcut for `uv tool run`
+
 ### Using pipx (for CLI tools)
 ```bash
 pipx install specifyx
