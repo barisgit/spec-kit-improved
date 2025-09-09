@@ -20,10 +20,10 @@ class TestProjectManagerContract:
     @pytest.fixture
     def project_manager(self) -> ProjectManager:
         """Create ProjectManager instance for testing"""
-        # This will fail until implementation exists
-        from specify_cli.services.project_manager import SpecifyProjectManager
+        # Use the actual ProjectManager class
+        from specify_cli.services.project_manager import ProjectManager
 
-        return SpecifyProjectManager()
+        return ProjectManager()
 
     @pytest.fixture
     def basic_init_options(self) -> ProjectInitOptions:
@@ -266,9 +266,9 @@ class TestProjectManagerIntegration:
     @pytest.fixture
     def project_manager(self) -> ProjectManager:
         """Create ProjectManager instance"""
-        from specify_cli.services.project_manager import SpecifyProjectManager
+        from specify_cli.services.project_manager import ProjectManager
 
-        return SpecifyProjectManager()
+        return ProjectManager()
 
     def test_full_project_initialization_workflow(
         self, project_manager: ProjectManager, tmp_path: Path
