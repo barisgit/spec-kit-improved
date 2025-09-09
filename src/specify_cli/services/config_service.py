@@ -163,28 +163,44 @@ class TomlConfigService(ConfigService):
 
     def get_merged_config(self, project_path: Path) -> ProjectConfig:
         """Get merged configuration (global defaults + project overrides)"""
-        # Start with defaults
-        merged = ProjectConfig.create_default("merged-config")
+        try:
+            # Start with defaults
+            merged = ProjectConfig.create_default("merged-config")
 
-        # Apply global config if it exists
-        global_config = self.load_global_config()
-        if global_config:
-            # Merge global settings
-            merged.branch_naming = global_config.branch_naming
-            merged.template_settings = global_config.template_settings
+            # Apply global config if it exists
+            global_config = self.load_global_config()
+            if global_config:
+                # Validate global config first
+                if global_config.branch_naming:
+                    is_valid, error = self.validate_branch_naming_config(global_config.branch_naming)
+                    if is_valid:
+                        merged.branch_naming = global_config.branch_naming
+                merged.template_settings = global_config.template_settings
 
-        # Apply project config if it exists
-        project_config = self.load_project_config(project_path)
-        if project_config:
-            # Project config overrides global/defaults
-            merged.name = project_config.name
-            merged.branch_naming = project_config.branch_naming
-            merged.template_settings = project_config.template_settings
-        else:
-            # No project config, use project directory name
-            merged.name = project_path.name
+            # Apply project config if it exists
+            project_config = self.load_project_config(project_path)
+            if project_config:
+                # Project config overrides global/defaults
+                merged.name = project_config.name
+                
+                # Validate project branch naming config
+                if project_config.branch_naming:
+                    is_valid, error = self.validate_branch_naming_config(project_config.branch_naming)
+                    if is_valid:
+                        merged.branch_naming = project_config.branch_naming
+                    # If invalid, keep the default/global config
+                        
+                merged.template_settings = project_config.template_settings
+            else:
+                # No project config, use project directory name
+                merged.name = project_path.name
 
-        return merged
+            return merged
+            
+        except Exception:
+            # If any error occurs, return safe defaults
+            default_config = ProjectConfig.create_default(project_path.name)
+            return default_config
 
     def validate_branch_pattern(self, pattern: str) -> Tuple[bool, Optional[str]]:
         """Validate branch naming pattern"""
@@ -472,3 +488,61 @@ class TomlConfigService(ConfigService):
         except (OSError, PermissionError):
             # Log error in real implementation
             return False
+    
+    def ensure_project_config(self, project_path: Path, ai_assistant: str, branch_naming_config: Optional["BranchNamingConfig"] = None) -> ProjectConfig:
+        """Ensure project has valid configuration, creating defaults if needed"""
+        try:
+            # Try to get existing config
+            config = self.load_project_config(project_path)
+            
+            if config is None:
+                # Create new default config
+                config = ProjectConfig.create_default(project_path.name)
+                
+                # Set AI assistant if provided
+                if ai_assistant:
+                    config.template_settings = {"ai_assistant": ai_assistant}
+                
+                # Set branch naming config if provided
+                if branch_naming_config:
+                    # Validate first
+                    is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                    if is_valid:
+                        config.branch_naming = branch_naming_config
+                
+                # Save the new config
+                self.save_project_config(project_path, config)
+            else:
+                # Update existing config if needed
+                needs_save = False
+                
+                # Update AI assistant if different
+                current_ai = config.template_settings.get("ai_assistant") if config.template_settings else None
+                if ai_assistant and current_ai != ai_assistant:
+                    if not config.template_settings:
+                        config.template_settings = {}
+                    config.template_settings["ai_assistant"] = ai_assistant
+                    needs_save = True
+                
+                # Update branch naming if provided and different
+                if branch_naming_config and config.branch_naming != branch_naming_config:
+                    is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                    if is_valid:
+                        config.branch_naming = branch_naming_config
+                        needs_save = True
+                
+                if needs_save:
+                    self.save_project_config(project_path, config)
+            
+            return config
+            
+        except Exception:
+            # If anything fails, return safe defaults without saving
+            default_config = ProjectConfig.create_default(project_path.name)
+            if ai_assistant:
+                default_config.template_settings = {"ai_assistant": ai_assistant}
+            if branch_naming_config:
+                is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                if is_valid:
+                    default_config.branch_naming = branch_naming_config
+            return default_config

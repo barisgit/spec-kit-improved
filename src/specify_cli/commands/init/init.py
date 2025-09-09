@@ -173,6 +173,7 @@ def init_command(
                 use_current_dir=here,
                 skip_git=False,
                 branch_pattern=branch_pattern,
+                branch_naming_config=branch_naming_config,
             )
             tracker.complete_step("validate", f"AI: {ai_assistant}, Pattern: {branch_pattern}")
 

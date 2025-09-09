@@ -270,41 +270,54 @@ class JinjaTemplateService(TemplateService):
 
     def render_template(self, template_name: Union[str, GranularTemplate], context: TemplateContext) -> str:
         """Render a specific template with given context"""
-        # Validate context
+        # Validate inputs
         if context is None:
             raise ValueError("Template context cannot be None")
+        
+        if not template_name:
+            raise ValueError("Template name cannot be empty")
             
-        # Handle GranularTemplate objects
-        if isinstance(template_name, GranularTemplate):
-            if not template_name.loaded_template:
-                # Load the template if not already loaded
-                template_name = self.load_template(template_name.name)
-            return self.render_with_platform_context(template_name, context)
-            
-        # Handle string template names
-        if self._environment is None:
-            # Try to load from package resources if no environment set
-            self.load_templates_from_package_resources()
-            
-        # Try to load as GranularTemplate first
         try:
-            granular_template = self.load_template(template_name)
-            return self.render_with_platform_context(granular_template, context)
-        except Exception:
-            # Fall back to original method if available
-            if self._environment is not None:
-                try:
-                    template = self._environment.get_template(template_name)
-                    context_dict = self._prepare_context(context)
-                    return template.render(**context_dict)
-                except TemplateNotFound as e:
+            # Handle GranularTemplate objects
+            if isinstance(template_name, GranularTemplate):
+                if not template_name.loaded_template:
+                    # Load the template if not already loaded
+                    template_name = self.load_template(template_name.name)
+                return self.render_with_platform_context(template_name, context)
+                
+            # Handle string template names
+            if self._environment is None:
+                # Try to load from package resources if no environment set
+                success = self.load_templates_from_package_resources()
+                if not success:
+                    raise RuntimeError("Failed to load template environment")
+                
+            # Try to load as GranularTemplate first
+            try:
+                granular_template = self.load_template(template_name)
+                return self.render_with_platform_context(granular_template, context)
+            except Exception as e:
+                # Fall back to original method if available
+                if self._environment is not None:
+                    try:
+                        template = self._environment.get_template(template_name)
+                        context_dict = self._prepare_context(context)
+                        return template.render(**context_dict)
+                    except TemplateNotFound as te:
+                        raise FileNotFoundError(f"Template not found: {template_name}") from te
+                    except TemplateSyntaxError as tse:
+                        raise RuntimeError(f"Template syntax error in '{template_name}': {str(tse)}") from tse
+                    except Exception as re:
+                        raise RuntimeError(f"Failed to render template '{template_name}': {str(re)}") from re
+                else:
                     raise FileNotFoundError(f"Template not found: {template_name}") from e
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to render template '{template_name}': {str(e)}"
-                    ) from e
-            else:
-                raise RuntimeError(f"Template not found: {template_name}")
+                    
+        except (ValueError, FileNotFoundError, RuntimeError):
+            # Re-raise these specific exceptions as-is
+            raise
+        except Exception as e:
+            # Catch any other unexpected errors
+            raise RuntimeError(f"Unexpected error rendering template '{template_name}': {str(e)}") from e
 
     def render_project_templates(
         self, context: TemplateContext, output_dir: Path
@@ -555,7 +568,8 @@ class JinjaTemplateService(TemplateService):
     def _determine_target_path(self, category: str, template_name: str) -> str:
         """Determine target path for template based on category and name"""
         if category == 'commands':
-            return f".claude/commands/{template_name}"
+            # AI-specific commands will be resolved during rendering based on context
+            return f".claude/commands/{template_name}.md"
         elif category == 'scripts':
             return f".specify/scripts/{template_name}.py"
         elif category == 'memory':
@@ -564,6 +578,21 @@ class JinjaTemplateService(TemplateService):
             return f".specify/templates/{template_name}.j2"
         else:
             return f".specify/{template_name}"
+            
+    def _determine_ai_specific_target_path(self, category: str, template_name: str, ai_assistant: str) -> str:
+        """Determine AI-specific target path for template"""
+        if category == 'commands':
+            if ai_assistant == "claude":
+                return f".claude/commands/{template_name}.md"
+            elif ai_assistant == "gemini":
+                return f".gemini/commands/{template_name}.md"
+            elif ai_assistant == "copilot":
+                return f".github/copilot/{template_name}.md"
+            else:
+                # Default to claude structure
+                return f".claude/commands/{template_name}.md"
+        else:
+            return self._determine_target_path(category, template_name)
 
     def discover_templates_by_category(self, category: str) -> List[GranularTemplate]:
         """Filter templates by category"""
@@ -681,45 +710,78 @@ class JinjaTemplateService(TemplateService):
         self, template: GranularTemplate, context: TemplateContext
     ) -> str:
         """Render template with platform-specific context variables"""
+        if not template:
+            raise ValueError("Template cannot be None")
+            
         if not template.loaded_template:
             raise RuntimeError(f"Template '{template.name}' not loaded")
             
-        # Prepare base context
-        context_dict = self._prepare_context(context)
-        
-        # Add platform-specific variables
-        context_dict.update({
-            'platform_system': platform.system(),
-            'platform_machine': platform.machine(),
-            'platform_python_version': platform.python_version(),
-            'is_windows': platform.system().lower() == 'windows',
-            'is_macos': platform.system().lower() == 'darwin',
-            'is_linux': platform.system().lower() == 'linux',
-            'path_separator': '\\' if platform.system().lower() == 'windows' else '/',
-            'script_extension': '.bat' if platform.system().lower() == 'windows' else '.sh'
-        })
-        
-        # Add template-specific variables
-        context_dict.update({
-            'template_name': template.name,
-            'template_category': template.category,
-            'is_executable': template.executable,
-            'target_path': template.target_path
-        })
-        
-        # Add branch pattern context if available
-        if hasattr(context, 'branch_naming_config') and context.branch_naming_config:
-            patterns = context.branch_naming_config.patterns
-            if patterns:
-                # Use first pattern as primary
-                context_dict['branch_pattern'] = patterns[0]
-                context_dict['branch_patterns'] = patterns
-        
-        # Add date alias for creation_date to support templates that expect 'date'
-        if 'creation_date' in context_dict and 'date' not in context_dict:
-            context_dict['date'] = context_dict['creation_date']
+        if not context:
+            raise ValueError("Context cannot be None")
         
         try:
-            return template.loaded_template.render(**context_dict)
+            # Prepare base context
+            context_dict = self._prepare_context(context)
+            
+            # Add platform-specific variables
+            try:
+                context_dict.update({
+                    'platform_system': platform.system(),
+                    'platform_machine': platform.machine(),
+                    'platform_python_version': platform.python_version(),
+                    'is_windows': platform.system().lower() == 'windows',
+                    'is_macos': platform.system().lower() == 'darwin',
+                    'is_linux': platform.system().lower() == 'linux',
+                    'path_separator': '\\' if platform.system().lower() == 'windows' else '/',
+                    'script_extension': '.bat' if platform.system().lower() == 'windows' else '.sh'
+                })
+            except Exception:
+                # Continue with basic context if platform detection fails
+                context_dict.update({
+                    'platform_system': 'unknown',
+                    'is_windows': False,
+                    'is_macos': False,
+                    'is_linux': False,
+                    'path_separator': '/',
+                    'script_extension': '.sh'
+                })
+            
+            # Add template-specific variables
+            context_dict.update({
+                'template_name': template.name,
+                'template_category': template.category,
+                'is_executable': template.executable,
+                'target_path': template.target_path
+            })
+            
+            # Add branch pattern context if available
+            if hasattr(context, 'branch_naming_config') and context.branch_naming_config:
+                patterns = context.branch_naming_config.patterns
+                if patterns:
+                    # Use first pattern as primary
+                    context_dict['branch_pattern'] = patterns[0]
+                    context_dict['branch_patterns'] = patterns
+            
+            # Add date alias for creation_date to support templates that expect 'date'
+            if 'creation_date' in context_dict and 'date' not in context_dict:
+                context_dict['date'] = context_dict['creation_date']
+            
+            # Render the template with enhanced error information
+            try:
+                return template.loaded_template.render(**context_dict)
+            except TemplateSyntaxError as e:
+                raise RuntimeError(f"Template syntax error in '{template.name}': {str(e)}") from e
+            except Exception as e:
+                # Add context about what variables were available for debugging
+                available_vars = sorted(context_dict.keys())
+                raise RuntimeError(
+                    f"Failed to render template '{template.name}': {str(e)}. "
+                    f"Available variables: {', '.join(available_vars[:10])}{'...' if len(available_vars) > 10 else ''}"
+                ) from e
+                
+        except (ValueError, RuntimeError):
+            # Re-raise validation and template errors as-is
+            raise
         except Exception as e:
-            raise RuntimeError(f"Failed to render template '{template.name}': {str(e)}") from e
+            # Catch any other unexpected errors
+            raise RuntimeError(f"Unexpected error rendering template '{template.name}': {str(e)}") from e

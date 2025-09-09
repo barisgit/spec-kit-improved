@@ -207,11 +207,15 @@ class SpecifyProjectManager(ProjectManager):
                     warnings.append("Directory is already a git repository")
 
             # Step 5: Create project configuration
+            # Use provided branch naming config or create simple default
+            branch_naming = options.branch_naming_config
+            if not branch_naming:
+                # Simple fallback default - should rarely be used since UI provides the config
+                branch_naming = BranchNamingConfig()
+                    
             config = ProjectConfig(
                 name=options.project_name or project_path.name,
-                branch_naming=BranchNamingConfig(
-                    default_pattern="001-feature-{feature_name}"
-                ),
+                branch_naming=branch_naming,
                 template_settings=TemplateConfig(ai_assistant=options.ai_assistant),
             )
 
@@ -227,6 +231,9 @@ class SpecifyProjectManager(ProjectManager):
             context.ai_assistant = options.ai_assistant
             context.project_path = project_path
             context.branch_naming_config = config.branch_naming
+            
+            # Set AI-specific target paths for templates
+            context.target_paths = self._build_ai_specific_target_paths(options.ai_assistant, project_path)
             
             try:
                 # Use enhanced template package system
@@ -413,13 +420,26 @@ class SpecifyProjectManager(ProjectManager):
     def setup_project_structure(self, project_path: Path, ai_assistant: str) -> bool:
         """Setup basic project structure and directories."""
         try:
-            # Create .specify directory
+            # Create .specify directory and subdirectories
             specify_dir = project_path / ".specify"
             specify_dir.mkdir(exist_ok=True)
-
-            # Create subdirectories
             (specify_dir / "templates").mkdir(exist_ok=True)
-            (specify_dir / "config").mkdir(exist_ok=True)
+            (specify_dir / "scripts").mkdir(exist_ok=True)
+            (specify_dir / "memory").mkdir(exist_ok=True)
+
+            # Create AI-specific directories
+            if ai_assistant == "claude":
+                claude_dir = project_path / ".claude"
+                claude_dir.mkdir(exist_ok=True)
+                (claude_dir / "commands").mkdir(exist_ok=True)
+            elif ai_assistant == "gemini":
+                gemini_dir = project_path / ".gemini"  
+                gemini_dir.mkdir(exist_ok=True)
+                (gemini_dir / "commands").mkdir(exist_ok=True)
+            elif ai_assistant == "copilot":
+                copilot_dir = project_path / ".github"
+                copilot_dir.mkdir(exist_ok=True)
+                (copilot_dir / "copilot").mkdir(exist_ok=True)
 
             # Create basic spec directory structure
             specs_dir = project_path / "specs"
@@ -609,30 +629,38 @@ class SpecifyProjectManager(ProjectManager):
         self, render_results: List, project_path: Path
     ) -> List[Path]:
         """Write template render results to disk."""
+        from ..utils.file_operations import FileOperations
+        
         written_files = []
         
         for result in render_results:
             if result.success:
                 try:
                     # Get absolute target path
-                    target_path = project_path / result.target_path
+                    if Path(result.target_path).is_absolute():
+                        target_path = Path(result.target_path)
+                    else:
+                        target_path = project_path / result.target_path
+                    
+                    # Ensure parent directory exists 
                     target_path.parent.mkdir(parents=True, exist_ok=True)
                     
-                    # Write content to file
-                    target_path.write_text(result.content, encoding='utf-8')
+                    # Use FileOperations for proper permission handling
+                    success = FileOperations.write_file_with_permissions(
+                        target_path,
+                        result.content,
+                        executable=result.template.executable
+                    )
                     
-                    # Set executable permissions if needed
-                    if result.template.executable:
-                        import stat
-                        current_mode = target_path.stat().st_mode
-                        new_mode = current_mode | stat.S_IEXEC
-                        target_path.chmod(new_mode)
+                    if success:
+                        # Mark template as written
+                        result.template.transition_to_written()
+                        written_files.append(target_path)
+                    else:
+                        self._console.print(
+                            f"[red]Failed to write {result.target_path}[/red]"
+                        )
                         
-                    # Mark template as written
-                    result.template.transition_to_written()
-                    
-                    written_files.append(target_path)
-                    
                 except Exception as e:
                     self._console.print(
                         f"[red]Failed to write {result.target_path}: {e}[/red]"
@@ -640,3 +668,39 @@ class SpecifyProjectManager(ProjectManager):
                     continue
                     
         return written_files
+    
+    def _build_ai_specific_target_paths(self, ai_assistant: str, project_path: Path) -> Dict[str, Path]:
+        """Build AI-specific target paths for templates"""
+        target_paths = {}
+        
+        # Commands directory based on AI assistant
+        if ai_assistant == "claude":
+            commands_base = project_path / ".claude" / "commands"
+        elif ai_assistant == "gemini":
+            commands_base = project_path / ".gemini" / "commands"
+        elif ai_assistant == "copilot":
+            commands_base = project_path / ".github" / "copilot"
+        else:
+            commands_base = project_path / ".claude" / "commands"  # Default
+        
+        # Common target paths mapping template names to their output locations
+        target_paths.update({
+            # Command templates (should be .md files)
+            "specify.j2": commands_base / "specify.md",
+            "plan.j2": commands_base / "plan.md", 
+            "tasks.j2": commands_base / "tasks.md",
+            
+            # Memory templates
+            "constitution.j2": project_path / ".specify" / "memory" / "constitution.md",
+            
+            # Script templates
+            "create-feature.j2": project_path / ".specify" / "scripts" / "create-feature.py",
+            "setup-plan.j2": project_path / ".specify" / "scripts" / "setup-plan.py",
+            "check-prerequisites.j2": project_path / ".specify" / "scripts" / "check-prerequisites.py",
+            
+            # Runtime templates
+            "spec-template.j2": project_path / ".specify" / "templates" / "spec-template.j2",
+            "plan-template.j2": project_path / ".specify" / "templates" / "plan-template.j2",
+        })
+        
+        return target_paths

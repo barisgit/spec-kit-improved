@@ -285,13 +285,14 @@ class ProjectInitStep(Enum):
 class ProjectInitOptions:
     """Options for project initialization"""
 
-    project_name: Optional[str]
+    project_name: Optional[str] = None
     ai_assistant: str = "claude"
     use_current_dir: bool = False
     skip_git: bool = False
     ignore_agent_tools: bool = False
     custom_config: Optional[Dict[str, Any]] = None
-    branch_pattern: Optional[str] = None
+    branch_pattern: Optional[str] = None # TODO: Remove old syntax
+    branch_naming_config: Optional[BranchNamingConfig] = None
 
 
 @dataclass
