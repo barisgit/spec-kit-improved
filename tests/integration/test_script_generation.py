@@ -39,11 +39,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 # These imports will FAIL initially for services - that's expected for TDD
-from specify_cli.models.config import BranchNamingConfig
-from specify_cli.models.project import ProjectConfig, TemplateContext
-from specify_cli.models.template import (
-    GeneratedScript,
-)
+from specify_cli.models.config import BranchNamingConfig, ProjectConfig
+from specify_cli.models.project import TemplateContext
+from specify_cli.models.script import GeneratedScript
 from specify_cli.services.project_manager import ProjectManager
 from specify_cli.services.script_generation_service import ScriptGenerationService
 from specify_cli.services.template_service import TemplateService
@@ -107,6 +105,7 @@ class TestScriptGeneration:
     @pytest.fixture
     def project_config(self) -> ProjectConfig:
         """Create project configuration for script generation"""
+        from specify_cli.models.config import TemplateConfig
         return ProjectConfig(
             name="script-test-project",
             branch_naming=BranchNamingConfig(
@@ -114,10 +113,10 @@ class TestScriptGeneration:
                 patterns=["{number-3}-{feature-name}", "hotfix/{bug-id}"],
                 validation_rules=["max_length_50", "lowercase_only", "no_spaces"],
             ),
-            template_settings={
-                "ai_assistant": "claude",
-                "config_directory": ".specify",
-            },
+            template_settings=TemplateConfig(
+                ai_assistant="claude",
+                config_directory=".specify",
+            ),
         )
 
     @pytest.fixture
@@ -136,7 +135,8 @@ class TestScriptGeneration:
     @pytest.fixture
     def project_manager(self) -> ProjectManager:
         """Create ProjectManager instance for script generation orchestration"""
-        return ProjectManager()
+        from specify_cli.services.project_manager import SpecifyProjectManager
+        return SpecifyProjectManager()
 
     def test_discover_script_templates_from_package(
         self, template_service: TemplateService

@@ -138,16 +138,14 @@ class GranularTemplate:
         self.error_message = error_message
 
     def is_ai_specific_for(self, ai_assistant: str) -> bool:
-        """Check if template is specific to given AI assistant"""
+        """Check if template is compatible with given AI assistant"""
         if not self.ai_aware:
             return True  # Non-AI-aware templates work for all assistants
 
-        # Template name or path should contain AI assistant name for specificity
-        ai_lower = ai_assistant.lower()
-        name_lower = self.name.lower()
-        path_lower = self.template_path.lower()
-
-        return ai_lower in name_lower or ai_lower in path_lower
+        # AI-aware templates are designed to work with all supported AI assistants
+        # through conditional logic ({% if ai_assistant == 'claude' %}, etc.)
+        supported_assistants = {"claude", "gemini", "copilot"}
+        return ai_assistant.lower() in supported_assistants
 
     def get_absolute_target_path(self, project_root: Path) -> Path:
         """Get absolute target path resolved from project root"""

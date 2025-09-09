@@ -5,15 +5,34 @@ This module provides an interface and implementation for template processing,
 supporting Jinja2 template rendering with context variables.
 """
 
+import importlib.resources
+import platform
 import re
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateSyntaxError
 from jinja2.meta import find_undeclared_variables
 
 from specify_cli.models.project import TemplateContext, TemplateFile
+from specify_cli.models.template import (
+    GranularTemplate,
+    TemplatePackage,
+    TemplateState,
+)
+
+
+@dataclass
+class TemplateRenderResult:
+    """Result of rendering a single template"""
+    
+    template: GranularTemplate
+    content: str
+    target_path: str
+    success: bool = True
+    error_message: Optional[str] = None
 
 
 class TemplateService(ABC):
@@ -107,6 +126,100 @@ class TemplateService(ABC):
         """
         pass
 
+    @abstractmethod
+    def discover_templates(self) -> List[GranularTemplate]:
+        """
+        Discover templates from package resources
+
+        Returns:
+            List of discovered GranularTemplate objects
+        """
+        pass
+
+    @abstractmethod
+    def discover_templates_by_category(self, category: str) -> List[GranularTemplate]:
+        """
+        Filter templates by category
+
+        Args:
+            category: Template category to filter by
+
+        Returns:
+            List of GranularTemplate objects in the category
+        """
+        pass
+
+    @abstractmethod
+    def load_template(self, template_name: str) -> GranularTemplate:
+        """
+        Load individual template object
+
+        Args:
+            template_name: Name of template to load
+
+        Returns:
+            GranularTemplate object with loaded Jinja2 template
+
+        Raises:
+            Exception: If template not found or loading fails
+        """
+        pass
+
+    @abstractmethod
+    def load_templates_from_package_resources(self) -> bool:
+        """
+        Load templates from package resources
+
+        Returns:
+            True if templates loaded successfully, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def validate_template_package(self, package: TemplatePackage) -> bool:
+        """
+        Validate template package
+
+        Args:
+            package: TemplatePackage to validate
+
+        Returns:
+            True if package is valid, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def render_template_package(
+        self, package: TemplatePackage, context: TemplateContext
+    ) -> List["TemplateRenderResult"]:
+        """
+        Render full template package
+
+        Args:
+            package: TemplatePackage to render
+            context: Template context for rendering
+
+        Returns:
+            List of TemplateRenderResult objects
+        """
+        pass
+
+    @abstractmethod
+    def render_with_platform_context(
+        self, template: GranularTemplate, context: TemplateContext
+    ) -> str:
+        """
+        Render template with platform-specific context variables
+
+        Args:
+            template: GranularTemplate to render
+            context: Base template context
+
+        Returns:
+            Rendered template content as string
+        """
+        pass
+
 
 class JinjaTemplateService(TemplateService):
     """Jinja2-based template service implementation"""
@@ -116,6 +229,7 @@ class JinjaTemplateService(TemplateService):
         self._custom_template_dir: Optional[Path] = None
         self._ai_assistant: Optional[str] = None
         self._environment: Optional[Environment] = None
+        self._discovered_templates: List[GranularTemplate] = []
 
     def load_template_package(self, ai_assistant: str, template_dir: Path) -> bool:
         """Load template package for specified AI assistant"""
@@ -154,25 +268,43 @@ class JinjaTemplateService(TemplateService):
         except Exception:
             return False
 
-    def render_template(self, template_name: str, context: TemplateContext) -> str:
+    def render_template(self, template_name: Union[str, GranularTemplate], context: TemplateContext) -> str:
         """Render a specific template with given context"""
+        # Validate context
+        if context is None:
+            raise ValueError("Template context cannot be None")
+            
+        # Handle GranularTemplate objects
+        if isinstance(template_name, GranularTemplate):
+            if not template_name.loaded_template:
+                # Load the template if not already loaded
+                template_name = self.load_template(template_name.name)
+            return self.render_with_platform_context(template_name, context)
+            
+        # Handle string template names
         if self._environment is None:
-            raise RuntimeError(
-                "No template package loaded. Call load_template_package first."
-            )
-
+            # Try to load from package resources if no environment set
+            self.load_templates_from_package_resources()
+            
+        # Try to load as GranularTemplate first
         try:
-            template = self._environment.get_template(template_name)
-            # Convert context to dict, handling both test and real TemplateContext
-            context_dict = self._prepare_context(context)
-            return template.render(**context_dict)
-
-        except TemplateNotFound as e:
-            raise FileNotFoundError(f"Template not found: {template_name}") from e
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to render template '{template_name}': {str(e)}"
-            ) from e
+            granular_template = self.load_template(template_name)
+            return self.render_with_platform_context(granular_template, context)
+        except Exception:
+            # Fall back to original method if available
+            if self._environment is not None:
+                try:
+                    template = self._environment.get_template(template_name)
+                    context_dict = self._prepare_context(context)
+                    return template.render(**context_dict)
+                except TemplateNotFound as e:
+                    raise FileNotFoundError(f"Template not found: {template_name}") from e
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to render template '{template_name}': {str(e)}"
+                    ) from e
+            else:
+                raise RuntimeError(f"Template not found: {template_name}")
 
     def render_project_templates(
         self, context: TemplateContext, output_dir: Path
@@ -318,6 +450,10 @@ class JinjaTemplateService(TemplateService):
                     context_dict["additional_vars"] = additional_vars
                     # Also merge the values directly for backwards compatibility
                     context_dict.update(additional_vars)
+                    
+            # Handle date/creation_date variations
+            if "creation_date" in context_dict and "date" not in context_dict:
+                context_dict["date"] = context_dict["creation_date"]
 
             # Handle template_variables and custom_fields
             if hasattr(context, "template_variables"):
@@ -362,3 +498,228 @@ class JinjaTemplateService(TemplateService):
         # Check for specific executable patterns in filename
         executable_patterns = ["run", "start", "stop", "deploy", "build", "test"]
         return any(pattern in check_name.lower() for pattern in executable_patterns)
+
+    def discover_templates(self) -> List[GranularTemplate]:
+        """Discover templates from package resources"""
+        if self._discovered_templates:
+            return self._discovered_templates
+            
+        templates = []
+        try:
+            # Get reference to the init_templates package
+            import specify_cli.init_templates as templates_pkg
+            
+            # Discover templates in each category directory
+            categories = ['commands', 'scripts', 'memory', 'runtime_templates']
+            
+            for category in categories:
+                try:
+                    # Get files in this category directory
+                    category_files = importlib.resources.files(templates_pkg) / category
+                    if category_files.is_dir():
+                        for file_path in category_files.iterdir():
+                            if file_path.is_file() and file_path.name.endswith('.j2'):
+                                template_name = file_path.name[:-3]  # Remove .j2
+                                
+                                # Determine target path based on category and template name
+                                target_path = self._determine_target_path(category, template_name)
+                                
+                                # Determine if executable (scripts only)
+                                executable = (category == 'scripts')
+                                
+                                # All command and memory templates are AI-aware
+                                ai_aware = category in ['commands', 'memory']
+                                
+                                template = GranularTemplate(
+                                    name=template_name,
+                                    template_path=f"{category}/{file_path.name}",
+                                    target_path=target_path,
+                                    category=category,
+                                    ai_aware=ai_aware,
+                                    executable=executable,
+                                    state=TemplateState.DISCOVERED
+                                )
+                                
+                                templates.append(template)
+                                
+                except Exception:
+                    # Skip problematic categories but continue with others
+                    continue
+                    
+            self._discovered_templates = templates
+            return templates
+            
+        except Exception:
+            return []
+
+    def _determine_target_path(self, category: str, template_name: str) -> str:
+        """Determine target path for template based on category and name"""
+        if category == 'commands':
+            return f".claude/commands/{template_name}"
+        elif category == 'scripts':
+            return f".specify/scripts/{template_name}.py"
+        elif category == 'memory':
+            return f".specify/memory/{template_name}.md"
+        elif category == 'runtime_templates':
+            return f".specify/templates/{template_name}.j2"
+        else:
+            return f".specify/{template_name}"
+
+    def discover_templates_by_category(self, category: str) -> List[GranularTemplate]:
+        """Filter templates by category"""
+        all_templates = self.discover_templates()
+        return [t for t in all_templates if t.category == category]
+
+    def load_template(self, template_name: str) -> GranularTemplate:
+        """Load individual template object"""
+        # Find template by name (with or without .j2 extension)
+        search_name = template_name.replace('.j2', '')
+        
+        templates = self.discover_templates()
+        template = next((t for t in templates if t.name == search_name), None)
+        
+        if not template:
+            raise FileNotFoundError(f"Template not found: {template_name}")
+            
+        # Load the Jinja2 template if not already loaded
+        if template.state == TemplateState.DISCOVERED:
+            try:
+                # Load from package resources
+                import specify_cli.init_templates as templates_pkg
+                template_content = (importlib.resources.files(templates_pkg) / template.template_path).read_text()
+                
+                # Create Jinja2 template from content
+                env = Environment(keep_trailing_newline=True)
+                
+                # Add custom filters
+                def regex_replace(value: str, pattern: str, replacement: str = "") -> str:
+                    return self._regex_replace_filter(value, pattern, replacement)
+                
+                env.filters["regex_replace"] = cast(Callable[..., Any], regex_replace)
+                
+                jinja_template = env.from_string(template_content)
+                template.transition_to_loaded(jinja_template)
+                
+            except Exception as e:
+                template.mark_error(f"Failed to load template: {str(e)}")
+                raise RuntimeError(f"Failed to load template '{template_name}': {str(e)}") from e
+                
+        return template
+
+    def load_templates_from_package_resources(self) -> bool:
+        """Load templates from package resources"""
+        try:
+            templates = self.discover_templates()
+            return len(templates) > 0
+        except Exception:
+            return False
+
+    def validate_template_package(self, package: TemplatePackage) -> bool:
+        """Validate template package"""
+        try:
+            # Check that all templates in package exist
+            available_templates = {t.name for t in self.discover_templates()}
+            
+            for template in package.templates:
+                if template.name not in available_templates:
+                    return False
+                    
+            # Check that templates are compatible with AI assistant
+            for template in package.templates:
+                if not template.is_ai_specific_for(package.ai_assistant):
+                    return False
+                    
+            return True
+            
+        except Exception:
+            return False
+
+    def render_template_package(
+        self, package: TemplatePackage, context: TemplateContext
+    ) -> List[TemplateRenderResult]:
+        """Render full template package"""
+        results = []
+        
+        # Get processing order (respecting dependencies)
+        templates_to_process = package.get_processing_order()
+        
+        for template in templates_to_process:
+            try:
+                # Load template if needed
+                loaded_template = self.load_template(template.name)
+                
+                # Render with platform context
+                content = self.render_with_platform_context(loaded_template, context)
+                
+                # Mark as rendered
+                loaded_template.transition_to_rendered(content)
+                
+                # Create result
+                result = TemplateRenderResult(
+                    template=loaded_template,
+                    content=content,
+                    target_path=loaded_template.target_path,
+                    success=True
+                )
+                results.append(result)
+                
+            except Exception as e:
+                # Create error result
+                template.mark_error(str(e))
+                result = TemplateRenderResult(
+                    template=template,
+                    content="",
+                    target_path=template.target_path,
+                    success=False,
+                    error_message=str(e)
+                )
+                results.append(result)
+                
+        return results
+
+    def render_with_platform_context(
+        self, template: GranularTemplate, context: TemplateContext
+    ) -> str:
+        """Render template with platform-specific context variables"""
+        if not template.loaded_template:
+            raise RuntimeError(f"Template '{template.name}' not loaded")
+            
+        # Prepare base context
+        context_dict = self._prepare_context(context)
+        
+        # Add platform-specific variables
+        context_dict.update({
+            'platform_system': platform.system(),
+            'platform_machine': platform.machine(),
+            'platform_python_version': platform.python_version(),
+            'is_windows': platform.system().lower() == 'windows',
+            'is_macos': platform.system().lower() == 'darwin',
+            'is_linux': platform.system().lower() == 'linux',
+            'path_separator': '\\' if platform.system().lower() == 'windows' else '/',
+            'script_extension': '.bat' if platform.system().lower() == 'windows' else '.sh'
+        })
+        
+        # Add template-specific variables
+        context_dict.update({
+            'template_name': template.name,
+            'template_category': template.category,
+            'is_executable': template.executable,
+            'target_path': template.target_path
+        })
+        
+        # Add branch pattern context if available
+        if hasattr(context, 'branch_naming_config') and context.branch_naming_config:
+            patterns = context.branch_naming_config.patterns
+            if patterns:
+                # Use first pattern as primary
+                context_dict['branch_pattern'] = patterns[0]
+                context_dict['branch_patterns'] = patterns
+        
+        # Add date alias for creation_date to support templates that expect 'date'
+        if 'creation_date' in context_dict and 'date' not in context_dict:
+            context_dict['date'] = context_dict['creation_date']
+        
+        try:
+            return template.loaded_template.render(**context_dict)
+        except Exception as e:
+            raise RuntimeError(f"Failed to render template '{template.name}': {str(e)}") from e

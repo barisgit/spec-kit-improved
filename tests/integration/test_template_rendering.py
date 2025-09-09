@@ -208,8 +208,8 @@ class TestAIAwareTemplateRendering:
             in constitution_content
         )
 
-        # Should contain project-specific info
-        assert "test-project" in constitution_content
+        # Should contain project-specific info (template converts to title case)
+        assert "Test-Project" in constitution_content
         assert (
             "{number-3}-{feature-name}" in constitution_content
             or "001-feature-name" in constitution_content

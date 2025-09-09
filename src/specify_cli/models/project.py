@@ -81,12 +81,8 @@ class TemplateContext:
         if not self.branch_type and self.spec_type:
             self.branch_type = self.spec_type
 
-        # Validate AI assistant
-        valid_assistants = {"claude", "gemini", "copilot"}
-        if self.ai_assistant not in valid_assistants:
-            raise ValueError(
-                f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"
-            )
+        # Note: AI assistant validation is permissive to allow unknown assistants
+        # Templates handle fallback behavior through conditional logic
 
         # Validate paths are absolute if project_path is set
         if self.project_path and not self.project_path.is_absolute():
@@ -295,6 +291,7 @@ class ProjectInitOptions:
     skip_git: bool = False
     ignore_agent_tools: bool = False
     custom_config: Optional[Dict[str, Any]] = None
+    branch_pattern: Optional[str] = None
 
 
 @dataclass

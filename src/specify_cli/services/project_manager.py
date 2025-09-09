@@ -19,9 +19,12 @@ from ..models.project import (
     ProjectInitStep,
     TemplateContext,
 )
+from ..models.script import GeneratedScript
+from ..models.template import TemplatePackage
 from .config_service import ConfigService
 from .download_service import DownloadService
 from .git_service import GitService
+from .script_generation_service import ScriptGenerationService
 from .template_service import TemplateService
 
 
@@ -74,6 +77,13 @@ class ProjectManager(ABC):
         """Clean up after a failed initialization attempt."""
         pass
 
+    @abstractmethod
+    def generate_python_scripts(
+        self, project_config: ProjectConfig, project_path: Path
+    ) -> List[GeneratedScript]:
+        """Generate Python scripts from templates with SpecifyX utility access."""
+        pass
+
 
 class SpecifyProjectManager(ProjectManager):
     """Default implementation of ProjectManager using dependency injection."""
@@ -84,6 +94,7 @@ class SpecifyProjectManager(ProjectManager):
         config_service: Optional[ConfigService] = None,
         git_service: Optional[GitService] = None,
         download_service: Optional[DownloadService] = None,
+        script_generation_service: Optional[ScriptGenerationService] = None,
     ):
         """Initialize with service dependencies.
 
@@ -118,6 +129,12 @@ class SpecifyProjectManager(ProjectManager):
         self._config_service = config_service
         self._git_service = git_service
         self._download_service = download_service
+        
+        # Initialize script generation service
+        if script_generation_service is None:
+            script_generation_service = ScriptGenerationService(self._template_service)
+        self._script_generation_service = script_generation_service
+        
         self._console = Console()
 
     def initialize_project(self, options: ProjectInitOptions) -> ProjectInitResult:
@@ -203,30 +220,35 @@ class SpecifyProjectManager(ProjectManager):
             else:
                 warnings.append("Failed to save project configuration")
 
-            # Step 6: Apply templates
+            # Step 6: Apply template package system
             context = TemplateContext.create_default(
                 project_name=options.project_name or project_path.name
             )
             context.ai_assistant = options.ai_assistant
             context.project_path = project_path
-
-            # Load and apply templates for the AI assistant
-            template_dir = project_path / ".specify" / "templates"
-            if self._template_service.load_template_package(
-                options.ai_assistant, template_dir
-            ):
-                try:
-                    rendered_files = self._template_service.render_project_templates(
-                        context, project_path
-                    )
-                    if rendered_files:
-                        completed_steps.append(ProjectInitStep.TEMPLATE_RENDER)
-                    else:
-                        warnings.append("No templates were rendered")
-                except Exception as e:
-                    warnings.append(f"Template rendering failed: {str(e)}")
-            else:
-                warnings.append("Failed to load template package")
+            context.branch_naming_config = config.branch_naming
+            
+            try:
+                # Use enhanced template package system
+                template_package = self._create_template_package(options.ai_assistant)
+                
+                # Render template package
+                render_results = self._template_service.render_template_package(
+                    template_package, context
+                )
+                
+                # Write rendered templates to disk
+                written_files = self._write_template_results(
+                    render_results, project_path
+                )
+                
+                if written_files:
+                    completed_steps.append(ProjectInitStep.TEMPLATE_RENDER)
+                else:
+                    warnings.append("No templates were rendered")
+                    
+            except Exception as e:
+                warnings.append(f"Template package rendering failed: {str(e)}")
 
             # Step 7: Create initial branch (if git is enabled and branch pattern is configured)
             if not options.skip_git and self._git_service.is_git_repository(
@@ -241,7 +263,30 @@ class SpecifyProjectManager(ProjectManager):
                 else:
                     warnings.append(f"Failed to create initial branch: {branch_name}")
 
-            completed_steps.append(ProjectInitStep.FINALIZATION)
+            # Step 8: Generate Python scripts
+            try:
+                generated_scripts = self._script_generation_service.generate_scripts_from_templates(
+                    context, project_path / ".specify" / "scripts", options.ai_assistant
+                )
+                
+                if generated_scripts:
+                    # Set executable permissions
+                    permissions_success = self._script_generation_service.set_script_permissions(generated_scripts)
+                    if not permissions_success:
+                        warnings.append("Failed to set script permissions")
+                        
+                    # Validate scripts
+                    validation_success = self._script_generation_service.validate_script_imports(generated_scripts)
+                    if not validation_success:
+                        warnings.append("Script validation failed")
+                        
+                    completed_steps.append(ProjectInitStep.FINALIZATION)
+                else:
+                    warnings.append("No scripts were generated")
+                    
+            except Exception as e:
+                warnings.append(f"Script generation failed: {str(e)}")
+                completed_steps.append(ProjectInitStep.FINALIZATION)
 
             return ProjectInitResult(
                 success=True,
@@ -502,3 +547,96 @@ class SpecifyProjectManager(ProjectManager):
                 f"[red]Failed to cleanup failed initialization: {e}[/red]"
             )
             return False
+
+    def generate_python_scripts(
+        self, project_config: ProjectConfig, project_path: Path
+    ) -> List[GeneratedScript]:
+        """Generate Python scripts from templates with SpecifyX utility access."""
+        try:
+            # Create template context from project config
+            context = TemplateContext(
+                project_name=project_config.name,
+                ai_assistant=project_config.template_settings.ai_assistant,
+                branch_naming_config=project_config.branch_naming,
+                config_directory=".specify",
+                project_path=project_path,
+                target_paths={}
+            )
+            
+            # Generate scripts
+            scripts_dir = project_path / ".specify" / "scripts"
+            generated_scripts = self._script_generation_service.generate_scripts_from_templates(
+                context, scripts_dir, project_config.template_settings.ai_assistant
+            )
+            
+            # Set permissions and validate
+            if generated_scripts:
+                self._script_generation_service.set_script_permissions(generated_scripts)
+                self._script_generation_service.validate_script_imports(generated_scripts)
+                
+            return generated_scripts
+            
+        except Exception as e:
+            self._console.print(f"[red]Failed to generate Python scripts: {e}[/red]")
+            return []
+            
+    def _create_template_package(self, ai_assistant: str) -> TemplatePackage:
+        """Create template package for the given AI assistant."""
+        # Discover templates from package resources
+        all_templates = self._template_service.discover_templates()
+        
+        # Filter templates compatible with AI assistant
+        compatible_templates = [
+            template for template in all_templates
+            if template.is_ai_specific_for(ai_assistant)
+        ]
+        
+        # Create output structure mapping
+        output_structure = {}
+        for template in compatible_templates:
+            target_dir = str(Path(template.target_path).parent)
+            if target_dir not in output_structure:
+                output_structure[target_dir] = []
+            output_structure[target_dir].append(template.name)
+            
+        return TemplatePackage(
+            ai_assistant=ai_assistant,
+            templates=compatible_templates,
+            output_structure=output_structure
+        )
+        
+    def _write_template_results(
+        self, render_results: List, project_path: Path
+    ) -> List[Path]:
+        """Write template render results to disk."""
+        written_files = []
+        
+        for result in render_results:
+            if result.success:
+                try:
+                    # Get absolute target path
+                    target_path = project_path / result.target_path
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Write content to file
+                    target_path.write_text(result.content, encoding='utf-8')
+                    
+                    # Set executable permissions if needed
+                    if result.template.executable:
+                        import stat
+                        current_mode = target_path.stat().st_mode
+                        new_mode = current_mode | stat.S_IEXEC
+                        target_path.chmod(new_mode)
+                        
+                    # Mark template as written
+                    result.template.transition_to_written()
+                    
+                    written_files.append(target_path)
+                    
+                except Exception as e:
+                    self._console.print(
+                        f"[red]Failed to write {result.target_path}: {e}[/red]"
+                    )
+                    continue
+                    
+        return written_files

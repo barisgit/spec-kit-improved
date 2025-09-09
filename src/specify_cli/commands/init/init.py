@@ -16,7 +16,11 @@ from specify_cli.services import (
     SpecifyProjectManager,
     TomlConfigService,
 )
-from specify_cli.utils.ui import InteractiveUI, StepTracker
+from specify_cli.utils.ui import StepTracker
+from specify_cli.utils.ui_helpers import (
+    select_ai_assistant,
+    select_branch_naming_pattern,
+)
 
 
 # Initialize services
@@ -109,26 +113,8 @@ def init_command(
 
     # Interactive AI assistant selection if not specified
     if ai_assistant is None:
-        ui = InteractiveUI()
-        ai_choices = {
-            "claude": "Claude Code (Terminal-based AI assistant with / commands)",
-            "gemini": "Gemini CLI (Terminal-based AI assistant)",
-            "copilot": "GitHub Copilot (VS Code/IDE integration)",
-        }
-
         try:
-            # Create choices as dict format for proper key:value display
-            choice_dict = ai_choices
-            choice_keys = list(ai_choices.keys())
-
-            selected_choice = ui.select(
-                "Choose your AI assistant:",
-                choices=choice_dict,
-                default=choice_keys[0],  # First choice key (claude)
-            )
-
-            # The selected_choice should be the key directly
-            ai_assistant = selected_choice
+            ai_assistant = select_ai_assistant()
         except KeyboardInterrupt:
             console.print("[yellow]Setup cancelled[/yellow]")
             raise typer.Exit(0) from None
@@ -142,26 +128,29 @@ def init_command(
         raise typer.Exit(1)
 
     # Interactive branch pattern selection if not specified
+    branch_naming_config = None
     if branch_pattern is None:
-        ui = InteractiveUI()
-        pattern_choices = {
-            "001-feature-name": "Traditional numbered format (001-auth-system)",
-            "feature/{name}": "Modern branch format (feature/auth-system)",
-        }
-
         try:
-            selected_pattern = ui.select(
-                "Choose your branch naming pattern:",
-                choices=pattern_choices,
-                default="001-feature-name",  # Default to traditional format
-            )
-            branch_pattern = selected_pattern
+            branch_naming_config = select_branch_naming_pattern()
+            # Get the pattern key from the primary pattern (first in list)
+            primary_pattern = branch_naming_config.patterns[0] if branch_naming_config.patterns else "001-{feature-name}"
+            # Map primary pattern to the simple key format expected by existing code
+            if primary_pattern.startswith("001-") or primary_pattern.startswith("{number"):
+                branch_pattern = "001-feature-name"
+            elif primary_pattern.startswith("feature/"):
+                branch_pattern = "feature/{name}"
+            elif primary_pattern.startswith("feature/{number"):
+                branch_pattern = "feature/{number-3}-{name}"
+            elif "{team}/" in primary_pattern:
+                branch_pattern = "{team}/{name}"
+            else:
+                branch_pattern = "001-feature-name"  # Default fallback
         except KeyboardInterrupt:
             console.print("[yellow]Setup cancelled[/yellow]")
             raise typer.Exit(0) from None
 
-    # Validate branch pattern
-    valid_patterns = ["001-feature-name", "feature/{name}"]
+    # Validate branch pattern (expanded list from ui_helpers)
+    valid_patterns = ["001-feature-name", "feature/{name}", "feature/{number-3}-{name}", "{team}/{name}"]
     if branch_pattern not in valid_patterns:
         console.print(
             f"[red]Error:[/red] Invalid branch pattern '{branch_pattern}'. Choose from: {', '.join(valid_patterns)}"
@@ -183,8 +172,9 @@ def init_command(
                 ai_assistant=ai_assistant,
                 use_current_dir=here,
                 skip_git=False,
+                branch_pattern=branch_pattern,
             )
-            tracker.complete_step("validate", f"AI: {ai_assistant}")
+            tracker.complete_step("validate", f"AI: {ai_assistant}, Pattern: {branch_pattern}")
 
             tracker.add_step("initialize", "Initialize project structure")
             tracker.start_step("initialize")
