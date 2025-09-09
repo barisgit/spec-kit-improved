@@ -11,15 +11,35 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .config import BranchNamingConfig
+from .defaults import PATH_DEFAULTS
 
 
 class TemplateDict(dict):
-    """Custom dict that prioritizes key access over dict methods in Jinja2 templates"""
+    """Custom dict that prioritizes key access over dict methods in Jinja2 templates.
 
-    def __getattribute__(self, name):
+    This is needed when template variables might conflict with dict method names
+    (e.g., a variable called 'items' would override dict.items() in Jinja2).
+    """
+
+    def __getattribute__(self, name: str) -> Any:
+        # Avoid infinite recursion by checking if this is a dict operation that we need to preserve
+        if name.startswith("_") or name in (
+            "__class__",
+            "__getitem__",
+            "__setitem__",
+            "__contains__",
+        ):
+            return super().__getattribute__(name)
+
         # If the name is a key in the dict, return the value instead of the method
-        if name in self:
-            return self[name]
+        try:
+            # Check if this name exists as a key in the dictionary
+            if dict.__contains__(self, name):
+                return dict.__getitem__(self, name)
+        except (AttributeError, TypeError):
+            # If checking membership fails for any reason, fall back to normal behavior
+            pass
+
         return super().__getattribute__(name)
 
 
@@ -41,7 +61,9 @@ class TemplateContext:
     author_name: str = ""
     author_email: str = ""
     creation_date: str = field(
-        default_factory=lambda: datetime.now().strftime("%Y-%m-%d")
+        default_factory=lambda: datetime.now().strftime(
+            PATH_DEFAULTS.PROJECT_DEFAULTS.date_format
+        )
     )
     creation_year: str = field(default_factory=lambda: str(datetime.now().year))
 
@@ -50,17 +72,21 @@ class TemplateContext:
     custom_fields: Dict[str, Any] = field(default_factory=dict)
 
     # AI assistant configuration (enhanced)
-    ai_assistant: str = "claude"
+    ai_assistant: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    )
     ai_context: Dict[str, str] = field(default_factory=dict)
 
     # Branch naming configuration (new)
     branch_naming_config: BranchNamingConfig = field(default_factory=BranchNamingConfig)
 
     # Configuration settings (new)
-    config_directory: str = ".specify"
+    config_directory: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory
+    )
 
-    # Template target mappings (new)
-    target_paths: Dict[str, Path] = field(default_factory=dict)
+    # Platform information
+    platform_name: str = ""
 
     # Git information
     git_remote_url: str = ""
@@ -69,7 +95,9 @@ class TemplateContext:
     # Specification information
     spec_number: str = ""
     spec_title: str = ""
-    spec_type: str = "feature"  # feature, bugfix, hotfix, epic
+    spec_type: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.spec_type
+    )  # feature, bugfix, hotfix, epic
 
     # Backwards compatibility fields for tests
     branch_type: str = ""
@@ -87,20 +115,6 @@ class TemplateContext:
         # Validate paths are absolute if project_path is set
         if self.project_path and not self.project_path.is_absolute():
             raise ValueError("project_path must be absolute")
-
-        # Validate target paths are within project directory if project_path is set
-        if self.project_path:
-            for template_name, target_path in self.target_paths.items():
-                if not target_path.is_absolute():
-                    raise ValueError(
-                        f"target_paths['{template_name}'] must be absolute"
-                    )
-                try:
-                    target_path.relative_to(self.project_path)
-                except ValueError as e:
-                    raise ValueError(
-                        f"target_paths['{template_name}'] must be within project directory"
-                    ) from e
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for Jinja2 template rendering"""
@@ -125,10 +139,6 @@ class TemplateContext:
             "branch_naming_config": self.branch_naming_config.to_dict(),
             # Configuration settings
             "config_directory": self.config_directory,
-            # Template target mappings
-            "target_paths": {
-                name: str(path) for name, path in self.target_paths.items()
-            },
             # Git information
             "git_remote_url": self.git_remote_url,
             "git_branch": self.git_branch,
@@ -168,7 +178,6 @@ class TemplateContext:
             "ai_context",
             "branch_naming_config",
             "config_directory",
-            "target_paths",
             "git_remote_url",
             "git_branch",
             "spec_number",
@@ -198,14 +207,6 @@ class TemplateContext:
                 context_data["branch_naming_config"]
             )
 
-        # Handle target_paths conversion
-        if "target_paths" in context_data and isinstance(
-            context_data["target_paths"], dict
-        ):
-            context_data["target_paths"] = {
-                name: Path(path) for name, path in context_data["target_paths"].items()
-            }
-
         # Set custom fields
         context_data["custom_fields"] = custom_fields
 
@@ -228,7 +229,6 @@ class TemplateContext:
             ai_context=self.ai_context.copy(),
             branch_naming_config=self.branch_naming_config,
             config_directory=self.config_directory,
-            target_paths=self.target_paths.copy(),
             git_remote_url=self.git_remote_url,
             git_branch=self.git_branch,
             spec_number=self.spec_number,
@@ -246,9 +246,9 @@ class TemplateContext:
             project_name=project_name,
             project_description=f"Project: {project_name}",
             author_name="Developer",
-            ai_assistant="claude",
+            ai_assistant=PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant,
             branch_naming_config=BranchNamingConfig(),
-            config_directory=".specify",
+            config_directory=PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory,
         )
 
 
@@ -286,12 +286,14 @@ class ProjectInitOptions:
     """Options for project initialization"""
 
     project_name: Optional[str] = None
-    ai_assistant: str = "claude"
+    ai_assistant: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    )
     use_current_dir: bool = False
     skip_git: bool = False
     ignore_agent_tools: bool = False
     custom_config: Optional[Dict[str, Any]] = None
-    branch_pattern: Optional[str] = None  # TODO: Remove old syntax
+    branch_pattern: Optional[str] = None
     branch_naming_config: Optional[BranchNamingConfig] = None
 
 

@@ -7,7 +7,6 @@ supporting Jinja2 template processing with state transitions and validation.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
@@ -41,7 +40,6 @@ class GranularTemplate:
     # Core identification
     name: str  # Template name (e.g., "specify", "constitution")
     template_path: str  # Source template path in package
-    target_path: str  # Relative target path from project root
     category: str  # Template category (commands, scripts, memory, runtime)
 
     # Template properties
@@ -59,7 +57,6 @@ class GranularTemplate:
     def __post_init__(self):
         """Validate template configuration after initialization"""
         self._validate_template_path()
-        self._validate_target_path()
         self._validate_category()
         self._validate_executable_constraint()
 
@@ -74,24 +71,6 @@ class GranularTemplate:
         # Should not be absolute path (package resources are relative)
         if self.template_path.startswith("/"):
             raise ValueError("template_path should be relative to package resources")
-
-    def _validate_target_path(self) -> None:
-        """Validate target path is valid relative path"""
-        if not self.target_path or not self.target_path.strip():
-            raise ValueError("target_path cannot be empty")
-
-        # Normalize path separators
-        self.target_path = self.target_path.replace("\\", "/")
-
-        # Should not be absolute path
-        if self.target_path.startswith("/"):
-            raise ValueError("target_path must be relative to project root")
-
-        # Should not contain parent directory traversal
-        if ".." in self.target_path:
-            raise ValueError(
-                "target_path cannot contain parent directory references (..)"
-            )
 
     def _validate_category(self) -> None:
         """Validate category is from supported types"""
@@ -144,22 +123,16 @@ class GranularTemplate:
 
         # AI-aware templates are designed to work with all supported AI assistants
         # through conditional logic ({% if ai_assistant == 'claude' %}, etc.)
-        supported_assistants = {"claude", "gemini", "copilot"}  # FIXME: HARDCODED - AI assistant validation set hardcoded
+        from .defaults.ai_defaults import AI_DEFAULTS
+
+        supported_assistants = set(AI_DEFAULTS.get_all_assistant_names())
         return ai_assistant.lower() in supported_assistants
-
-    def get_absolute_target_path(self, project_root: Path) -> Path:
-        """Get absolute target path resolved from project root"""
-        if not project_root.is_absolute():
-            raise ValueError("project_root must be absolute path")
-
-        return project_root / self.target_path
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization/logging"""
         return {
             "name": self.name,
             "template_path": self.template_path,
-            "target_path": self.target_path,
             "category": self.category,
             "ai_aware": self.ai_aware,
             "executable": self.executable,
@@ -180,7 +153,6 @@ class GranularTemplate:
         template = cls(
             name=data["name"],
             template_path=data["template_path"],
-            target_path=data["target_path"],
             category=data["category"],
             ai_aware=data.get("ai_aware", False),
             executable=data.get("executable", False),
@@ -192,70 +164,6 @@ class GranularTemplate:
             template.error_message = data["error_message"]
 
         return template
-
-
-@dataclass
-class GeneratedScript:
-    """
-    Python scripts generated from templates with SpecifyX utility access
-
-    Purpose: Represents Python scripts created from script templates that
-    can import and use SpecifyX utilities.
-    """
-
-    name: str  # Script name (e.g., "create-feature", "setup-plan")
-    source_template: str  # Source template name
-    target_path: Path  # Absolute path to generated script
-    imports: List[str]  # SpecifyX utilities imported
-    executable: bool = False  # Whether script has execute permissions
-    json_output: bool = False  # Whether script supports --json flag
-
-    def __post_init__(self):
-        """Validate script configuration"""
-        self._validate_target_path()
-        self._validate_imports()
-
-    def _validate_target_path(self) -> None:
-        """Validate target path is in .specify/scripts directory with .py extension"""
-        if not self.target_path.is_absolute():
-            raise ValueError("target_path must be absolute")
-
-        # Check if in .specify/scripts directory
-        path_parts = self.target_path.parts
-        if not (".specify" in path_parts and "scripts" in path_parts):
-            raise ValueError("target_path must be in .specify/scripts directory")
-
-        # Check .py extension
-        if not self.target_path.name.endswith(".py"):
-            raise ValueError("target_path must have .py extension")
-
-    def _validate_imports(self) -> None:
-        """Validate that at least one SpecifyX utility is imported"""
-        if not self.imports:
-            raise ValueError("Must import at least one SpecifyX utility")
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            "name": self.name,
-            "source_template": self.source_template,
-            "target_path": str(self.target_path),
-            "imports": self.imports.copy(),
-            "executable": self.executable,
-            "json_output": self.json_output,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "GeneratedScript":
-        """Create instance from dictionary"""
-        return cls(
-            name=data["name"],
-            source_template=data["source_template"],
-            target_path=Path(data["target_path"]),
-            imports=data.get("imports", []),
-            executable=data.get("executable", False),
-            json_output=data.get("json_output", False),
-        )
 
 
 @dataclass
@@ -282,7 +190,9 @@ class TemplatePackage:
 
     def _validate_ai_assistant(self) -> None:
         """Validate AI assistant is supported"""
-        valid_assistants = {"claude", "gemini", "copilot"}  # FIXME: HARDCODED - AI assistant validation set hardcoded
+        from .defaults.ai_defaults import AI_DEFAULTS
+
+        valid_assistants = set(AI_DEFAULTS.get_all_assistant_names())
         if self.ai_assistant not in valid_assistants:
             raise ValueError(
                 f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"
