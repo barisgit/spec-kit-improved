@@ -34,7 +34,7 @@ from specify_cli.models.template import (
 class TemplateFolderMapping(TypedDict):
     """Type-safe template folder configuration"""
 
-    source: str  # Source folder in init_templates/
+    source: str  # Source folder in templates/
     target_pattern: str  # Target pattern, supports {ai_assistant}, {project_name}
     render: bool  # Whether to render .j2 files or copy as-is
     executable_extensions: List[str]  # File extensions to make executable
@@ -274,12 +274,12 @@ class JinjaTemplateService(TemplateService):
             ".gitkeep",
         ]
 
-        # FIXME: HARDCODED - Template root path hardcoded to init_templates
+        # FIXME: HARDCODED - Template root path hardcoded to templates
         # TODO: Make configurable via TemplateProcessingConfig.template_root_path
         # Get template root from package resources using Traversable API
-        # TODO: This should be configurable, now we are hardcoding it to the init_templates folder
+        # TODO: This should be configurable, now we are hardcoding it to the templates folder
         self._template_root = importlib.resources.files("specify_cli").joinpath(
-            "init_templates"
+            "templates"
         )
         self._console = Console()
 
@@ -587,8 +587,8 @@ class JinjaTemplateService(TemplateService):
 
         templates = []
         try:
-            # Get reference to the init_templates package
-            import specify_cli.init_templates as templates_pkg
+            # Get reference to the templates package
+            import specify_cli.templates as templates_pkg
 
             # FIXME: HARDCODED - Template categories hardcoded
             # TODO: Make configurable via TemplateProcessingConfig.template_categories
@@ -706,7 +706,7 @@ class JinjaTemplateService(TemplateService):
         if template.state == TemplateState.DISCOVERED:
             try:
                 # Load from package resources
-                import specify_cli.init_templates as templates_pkg
+                import specify_cli.templates as templates_pkg
 
                 template_content = (
                     importlib.resources.files(templates_pkg) / template.template_path
