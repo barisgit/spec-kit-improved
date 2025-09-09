@@ -14,7 +14,7 @@ class LoggingConfig:
     @staticmethod
     def setup(
         log_file: Path | None = None,
-        level: str = "INFO",
+        level: str | int = "INFO",
     ) -> None:
         """
         Set up logging configuration
@@ -77,14 +77,14 @@ class LoggingConfig:
         logging.getLogger("rich").setLevel(logging.WARNING)
 
 
-def setup_logging(debug: bool = False) -> None:
+def setup_logging(log_level: str | int = "INFO") -> None:
     """
     Setup logging with appropriate level
 
     Args:
-        debug: Enable debug logging
+        log_level: Logging level (default: INFO)
     """
-    level = "DEBUG" if debug else "INFO"
+    level = log_level
 
     # Use ~/.specify/logs for log files
     home_dir = Path.home()

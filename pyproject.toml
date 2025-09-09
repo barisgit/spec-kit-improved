@@ -30,6 +30,7 @@ dependencies = [
     "jinja2",
     "dynaconf",
     "tomli-w",
+    "packaging",
     "colorlog",
 ]
 
