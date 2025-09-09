@@ -12,6 +12,11 @@ from ...services.script_execution_service import SubprocessScriptExecutionServic
 
 console = Console()
 
+# Define typer options at module level to avoid B008 violation
+_PROJECT_PATH_OPTION = typer.Option(
+    None, "--project", "-p", help="Project path (defaults to current directory)"
+)
+
 # Create the Typer app
 run_app = typer.Typer(
     help="Execute generated Python scripts",
@@ -28,9 +33,7 @@ def run_callback(
     which_script: Optional[str] = typer.Option(
         None, "--which", help="Show path to specified script"
     ),
-    project_path: Optional[Path] = typer.Option(
-        None, "--project", "-p", help="Project path (defaults to current directory)"
-    ),
+    project_path: Optional[Path] = _PROJECT_PATH_OPTION,
 ) -> None:
     """Execute a generated Python script with arguments passed through.
 
@@ -92,7 +95,7 @@ def run_callback(
 
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to execute script: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _show_script_path(script_name: str, project_path: Optional[Path]) -> None:
@@ -109,7 +112,7 @@ def _show_script_path(script_name: str, project_path: Optional[Path]) -> None:
 
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to locate script: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _list_available_scripts(project_path: Optional[Path]) -> None:
@@ -134,7 +137,11 @@ def _list_available_scripts(project_path: Optional[Path]) -> None:
                     description = "No description available"
                     for line in first_lines:
                         if line.startswith('"""') and len(line) > 3:
-                            description = line[3:].rstrip('"""').strip()
+                            # Extract content between triple quotes
+                            content = line[3:]
+                            if content.endswith('"""'):
+                                content = content[:-3]
+                            description = content.strip()
                             break
                         elif line.startswith("# ") and "description:" in line.lower():
                             description = line[2:].strip()
@@ -149,4 +156,4 @@ def _list_available_scripts(project_path: Optional[Path]) -> None:
 
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to list scripts: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

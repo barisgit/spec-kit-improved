@@ -1,24 +1,26 @@
 """Project management commands using services and enhanced UI."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.panel import Panel
 
+from specify_cli.models.defaults import AI_DEFAULTS
 from specify_cli.models.project import ProjectInitOptions
 from specify_cli.services import (
     CommandLineGitService,
     TomlConfigService,
 )
-
-# Import services
 from specify_cli.services.project_manager import ProjectManager
 from specify_cli.utils.ui import StepTracker
 from specify_cli.utils.ui_helpers import (
     select_ai_assistant,
     select_branch_naming_pattern,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # Initialize services
@@ -40,7 +42,7 @@ def init_command(
     ai_assistant: Optional[str] = typer.Option(
         None,
         "--ai",
-        help="AI assistant to use: claude, gemini, or copilot (interactive if not specified)",  # FIXME: HARDCODED - AI assistant names hardcoded in help text
+        help=f"AI assistant to use: {', '.join([assistant.name for assistant in AI_DEFAULTS.ASSISTANTS])} (interactive if not specified)",
     ),
     branch_pattern: Optional[str] = typer.Option(
         None,
@@ -116,8 +118,8 @@ def init_command(
             console.print("[yellow]Setup cancelled[/yellow]")
             raise typer.Exit(0) from None
 
-    # Validate AI assistant choice
-        valid_assistants = ["claude", "gemini", "copilot"]  # FIXME: HARDCODED - AI assistant validation list hardcoded
+    # Validate AI assistant choice using AI_DEFAULTS
+    valid_assistants = [assistant.name for assistant in AI_DEFAULTS.ASSISTANTS]
     if ai_assistant not in valid_assistants:
         console.print(
             f"[red]Error:[/red] Invalid AI assistant '{ai_assistant}'. Choose from: {', '.join(valid_assistants)}"

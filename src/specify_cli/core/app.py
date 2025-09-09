@@ -6,7 +6,6 @@ and main entry point for the Specify-X CLI tool.
 
 import sys
 from importlib.metadata import version
-from typing import Dict
 
 import typer
 from rich.align import Align
@@ -14,14 +13,10 @@ from rich.console import Console
 from rich.text import Text
 from typer.core import TyperGroup
 
-# AI assistant choices for validation
-AI_CHOICES: Dict[str, str] = {
-    # FIXME: HARDCODED - AI assistant descriptions hardcoded
-    # TODO: Make configurable via configuration system
-    "copilot": "GitHub Copilot",
-    "claude": "Claude Code",
-    "gemini": "Gemini CLI",
-}
+from specify_cli.utils.logging_config import setup_logging
+
+# Setup logging for developers
+setup_logging(debug=True)  # Always enable debug for development
 
 # ASCII Art Banner
 BANNER = """

@@ -14,14 +14,14 @@
 # ///
 
 """
-Specify-X CLI - Setup tool for Specify-X projects
+SpecifyX CLI - Enhanced spec-driven development CLI
 
 Usage:
-    uvx specify-cli.py init <project-name>
-    uvx specify-cli.py init --here
+    uvx specifyx init <project-name>
+    uvx specifyx init --here
 
 Or install globally:
-    uv tool install --from specify-cli.py specify-cli
+    uv tool install specifyx
     specifyx init <project-name>
     specifyx init --here
 """
