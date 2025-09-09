@@ -44,9 +44,11 @@ def init_command(
         "--ai",
         help="AI assistant to use: claude, gemini, or copilot (interactive if not specified)",
     ),
-    # no_git: bool = typer.Option(
-    #     False, "--no-git", help="Skip git repository initialization"
-    # ),
+    branch_pattern: Optional[str] = typer.Option(
+        None,
+        "--branch-pattern",
+        help="Branch naming pattern: '001-feature-name' or 'feature/{name}' (interactive if not specified)",
+    ),
     here: bool = typer.Option(
         False,
         "--here",
@@ -136,6 +138,33 @@ def init_command(
     if ai_assistant not in valid_assistants:
         console.print(
             f"[red]Error:[/red] Invalid AI assistant '{ai_assistant}'. Choose from: {', '.join(valid_assistants)}"
+        )
+        raise typer.Exit(1)
+
+    # Interactive branch pattern selection if not specified
+    if branch_pattern is None:
+        ui = InteractiveUI()
+        pattern_choices = {
+            "001-feature-name": "Traditional numbered format (001-auth-system)",
+            "feature/{name}": "Modern branch format (feature/auth-system)",
+        }
+
+        try:
+            selected_pattern = ui.select(
+                "Choose your branch naming pattern:",
+                choices=pattern_choices,
+                default="001-feature-name",  # Default to traditional format
+            )
+            branch_pattern = selected_pattern
+        except KeyboardInterrupt:
+            console.print("[yellow]Setup cancelled[/yellow]")
+            raise typer.Exit(0) from None
+
+    # Validate branch pattern
+    valid_patterns = ["001-feature-name", "feature/{name}"]
+    if branch_pattern not in valid_patterns:
+        console.print(
+            f"[red]Error:[/red] Invalid branch pattern '{branch_pattern}'. Choose from: {', '.join(valid_patterns)}"
         )
         raise typer.Exit(1)
 

@@ -14,35 +14,57 @@ from typing import Any, Dict, List, Optional
 class BranchNamingConfig:
     """Configuration for branch naming patterns"""
 
-    default_pattern: str = "feature/{feature-name}"
+    description: str = "Modern feature branches with hotfixes and main branches"
     patterns: List[str] = field(
         default_factory=lambda: [
             "feature/{feature-name}",
+            "hotfix/{bug-id}",
             "bugfix/{bug-id}",
-            "hotfix/{version}",
-            "epic/{epic-name}",
+            "main",
+            "development",
+        ]
+    )
+    validation_rules: List[str] = field(
+        default_factory=lambda: [
+            "max_length_50",
+            "lowercase_only",
+            "no_spaces",
+            "alphanumeric_dash_only",
         ]
     )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for TOML serialization"""
         return {
-            "default_pattern": self.default_pattern,
+            "description": self.description,
             "patterns": self.patterns.copy(),
+            "validation_rules": self.validation_rules.copy(),
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "BranchNamingConfig":
         """Create instance from dictionary (TOML deserialization)"""
         return cls(
-            default_pattern=data.get("default_pattern", "feature/{feature-name}"),
+            description=data.get(
+                "description", "Modern feature branches with hotfixes and main branches"
+            ),
             patterns=data.get(
                 "patterns",
                 [
                     "feature/{feature-name}",
+                    "hotfix/{bug-id}",
                     "bugfix/{bug-id}",
-                    "hotfix/{version}",
-                    "epic/{epic-name}",
+                    "main",
+                    "development",
+                ],
+            ),
+            validation_rules=data.get(
+                "validation_rules",
+                [
+                    "max_length_50",
+                    "lowercase_only",
+                    "no_spaces",
+                    "alphanumeric_dash_only",
                 ],
             ),
         )
@@ -53,6 +75,7 @@ class TemplateConfig:
     """Configuration for template engine settings"""
 
     ai_assistant: str = "claude"
+    config_directory: str = ".specify"
     custom_templates_dir: Optional[Path] = None
     template_cache_enabled: bool = True
     template_variables: Dict[str, Any] = field(default_factory=dict)
@@ -61,6 +84,7 @@ class TemplateConfig:
         """Convert to dictionary for TOML serialization"""
         result: Dict[str, Any] = {
             "ai_assistant": self.ai_assistant,
+            "config_directory": self.config_directory,
             "template_cache_enabled": self.template_cache_enabled,
         }
 
@@ -82,6 +106,7 @@ class TemplateConfig:
 
         return cls(
             ai_assistant=data.get("ai_assistant", "claude"),
+            config_directory=data.get("config_directory", ".specify"),
             custom_templates_dir=custom_templates_dir,
             template_cache_enabled=data.get("template_cache_enabled", True),
             template_variables=data.get("template_variables", {}),

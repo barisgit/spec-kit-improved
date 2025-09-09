@@ -10,6 +10,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .config import BranchNamingConfig
+
 
 class TemplateDict(dict):
     """Custom dict that prioritizes key access over dict methods in Jinja2 templates"""
@@ -47,9 +49,18 @@ class TemplateContext:
     template_variables: Dict[str, Any] = field(default_factory=dict)
     custom_fields: Dict[str, Any] = field(default_factory=dict)
 
-    # AI assistant configuration
+    # AI assistant configuration (enhanced)
     ai_assistant: str = "claude"
     ai_context: Dict[str, str] = field(default_factory=dict)
+
+    # Branch naming configuration (new)
+    branch_naming_config: BranchNamingConfig = field(default_factory=BranchNamingConfig)
+
+    # Configuration settings (new)
+    config_directory: str = ".specify"
+
+    # Template target mappings (new)
+    target_paths: Dict[str, Path] = field(default_factory=dict)
 
     # Git information
     git_remote_url: str = ""
@@ -70,6 +81,31 @@ class TemplateContext:
         if not self.branch_type and self.spec_type:
             self.branch_type = self.spec_type
 
+        # Validate AI assistant
+        valid_assistants = {"claude", "gemini", "copilot"}
+        if self.ai_assistant not in valid_assistants:
+            raise ValueError(
+                f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"
+            )
+
+        # Validate paths are absolute if project_path is set
+        if self.project_path and not self.project_path.is_absolute():
+            raise ValueError("project_path must be absolute")
+
+        # Validate target paths are within project directory if project_path is set
+        if self.project_path:
+            for template_name, target_path in self.target_paths.items():
+                if not target_path.is_absolute():
+                    raise ValueError(
+                        f"target_paths['{template_name}'] must be absolute"
+                    )
+                try:
+                    target_path.relative_to(self.project_path)
+                except ValueError as e:
+                    raise ValueError(
+                        f"target_paths['{template_name}'] must be within project directory"
+                    ) from e
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for Jinja2 template rendering"""
         result = {
@@ -86,9 +122,17 @@ class TemplateContext:
             "author_email": self.author_email,
             "creation_date": self.creation_date,
             "creation_year": self.creation_year,
-            # AI assistant
+            # AI assistant configuration
             "ai_assistant": self.ai_assistant,
             "ai_context": self.ai_context.copy(),
+            # Branch naming configuration
+            "branch_naming_config": self.branch_naming_config.to_dict(),
+            # Configuration settings
+            "config_directory": self.config_directory,
+            # Template target mappings
+            "target_paths": {
+                name: str(path) for name, path in self.target_paths.items()
+            },
             # Git information
             "git_remote_url": self.git_remote_url,
             "git_branch": self.git_branch,
@@ -126,6 +170,9 @@ class TemplateContext:
             "creation_year",
             "ai_assistant",
             "ai_context",
+            "branch_naming_config",
+            "config_directory",
+            "target_paths",
             "git_remote_url",
             "git_branch",
             "spec_number",
@@ -147,6 +194,22 @@ class TemplateContext:
         if "project_path" in context_data and context_data["project_path"]:
             context_data["project_path"] = Path(context_data["project_path"])
 
+        # Handle branch_naming_config conversion
+        if "branch_naming_config" in context_data and isinstance(
+            context_data["branch_naming_config"], dict
+        ):
+            context_data["branch_naming_config"] = BranchNamingConfig.from_dict(
+                context_data["branch_naming_config"]
+            )
+
+        # Handle target_paths conversion
+        if "target_paths" in context_data and isinstance(
+            context_data["target_paths"], dict
+        ):
+            context_data["target_paths"] = {
+                name: Path(path) for name, path in context_data["target_paths"].items()
+            }
+
         # Set custom fields
         context_data["custom_fields"] = custom_fields
 
@@ -167,6 +230,9 @@ class TemplateContext:
             creation_year=self.creation_year,
             ai_assistant=self.ai_assistant,
             ai_context=self.ai_context.copy(),
+            branch_naming_config=self.branch_naming_config,
+            config_directory=self.config_directory,
+            target_paths=self.target_paths.copy(),
             git_remote_url=self.git_remote_url,
             git_branch=self.git_branch,
             spec_number=self.spec_number,
@@ -185,6 +251,8 @@ class TemplateContext:
             project_description=f"Project: {project_name}",
             author_name="Developer",
             ai_assistant="claude",
+            branch_naming_config=BranchNamingConfig(),
+            config_directory=".specify",
         )
 
 

@@ -1,507 +1,545 @@
 """
-Integration test for Jinja2 template rendering workflow
+Integration test for SpecifyX AI-aware Jinja2 template rendering
+
+This test follows TDD principles and will FAIL initially since the AI-aware services aren't implemented yet.
+Tests the actual SpecifyX templates with AI-specific conditional logic.
+
+MISSING METHODS that need to be implemented in JinjaTemplateService:
+- discover_templates() -> List[GranularTemplate]: Discover templates from package resources
+- discover_templates_by_category(category: str) -> List[GranularTemplate]: Filter templates by category
+- load_template(template_name: str) -> GranularTemplate: Load individual template object
+- load_templates_from_package_resources() -> bool: Load templates from src/specify_cli/init_templates/
+- validate_template_package(package: TemplatePackage) -> bool: Validate template package
+- render_template_package(package: TemplatePackage, context: TemplateContext) -> List[...]: Render full package
+
+CURRENT FUNCTIONALITY that exists but needs enhancement:
+- render_template(template_name: str, context: TemplateContext) -> str: Needs AI-aware context handling
+- load_template_package(ai_assistant: str, template_dir: Path) -> bool: Needs package resource support
+
+The tests validate:
+1. AI-specific conditional logic ({% if ai_assistant == 'claude' %})
+2. Template context variable substitution
+3. Granular template processing (one template -> one file)
+4. Template package orchestration
+5. Script template execution permissions
+6. Fallback behavior for unknown AI assistants
 """
 
 from pathlib import Path
 
 import pytest
 
+# These imports will FAIL initially for services - that's expected for TDD
+from specify_cli.models.config import BranchNamingConfig
 from specify_cli.models.project import TemplateContext
+from specify_cli.models.template import TemplatePackage
 from specify_cli.services.template_service import TemplateService
 
 
-class TestJinja2TemplateRendering:
-    """Integration tests for end-to-end Jinja2 template rendering"""
+class TestAIAwareTemplateRendering:
+    """Integration tests for AI-specific template rendering using real SpecifyX templates"""
+
+    @pytest.fixture
+    def claude_template_context(self) -> TemplateContext:
+        """Create template context for Claude AI assistant"""
+        branch_config = BranchNamingConfig(
+            description="Traditional numbered branches with hotfixes and main branches",
+            patterns=[
+                "{number-3}-{feature-name}",
+                "hotfix/{bug-id}",
+                "main",
+                "development",
+            ],
+            validation_rules=[
+                "max_length_50",
+                "lowercase_only",
+                "no_spaces",
+                "alphanumeric_dash_only",
+            ],
+        )
+
+        return TemplateContext(
+            project_name="test-project",
+            ai_assistant="claude",
+            branch_naming_config=branch_config,
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test/project"),
+            target_paths={
+                "specify.j2": Path("/test/project/.claude/commands/specify"),
+                "constitution.j2": Path(
+                    "/test/project/.specify/memory/constitution.md"
+                ),
+                "create-feature.j2": Path(
+                    "/test/project/.specify/scripts/create-feature.py"
+                ),
+            },
+        )
+
+    @pytest.fixture
+    def gemini_template_context(self) -> TemplateContext:
+        """Create template context for Gemini AI assistant"""
+        branch_config = BranchNamingConfig(
+            description="Modern feature branches with hotfixes and main branches",
+            patterns=[
+                "feature/{feature-name}",
+                "hotfix/{bug-id}",
+                "bugfix/{bug-id}",
+                "main",
+                "development",
+            ],
+            validation_rules=[
+                "max_length_50",
+                "lowercase_only",
+                "no_spaces",
+                "alphanumeric_dash_only",
+            ],
+        )
+
+        return TemplateContext(
+            project_name="gemini-test",
+            ai_assistant="gemini",
+            branch_naming_config=branch_config,
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test/gemini"),
+            target_paths={
+                "specify.j2": Path("/test/gemini/.claude/commands/specify"),
+                "constitution.j2": Path("/test/gemini/.specify/memory/constitution.md"),
+            },
+        )
+
+    @pytest.fixture
+    def copilot_template_context(self) -> TemplateContext:
+        """Create template context for GitHub Copilot"""
+        branch_config = BranchNamingConfig(
+            description="Team-based branches with workflow support",
+            patterns=[
+                "{team}/{feature-name}",
+                "hotfix/{bug-id}",
+                "release/{version}",
+                "main",
+                "development",
+            ],
+            validation_rules=[
+                "max_length_60",
+                "lowercase_only",
+                "no_spaces",
+                "alphanumeric_dash_slash_only",
+            ],
+        )
+
+        return TemplateContext(
+            project_name="copilot-project",
+            ai_assistant="copilot",
+            branch_naming_config=branch_config,
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test/copilot"),
+            target_paths={},
+        )
 
     @pytest.fixture
     def template_service(self) -> TemplateService:
-        """Create TemplateService instance"""
+        """Create TemplateService instance - will fail initially due to missing AI-aware methods"""
+        # This will fail when we try to use AI-aware methods that don't exist yet
         from specify_cli.services.template_service import JinjaTemplateService
 
         return JinjaTemplateService()
 
-    @pytest.fixture
-    def comprehensive_template_package(self, tmp_path: Path) -> Path:
-        """Create comprehensive template package for testing"""
-        template_dir = tmp_path / "comprehensive_templates"
-        template_dir.mkdir()
+    def test_discover_templates_from_package(self, template_service: TemplateService):
+        """Test template discovery from SpecifyX package resources"""
+        # This will fail initially - testing template discovery method that doesn't exist yet
+        templates = template_service.discover_templates()
 
-        # Create various template types
-        templates = {
-            "README.md.j2": """# {{ project_name }}
+        # Should find all our templates
+        assert len(templates) > 0
 
-Project: {{ project_name }}
-AI Assistant: {{ ai_assistant }}
-Branch: {{ branch_type }}/{{ feature_name }}
+        # Check for specific templates we know exist
+        template_names = [t.name for t in templates]
+        assert "specify" in template_names
+        assert "constitution" in template_names
+        assert "create-feature" in template_names
+        assert "plan" in template_names
 
-{% if additional_vars.author %}
-Author: {{ additional_vars.author }}
-{% endif %}
+        # Check template categories
+        categories = [t.category for t in templates]
+        assert "commands" in categories
+        assert "memory" in categories
+        assert "scripts" in categories
 
-## Features
-{% for feature in additional_vars.features %}
-- {{ feature }}
-{% endfor %}
-
-## Configuration
-AI: {{ ai_assistant }}
-{% if additional_vars.enable_logging %}
-Logging: Enabled
-{% else %}
-Logging: Disabled  
-{% endif %}
-""",
-            "package.json.j2": """{
-  "name": "{{ project_name }}",
-  "version": "{{ additional_vars.version | default('1.0.0') }}",
-  "description": "{{ additional_vars.description | default('Generated by ' + ai_assistant) }}",
-  "main": "{{ additional_vars.main_file | default('index.js') }}",
-  "scripts": {
-    "start": "node {{ additional_vars.main_file | default('index.js') }}",
-    "test": "{{ additional_vars.test_command | default('npm test') }}"
-  },
-  "keywords": [
-    {% for keyword in additional_vars.keywords %}
-    "{{ keyword }}"{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ],
-  "author": "{{ additional_vars.author | default('Unknown') }}"
-}""",
-            "config.toml.j2": """[project]
-name = "{{ project_name }}"
-ai_assistant = "{{ ai_assistant }}"
-
-[project.branch_naming]
-default_pattern = "{{ branch_type }}/{feature-name}"
-{% if additional_vars.custom_patterns %}
-{% for pattern in additional_vars.custom_patterns %}
-patterns = "{{ pattern }}"
-{% endfor %}
-{% endif %}
-
-[project.template_settings]
-template_cache_enabled = {{ additional_vars.enable_cache | default(true) | lower }}
-{% if additional_vars.template_vars %}
-[project.template_settings.template_variables]
-{% for key, value in additional_vars.template_vars.items() %}
-{{ key }} = "{{ value }}"
-{% endfor %}
-{% endif %}
-""",
-            "spec.md.j2": """# {{ project_name }} - Specification
-
-**Project**: {{ project_name }}  
-**AI Assistant**: {{ ai_assistant }}  
-**Branch**: {{ branch_type }}/{{ feature_name }}  
-
-## Overview
-{% if additional_vars.description %}
-{{ additional_vars.description }}
-{% else %}
-Specification document for {{ project_name }} project.
-{% endif %}
-
-## Requirements
-{% for requirement in additional_vars.requirements %}
-- {{ requirement }}
-{% endfor %}
-
-## Implementation Plan
-{% if additional_vars.implementation_steps %}
-{% for step in additional_vars.implementation_steps %}
-{{ loop.index }}. {{ step }}
-{% endfor %}
-{% endif %}
-
-## Testing Strategy
-{% if additional_vars.testing_approach %}
-{{ additional_vars.testing_approach }}
-{% else %}
-- Unit tests for core functionality
-- Integration tests for workflows
-- Contract tests for service interfaces
-{% endif %}
-
-## Architecture
-AI Assistant: {{ ai_assistant }}
-{% if additional_vars.architecture_notes %}
-{{ additional_vars.architecture_notes }}
-{% endif %}
-
----
-*Generated by {{ ai_assistant }} for spec-driven development*
-""",
-            "scripts/setup.sh.j2": """#!/bin/bash
-
-# Setup script for {{ project_name }}
-# Generated by {{ ai_assistant }}
-
-set -e
-
-echo "Setting up {{ project_name }}..."
-
-{% if additional_vars.create_directories %}
-# Create directory structure
-{% for dir in additional_vars.create_directories %}
-mkdir -p "{{ dir }}"
-{% endfor %}
-{% endif %}
-
-{% if additional_vars.install_dependencies %}
-# Install dependencies
-{% if additional_vars.package_manager == 'npm' %}
-npm install
-{% elif additional_vars.package_manager == 'yarn' %}
-yarn install  
-{% elif additional_vars.package_manager == 'pnpm' %}
-pnpm install
-{% endif %}
-{% endif %}
-
-{% if additional_vars.run_setup_commands %}
-# Run setup commands
-{% for command in additional_vars.run_setup_commands %}
-echo "Running: {{ command }}"
-{{ command }}
-{% endfor %}
-{% endif %}
-
-echo "Setup complete for {{ project_name }}!"
-""",
-        }
-
-        for filename, content in templates.items():
-            template_path = template_dir / filename
-            template_path.parent.mkdir(parents=True, exist_ok=True)
-            template_path.write_text(content)
-
-        return template_dir
-
-    @pytest.fixture
-    def rich_template_context(self) -> TemplateContext:
-        """Create rich template context with various data types"""
-        return TemplateContext(
-            project_name="integration-test-project",
-            ai_assistant="claude",
-            branch_type="feature",
-            feature_name="template-rendering",
-            additional_vars={
-                "author": "Integration Test Suite",
-                "version": "2.1.0",
-                "description": "Comprehensive integration test for template rendering",
-                "main_file": "app.js",
-                "test_command": "jest",
-                "keywords": ["testing", "templates", "integration", "jinja2"],
-                "features": [
-                    "Jinja2 template processing",
-                    "Multi-format support",
-                    "Variable interpolation",
-                    "Conditional rendering",
-                    "Loop processing",
-                ],
-                "enable_logging": True,
-                "enable_cache": True,
-                "requirements": [
-                    "Spec-driven development workflow",
-                    "Template-based project initialization",
-                    "Branch naming configuration",
-                    "AI assistant integration",
-                ],
-                "implementation_steps": [
-                    "Design service architecture",
-                    "Implement template processing",
-                    "Create configuration management",
-                    "Build CLI interface",
-                ],
-                "create_directories": ["src", "tests", "docs", "config"],
-                "package_manager": "npm",
-                "install_dependencies": True,
-                "run_setup_commands": ["npm run build", "npm run test:setup"],
-                "custom_patterns": ["hotfix/{version}", "epic/{epic-name}"],
-                "template_vars": {
-                    "team": "integration-team",
-                    "environment": "test",
-                    "region": "us-west",
-                },
-            },
-        )
-
-    def test_comprehensive_template_rendering(
+    def test_claude_specific_template_rendering(
         self,
         template_service: TemplateService,
-        comprehensive_template_package: Path,
-        rich_template_context: TemplateContext,
+        claude_template_context: TemplateContext,
     ):
-        """Test comprehensive Jinja2 template rendering with complex features"""
-        # Load template package
-        success = template_service.load_template_package(
-            "claude", comprehensive_template_package
-        )
-        assert success, "Failed to load comprehensive template package"
-
-        # Test individual template rendering
-        readme_content = template_service.render_template(
-            "README.md.j2", rich_template_context
+        """Test Claude-specific conditional logic in templates"""
+        # Load the real specify command template using method that doesn't exist yet
+        specify_template = template_service.load_template("specify.j2")
+        content = template_service.render_template(
+            specify_template, claude_template_context
         )
 
-        # Verify complex rendering features
-        assert "integration-test-project" in readme_content
-        assert "claude" in readme_content
-        assert "feature/template-rendering" in readme_content
-        assert "Integration Test Suite" in readme_content
-        assert "Jinja2 template processing" in readme_content
-        assert "Multi-format support" in readme_content
-        assert "Logging: Enabled" in readme_content
-
-        # Test JSON template with filters and defaults
-        package_content = template_service.render_template(
-            "package.json.j2", rich_template_context
-        )
-        assert '"name": "integration-test-project"' in package_content
-        assert '"version": "2.1.0"' in package_content
-        assert '"main": "app.js"' in package_content
-        assert '"testing"' in package_content
-        assert '"templates"' in package_content
-
-        # Test TOML template with nested structures
-        config_content = template_service.render_template(
-            "config.toml.j2", rich_template_context
-        )
-        assert 'name = "integration-test-project"' in config_content
-        assert 'ai_assistant = "claude"' in config_content
-        assert "template_cache_enabled = true" in config_content
-        assert 'team = "integration-team"' in config_content
-
-        # Test spec.md with conditionals and loops
-        spec_content = template_service.render_template(
-            "spec.md.j2", rich_template_context
-        )
-        assert "# integration-test-project - Specification" in spec_content
-        assert "feature/template-rendering" in spec_content
-        assert "Spec-driven development workflow" in spec_content
-        assert "Design service architecture" in spec_content
-
-        # Test shell script with loops and conditionals
-        script_content = template_service.render_template(
-            "scripts/setup.sh.j2", rich_template_context
-        )
-        assert "Setting up integration-test-project..." in script_content
-        assert 'mkdir -p "src"' in script_content
-        assert 'mkdir -p "tests"' in script_content
-        assert "npm install" in script_content
-        assert "npm run build" in script_content
-
-    def test_template_rendering_with_missing_variables(
-        self, template_service: TemplateService, comprehensive_template_package: Path
-    ):
-        """Test template rendering gracefully handles missing variables"""
-        template_service.load_template_package("claude", comprehensive_template_package)
-
-        # Context with minimal data
-        minimal_context = TemplateContext(
-            project_name="minimal-test",
-            ai_assistant="claude",
-            branch_type="feature",
-            feature_name="minimal",
-            additional_vars={},  # Empty additional vars
+        # Should contain Claude-specific content
+        assert "Claude Code Integration:" in content
+        assert "Use this command with `/specify` in any file" in content
+        assert (
+            "Generated specifications follow the project's configured branch naming pattern"
+            in content
         )
 
-        # Should not crash and should use defaults
-        readme_content = template_service.render_template(
-            "README.md.j2", minimal_context
-        )
-        assert "minimal-test" in readme_content
-        assert "claude" in readme_content
-        # Author section should not appear (conditional)
-        assert "Author:" not in readme_content
+        # Should NOT contain other AI assistant content
+        assert "Gemini Integration:" not in content
+        assert "GitHub Copilot Integration:" not in content
 
-        # Package.json should use defaults
-        package_content = template_service.render_template(
-            "package.json.j2", minimal_context
-        )
-        assert '"version": "1.0.0"' in package_content  # Default version
-        assert '"main": "index.js"' in package_content  # Default main file
-        assert '"author": "Unknown"' in package_content  # Default author
-
-    def test_template_rendering_edge_cases(
-        self, template_service: TemplateService, tmp_path: Path
-    ):
-        """Test edge cases in template rendering"""
-        template_dir = tmp_path / "edge_cases"
-        template_dir.mkdir()
-
-        # Template with complex expressions
-        edge_template = template_dir / "edge.j2"
-        edge_template.write_text("""
-{# Complex expressions and filters #}
-Project: {{ project_name | upper }}
-Slug: {{ project_name | lower | replace(' ', '-') }}
-Feature: {{ feature_name | title }}
-
-{# Math operations #}
-Priority: {{ (additional_vars.base_priority | default(1)) + (additional_vars.priority_offset | default(0)) }}
-
-{# Complex conditionals #}
-{% if additional_vars.items and additional_vars.items | length > 0 %}
-Items ({{ additional_vars.items | length }}):
-{% for item in additional_vars.items %}
-  - {{ loop.index }}: {{ item.name }} ({{ item.type | default('unknown') }})
-{% endfor %}
-{% else %}
-No items configured.
-{% endif %}
-
-{# Date formatting if available #}
-{% if additional_vars.created_date %}
-Created: {{ additional_vars.created_date | default('unknown') }}
-{% endif %}
-
-{# String manipulation #}
-Clean name: {{ project_name | regex_replace('[^a-zA-Z0-9]', '_') | lower }}
-""")
-
-        template_service.load_template_package("claude", template_dir)
-
-        context = TemplateContext(
-            project_name="Edge Case Test",
-            ai_assistant="claude",
-            branch_type="test",
-            feature_name="edge-cases",
-            additional_vars={
-                "base_priority": 5,
-                "priority_offset": 2,
-                "items": [
-                    {"name": "item1", "type": "config"},
-                    {"name": "item2"},  # Missing type
-                    {"name": "item3", "type": "data"},
-                ],
-                "created_date": "2025-09-07",
-            },
+        # Test constitution template for Claude using method that doesn't exist yet
+        constitution_template = template_service.load_template("constitution.j2")
+        constitution_content = template_service.render_template(
+            constitution_template, claude_template_context
         )
 
-        content = template_service.render_template("edge.j2", context)
+        # Should contain Claude-specific workflow
+        assert (
+            "Claude Code commands (specify, plan, tasks) drive the workflow"
+            in constitution_content
+        )
+        assert (
+            "All templates support Claude-specific features and syntax"
+            in constitution_content
+        )
 
-        # Verify complex processing
-        assert "Project: EDGE CASE TEST" in content
-        assert "Slug: edge case test" in content or "edge-case-test" in content
-        assert "Feature: Edge-Cases" in content or "Edge Cases" in content
-        assert "Priority: 7" in content
-        assert "Items (3):" in content
-        assert "1: item1 (config)" in content
-        assert "2: item2 (unknown)" in content  # Default type
-        assert "3: item3 (data)" in content
+        # Should contain project-specific info
+        assert "test-project" in constitution_content
+        assert (
+            "{number-3}-{feature-name}" in constitution_content
+            or "001-feature-name" in constitution_content
+        )
 
-    def test_batch_template_rendering(
+    def test_gemini_specific_template_rendering(
         self,
         template_service: TemplateService,
-        comprehensive_template_package: Path,
-        rich_template_context: TemplateContext,
-        tmp_path: Path,
+        gemini_template_context: TemplateContext,
     ):
-        """Test rendering multiple templates in batch"""
-        template_service.load_template_package("claude", comprehensive_template_package)
-
-        output_dir = tmp_path / "rendered_output"
-        output_dir.mkdir()
-
-        # Render all project templates
-        template_files = template_service.render_project_templates(
-            rich_template_context, output_dir
+        """Test Gemini-specific conditional logic in templates"""
+        specify_template = template_service.load_template("specify.j2")
+        content = template_service.render_template(
+            specify_template, gemini_template_context
         )
 
-        # Verify we got multiple files
-        assert len(template_files) >= 4  # At least our main templates
+        # Should contain Gemini-specific content
+        assert "Gemini Integration:" in content
+        assert "Templates optimized for Gemini's interaction patterns" in content
 
-        # Verify each template file structure
-        for template_file in template_files:
-            assert hasattr(template_file, "template_path")
-            assert hasattr(template_file, "output_path")
-            assert hasattr(template_file, "content")
-            assert hasattr(template_file, "is_executable")
+        # Should NOT contain other AI assistant content
+        assert "Claude Code Integration:" not in content
+        assert "GitHub Copilot Integration:" not in content
 
-            # Content should be rendered (contain project name)
-            assert rich_template_context.project_name in template_file.content
-
-            # Executable flag should be set for shell scripts
-            if template_file.output_path.endswith(".sh"):
-                assert template_file.is_executable
-
-        # Verify specific files were rendered correctly
-        readme_file = next(
-            (tf for tf in template_files if "README.md" in tf.output_path), None
+        # Test constitution for different branch pattern
+        constitution_template = template_service.load_template("constitution.j2")
+        constitution_content = template_service.render_template(
+            constitution_template, gemini_template_context
         )
-        assert readme_file is not None
-        assert "# integration-test-project" in readme_file.content
 
-        package_file = next(
-            (tf for tf in template_files if "package.json" in tf.output_path), None
+        assert (
+            "Gemini CLI integration for specification and planning workflows"
+            in constitution_content
         )
-        assert package_file is not None
-        assert '"name": "integration-test-project"' in package_file.content
+        assert "feature/{feature-name}" in constitution_content
 
-    def test_template_syntax_validation_integration(
-        self, template_service: TemplateService, tmp_path: Path
+    def test_copilot_specific_template_rendering(
+        self,
+        template_service: TemplateService,
+        copilot_template_context: TemplateContext,
     ):
-        """Test template syntax validation in integration workflow"""
-        template_dir = tmp_path / "validation_test"
-        template_dir.mkdir()
+        """Test GitHub Copilot-specific conditional logic in templates"""
+        specify_template = template_service.load_template("specify.j2")
+        content = template_service.render_template(
+            specify_template, copilot_template_context
+        )
 
-        # Valid template
-        valid_template = template_dir / "valid.j2"
-        valid_template.write_text("Hello {{ name }}!")
+        # Should contain Copilot-specific content
+        assert "GitHub Copilot Integration:" in content
+        assert "Use this command in your IDE or terminal" in content
+        assert "Works with your configured branch naming patterns" in content
 
-        # Invalid templates
-        invalid_templates = {
-            "unclosed_var.j2": "Hello {{ name",
-            "unclosed_block.j2": "{% if condition %}Hello",
-            "invalid_filter.j2": "{{ name | nonexistent_filter }}",
-            "syntax_error.j2": "{% for item in %}",
-        }
+        # Should NOT contain other AI assistant content
+        assert "Claude Code Integration:" not in content
+        assert "Gemini Integration:" not in content
 
-        for filename, content in invalid_templates.items():
-            (template_dir / filename).write_text(content)
+    def test_fallback_for_unknown_ai_assistant(self, template_service: TemplateService):
+        """Test fallback behavior for unknown AI assistant"""
+        unknown_context = TemplateContext(
+            project_name="unknown-test",
+            ai_assistant="unknown-ai",
+            branch_naming_config=BranchNamingConfig(
+                description="Default pattern",
+                patterns=["001-{feature-name}"],
+                validation_rules=["max_length_50"],
+            ),
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test/unknown"),
+            target_paths={},
+        )
 
-        template_service.load_template_package("claude", template_dir)
+        specify_template = template_service.load_template("specify.j2")
+        content = template_service.render_template(specify_template, unknown_context)
 
-        # Test valid template
-        is_valid, error = template_service.validate_template_syntax(valid_template)
+        # Should contain generic fallback content
+        assert "Generic AI Assistant:" in content
+        assert "Use this command to create feature specifications" in content
+        assert "Configurable branch naming patterns supported" in content
+
+    def test_template_context_variable_substitution(
+        self,
+        template_service: TemplateService,
+        claude_template_context: TemplateContext,
+    ):
+        """Test that all template context variables are properly substituted"""
+        constitution_template = template_service.load_template("constitution.j2")
+        content = template_service.render_template(
+            constitution_template, claude_template_context
+        )
+
+        # Project name should be substituted everywhere
+        assert "test-project" in content.lower() or "Test-Project" in content
+
+        # Date should be substituted
+        assert "2025-09-08" in content
+
+        # AI assistant should be referenced
+        assert "claude" in content.lower()
+
+        # Branch pattern should be included
+        assert "{number-3}-{feature-name}" in content or "001-feature-name" in content
+
+        # Config directory should be referenced
+        assert ".specify" in content
+
+    def test_granular_template_processing(
+        self,
+        template_service: TemplateService,
+        claude_template_context: TemplateContext,
+    ):
+        """Test that each template generates exactly one output file"""
+        templates = template_service.discover_templates()
+
+        for template in templates:
+            # Each template should have exactly one target path
+            assert hasattr(template, "target_path")
+            assert template.target_path is not None
+            assert isinstance(template.target_path, str)
+
+            # Template should be renderable
+            content = template_service.render_template(
+                template, claude_template_context
+            )
+            assert content is not None
+            assert len(content) > 0
+
+            # Content should contain project name (basic substitution test)
+            assert claude_template_context.project_name in content
+
+    def test_script_template_execution_permissions(
+        self,
+        template_service: TemplateService,
+        claude_template_context: TemplateContext,
+    ):
+        """Test that script templates are marked as executable"""
+        # This method doesn't exist yet - will fail initially
+        script_templates = template_service.discover_templates_by_category("scripts")
+
+        for template in script_templates:
+            assert template.executable is True
+            assert template.category == "scripts"
+
+            # Python scripts should have .py extension in target path
+            if template.target_path.endswith(".py"):
+                content = template_service.render_template(
+                    template, claude_template_context
+                )
+
+                # Should contain proper Python script structure
+                assert "#!/usr/bin/env python3" in content or "import" in content
+
+                # Should import SpecifyX utilities for consistency
+                assert "from specify_cli" in content or "import specify_cli" in content
+
+    def test_template_package_orchestration(
+        self,
+        template_service: TemplateService,
+        claude_template_context: TemplateContext,
+    ):
+        """Test complete template package processing"""
+        # This tests the full workflow - will fail initially
+        package = TemplatePackage(
+            ai_assistant="claude",
+            templates=template_service.discover_templates(),
+            output_structure={},
+            dependencies={},
+        )
+
+        # Validate package using method that doesn't exist yet
+        is_valid = template_service.validate_template_package(package)
         assert is_valid is True
-        assert error is None
 
-        # Test invalid templates
-        for filename in invalid_templates:
-            template_path = template_dir / filename
-            is_valid, error = template_service.validate_template_syntax(template_path)
-            assert is_valid is False
-            assert error is not None
-            assert len(error) > 0
+        # Render entire package using method that doesn't exist yet
+        results = template_service.render_template_package(
+            package, claude_template_context
+        )
 
-    def test_template_variable_extraction_integration(
-        self, template_service: TemplateService, comprehensive_template_package: Path
+        # Should have results for each template
+        assert len(results) == len(package.templates)
+
+        # Each result should have rendered content
+        for result in results:
+            assert hasattr(result, "template")
+            assert hasattr(result, "content")
+            assert hasattr(result, "target_path")
+            assert len(result.content) > 0
+
+    def test_template_conditional_logic_complexity(
+        self, template_service: TemplateService
     ):
-        """Test template variable extraction in integration workflow"""
-        template_service.load_template_package("claude", comprehensive_template_package)
+        """Test complex conditional logic with multiple AI assistants"""
+        contexts = [
+            ("claude", "Claude Code Integration"),
+            ("gemini", "Gemini Integration"),
+            ("copilot", "GitHub Copilot Integration"),
+            ("unknown", "Generic AI Assistant"),
+        ]
 
-        # Test variable extraction from README template
-        readme_template = comprehensive_template_package / "README.md.j2"
-        variables = template_service.get_template_variables(readme_template)
+        specify_template = template_service.load_template("specify.j2")
 
-        expected_vars = {
-            "project_name",
-            "ai_assistant",
-            "branch_type",
-            "feature_name",
-            "additional_vars",  # May be detected as a base variable
+        for ai_assistant, expected_text in contexts:
+            context = TemplateContext(
+                project_name="conditional-test",
+                ai_assistant=ai_assistant,
+                branch_naming_config=BranchNamingConfig(
+                    description="Test pattern",
+                    patterns=["test-{name}"],
+                    validation_rules=[],
+                ),
+                config_directory=".specify",
+                creation_date="2025-09-08",
+                project_path=Path("/test"),
+                target_paths={},
+            )
+
+            content = template_service.render_template(specify_template, context)
+
+            # Should contain AI-specific content
+            assert expected_text in content
+
+            # Should not contain other AI assistant markers
+            other_markers = [
+                marker for _, marker in contexts if marker != expected_text
+            ]
+            for other_marker in other_markers:
+                assert other_marker not in content
+
+    def test_template_error_handling(self, template_service: TemplateService):
+        """Test error handling for template rendering failures"""
+        # Test with invalid template context
+        invalid_context = None
+
+        with pytest.raises(Exception):
+            template_service.render_template("specify.j2", invalid_context)
+
+        # Test with missing template
+        valid_context = TemplateContext(
+            project_name="error-test",
+            ai_assistant="claude",
+            branch_naming_config=BranchNamingConfig("", ["test"], []),
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test"),
+            target_paths={},
+        )
+
+        with pytest.raises(Exception):
+            template_service.render_template("nonexistent.j2", valid_context)
+
+    @pytest.mark.parametrize(
+        "ai_assistant,expected_commands",
+        [
+            ("claude", [".claude/commands/"]),
+            ("gemini", [".claude/commands/"]),  # May use same directory structure
+            ("copilot", [".claude/commands/"]),
+        ],
+    )
+    def test_ai_specific_output_paths(
+        self,
+        template_service: TemplateService,
+        ai_assistant: str,
+        expected_commands: list,
+    ):
+        """Test that output paths are correct for each AI assistant"""
+        TemplateContext(
+            project_name="path-test",
+            ai_assistant=ai_assistant,
+            branch_naming_config=BranchNamingConfig("", ["test"], []),
+            config_directory=".specify",
+            creation_date="2025-09-08",
+            project_path=Path("/test"),
+            target_paths={},
+        )
+
+        # This method doesn't exist yet - will fail initially
+        templates = template_service.discover_templates_by_category("commands")
+
+        for template in templates:
+            # Target paths should be appropriate for AI assistant
+            if template.target_path:
+                # Commands should go in AI-specific directories or generic locations
+                assert (
+                    any(
+                        expected_path in template.target_path
+                        for expected_path in expected_commands
+                    )
+                    or ".specify/" in template.target_path
+                )
+
+    def test_load_real_specityx_templates_from_package_resources(
+        self, template_service: TemplateService
+    ):
+        """Test loading actual SpecifyX templates from package resources"""
+        # This test specifically validates that we can load the real templates from:
+        # src/specify_cli/init_templates/
+
+        # This method doesn't exist yet - will fail initially
+        success = template_service.load_templates_from_package_resources()
+        assert success is True
+
+        # Should discover the real templates we know exist
+        templates = template_service.discover_templates()
+        template_names = [t.name for t in templates]
+
+        # Validate we found the actual SpecifyX templates
+        expected_templates = {
+            "specify": "commands",
+            "plan": "commands",
+            "tasks": "commands",
+            "constitution": "memory",
+            "create-feature": "scripts",
+            "setup-plan": "scripts",
+            "check-prerequisites": "scripts",
+            "spec-template": "runtime_templates",
+            "plan-template": "runtime_templates",
+            "tasks-template": "runtime_templates",
         }
 
-        found_vars = set(variables)
-        # Should find at least the basic template variables
-        assert len(found_vars.intersection(expected_vars)) > 0
+        for template_name, expected_category in expected_templates.items():
+            assert template_name in template_names, f"Missing template: {template_name}"
 
-        # Test complex template
-        package_template = comprehensive_template_package / "package.json.j2"
-        variables = template_service.get_template_variables(package_template)
+            # Find the template and check its category
+            template = next(t for t in templates if t.name == template_name)
+            assert template.category == expected_category, (
+                f"Wrong category for {template_name}: expected {expected_category}, got {template.category}"
+            )
 
-        # Should detect nested variable access patterns
-        assert len(variables) > 0
-        assert any("project_name" in var for var in variables)
+            # Templates should be marked as AI-aware
+            if template.category in ["commands", "memory"]:
+                assert template.ai_aware is True, (
+                    f"Template {template_name} should be AI-aware"
+                )
