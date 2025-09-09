@@ -56,6 +56,11 @@ class GitService(ABC):
         """Get the remote origin URL"""
         pass
 
+    @abstractmethod
+    def configure_platform_line_endings(self, project_path: Path) -> bool:
+        """Configure git for platform-specific line endings"""
+        pass
+
 
 class CommandLineGitService(GitService):
     """Implementation using command-line git via subprocess"""
@@ -210,3 +215,24 @@ class CommandLineGitService(GitService):
             return result.stdout.strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
             return None
+
+    def configure_platform_line_endings(self, project_path: Path) -> bool:
+        """Configure git for platform-specific line endings.
+
+        Args:
+            project_path: Path to the git repository
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Configure git to handle line endings automatically
+            subprocess.run(
+                ["git", "config", "core.autocrlf", "true"],
+                cwd=project_path,
+                check=True,
+                capture_output=True,
+            )
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False

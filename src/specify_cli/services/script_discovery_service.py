@@ -39,7 +39,7 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
             return None
 
         # Try with .py extension
-        script_path = self.scripts_dir / f"{script_name}.py"  # FIXME: HARDCODED - Python extension hardcoded
+        script_path = self.scripts_dir / f"{script_name}.py"
         if script_path.exists() and script_path.is_file():
             return script_path
 
@@ -55,7 +55,7 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
         if (
             script_path.exists()
             and script_path.is_file()
-            and script_path.suffix == ".py"  # FIXME: HARDCODED - Python extension hardcoded
+            and script_path.suffix == ".py"
         ):
             return script_path
 
@@ -68,7 +68,7 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
 
         scripts = []
         try:
-            for script_path in self.scripts_dir.glob("*.py"):  # FIXME: HARDCODED - Python extension glob pattern hardcoded
+            for script_path in self.scripts_dir.glob("*.py"):
                 if script_path.is_file():
                     # Return name without .py extension
                     scripts.append(script_path.stem)
@@ -131,7 +131,7 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
         # Try to find module docstring
         in_docstring = False
         docstring_lines = []
-        quote_type = None
+        quote_type: Optional[str] = None
 
         for line in lines:
             stripped = line.strip()
@@ -174,7 +174,7 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
                     break
             else:
                 # We're in a docstring
-                if stripped.endswith(quote_type):
+                if quote_type and stripped.endswith(quote_type):
                     docstring_lines.append(stripped[:-3])
                     break
                 else:
@@ -210,17 +210,15 @@ class FileSystemScriptDiscoveryService(ScriptDiscoveryService):
 
         return sorted(set(imports))
 
-    def _extract_functions(self, tree: ast.AST) -> List[str]:
+    def _extract_functions(self, tree: ast.Module) -> List[str]:
         """Extract function names from AST."""
         functions = []
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                # Only include top-level functions (not nested or methods)
-                if isinstance(
-                    node.parent if hasattr(node, "parent") else None, ast.Module
-                ):
-                    functions.append(node.name)
+            if isinstance(node, ast.FunctionDef) and isinstance(
+                node.parent if hasattr(node, "parent") else None, ast.Module
+            ):
+                functions.append(node.name)
 
         # Manual parsing since AST doesn't give us parent info by default
         functions = []

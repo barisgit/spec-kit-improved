@@ -103,6 +103,20 @@ class ConfigService(ABC):
         """Restore configuration from backup"""
         pass
 
+    @abstractmethod
+    def save_project_config_cross_platform(
+        self, project_path: Path, config: ProjectConfig, platform_name: str
+    ) -> bool:
+        """Save project configuration with cross-platform compatibility"""
+        pass
+
+    @abstractmethod
+    def load_project_config_cross_platform(
+        self, project_path: Path, platform_name: str
+    ) -> Optional[ProjectConfig]:
+        """Load project configuration with cross-platform compatibility"""
+        pass
+
 
 class TomlConfigService(ConfigService):
     """TOML-based configuration service implementation"""
@@ -277,6 +291,8 @@ class TomlConfigService(ConfigService):
 
     def expand_branch_name(self, pattern: str, context: Dict[str, str]) -> str:
         """Expand branch name pattern with context variables"""
+        if not pattern:
+            return ""
         result = pattern
 
         # First, expand special placeholders like {number-3}, {date}, etc.
@@ -289,10 +305,12 @@ class TomlConfigService(ConfigService):
         for var_name in matches:
             placeholder = f"{{{var_name}}}"
             # Special handling for spec-id
-            if var_name == 'spec-id':
-                value = context.get('spec_id', context.get('spec-id', placeholder))
+            if var_name == "spec-id":
+                value = context.get("spec_id", context.get("spec-id", placeholder))
             else:
-                value = context.get(var_name, placeholder)  # Keep placeholder if not found
+                value = context.get(
+                    var_name, placeholder
+                )  # Keep placeholder if not found
             result = result.replace(placeholder, value)
 
         return result
@@ -458,84 +476,110 @@ class TomlConfigService(ConfigService):
         """Validate if a branch name matches a given pattern"""
         if not branch_name:
             return False, "Branch name cannot be empty"
-        
+
         if not pattern:
             return False, "Pattern cannot be empty"
-        
+
         # Static patterns (no variables) - exact match
         if "{" not in pattern:
             if branch_name == pattern:
                 return True, None
             else:
-                return False, f"Branch name '{branch_name}' doesn't match static pattern '{pattern}'"
-        
+                return (
+                    False,
+                    f"Branch name '{branch_name}' doesn't match static pattern '{pattern}'",
+                )
+
         # Dynamic patterns with variables
         # Split both into path segments for validation
-        pattern_parts = pattern.split('/')
-        branch_parts = branch_name.split('/')
-        
+        pattern_parts = pattern.split("/")
+        branch_parts = branch_name.split("/")
+
         # Must have same number of path segments
         if len(pattern_parts) != len(branch_parts):
             expected_segments = len(pattern_parts)
             actual_segments = len(branch_parts)
-            return False, f"Branch name has {actual_segments} path segment(s), pattern expects {expected_segments}"
-        
+            return (
+                False,
+                f"Branch name has {actual_segments} path segment(s), pattern expects {expected_segments}",
+            )
+
         # Check each segment
-        for i, (pattern_part, branch_part) in enumerate(zip(pattern_parts, branch_parts)):
+        for i, (pattern_part, branch_part) in enumerate(
+            zip(pattern_parts, branch_parts, strict=False)
+        ):
             if "{" not in pattern_part:
                 # Static segment - must match exactly
                 if pattern_part != branch_part:
-                    return False, f"Segment {i+1}: expected '{pattern_part}', got '{branch_part}'"
+                    return (
+                        False,
+                        f"Segment {i + 1}: expected '{pattern_part}', got '{branch_part}'",
+                    )
             else:
                 # Dynamic segment with variables - convert to regex and validate
                 regex_pattern = self._pattern_to_regex(pattern_part)
                 if not re.match(regex_pattern, branch_part):
                     expected_format = self._pattern_to_example(pattern_part)
-                    return False, f"Segment {i+1}: '{branch_part}' doesn't match pattern '{pattern_part}' (expected format like '{expected_format}')"
-        
+                    return (
+                        False,
+                        f"Segment {i + 1}: '{branch_part}' doesn't match pattern '{pattern_part}' (expected format like '{expected_format}')",
+                    )
+
         return True, None
-    
+
     def _pattern_to_regex(self, pattern_part: str) -> str:
         """Convert a pattern part with variables to a regex pattern"""
         regex_pattern = pattern_part
-        
+
         # Replace common variable patterns with appropriate regex
         # {spec-id} -> exactly 3 digits
-        regex_pattern = re.sub(r'\{spec-id\}', r'\\d{3}', regex_pattern)
-        
-        # {number-3} or {number} -> digits with optional minimum width (legacy support)
-        regex_pattern = re.sub(r'\{number(?:-(\d+))?\}', lambda m: r'\\d{' + (m.group(1) or '1') + r',}', regex_pattern)
-        
+        regex_pattern = re.sub(r"\{spec-id\}", r"\\d{3}", regex_pattern)
+
+        # {number-3} or {number} -> exactly x digits
+        regex_pattern = re.sub(
+            r"\{number(?:-(\d+))?\}",
+            lambda m: r"\\d{" + (m.group(1) or "1") + r"}",
+            regex_pattern,
+        )
+
         # {feature-name}, {feature_name} -> alphanumeric with dashes
-        regex_pattern = re.sub(r'\{[^}]*(?:feature|name)[^}]*\}', r'[a-z0-9-]+', regex_pattern)
-        
+        regex_pattern = re.sub(
+            r"\{[^}]*(?:feature|name)[^}]*\}", r"[a-z0-9-]+", regex_pattern
+        )
+
         # {bug-id}, {bug_id} -> alphanumeric with dashes
-        regex_pattern = re.sub(r'\{[^}]*(?:bug|id)[^}]*\}', r'[a-z0-9-]+', regex_pattern)
-        
+        regex_pattern = re.sub(
+            r"\{[^}]*(?:bug|id)[^}]*\}", r"[a-z0-9-]+", regex_pattern
+        )
+
         # {version} -> version format (alphanumeric, dots, dashes)
-        regex_pattern = re.sub(r'\{[^}]*version[^}]*\}', r'[a-z0-9.-]+', regex_pattern)
-        
+        regex_pattern = re.sub(r"\{[^}]*version[^}]*\}", r"[a-z0-9.-]+", regex_pattern)
+
         # {team} -> alphanumeric with dashes
-        regex_pattern = re.sub(r'\{[^}]*team[^}]*\}', r'[a-z0-9-]+', regex_pattern)
-        
+        regex_pattern = re.sub(r"\{[^}]*team[^}]*\}", r"[a-z0-9-]+", regex_pattern)
+
         # Generic fallback for any other variables
-        regex_pattern = re.sub(r'\{[^}]+\}', r'[a-z0-9-]+', regex_pattern)
-        
-        return f'^{regex_pattern}$'
-    
+        regex_pattern = re.sub(r"\{[^}]+\}", r"[a-z0-9-]+", regex_pattern)
+
+        return f"^{regex_pattern}$"
+
     def _pattern_to_example(self, pattern_part: str) -> str:
         """Convert a pattern part to an example string"""
         example = pattern_part
-        
+
         # Replace variables with example values
-        example = re.sub(r'\{spec-id\}', '001', example)
-        example = re.sub(r'\{number(?:-(\d+))?\}', lambda m: '001' if m.group(1) and int(m.group(1)) >= 3 else '1', example)
-        example = re.sub(r'\{[^}]*(?:feature|name)[^}]*\}', 'feature-name', example)
-        example = re.sub(r'\{[^}]*(?:bug|id)[^}]*\}', 'bug-123', example)
-        example = re.sub(r'\{[^}]*version[^}]*\}', 'v1.0.0', example)
-        example = re.sub(r'\{[^}]*team[^}]*\}', 'team-name', example)
-        example = re.sub(r'\{[^}]+\}', 'value', example)
-        
+        example = re.sub(r"\{spec-id\}", "001", example)
+        example = re.sub(
+            r"\{number(?:-(\d+))?\}",
+            lambda m: "001" if m.group(1) and int(m.group(1)) >= 3 else "1",
+            example,
+        )
+        example = re.sub(r"\{[^}]*(?:feature|name)[^}]*\}", "feature-name", example)
+        example = re.sub(r"\{[^}]*(?:bug|id)[^}]*\}", "bug-123", example)
+        example = re.sub(r"\{[^}]*version[^}]*\}", "v1.0.0", example)
+        example = re.sub(r"\{[^}]*team[^}]*\}", "team-name", example)
+        example = re.sub(r"\{[^}]+\}", "value", example)
+
         return example
 
     def expand_special_placeholders(self, pattern: str) -> str:
@@ -627,7 +671,9 @@ class TomlConfigService(ConfigService):
 
                 # Set AI assistant if provided
                 if ai_assistant:
-                    config.template_settings = {"ai_assistant": ai_assistant}
+                    from ..models.config import TemplateConfig
+
+                    config.template_settings = TemplateConfig(ai_assistant=ai_assistant)
 
                 # Set branch naming config if provided
                 if branch_naming_config:
@@ -646,14 +692,28 @@ class TomlConfigService(ConfigService):
 
                 # Update AI assistant if different
                 current_ai = (
-                    config.template_settings.get("ai_assistant")
+                    config.template_settings.ai_assistant
                     if config.template_settings
                     else None
                 )
                 if ai_assistant and current_ai != ai_assistant:
                     if not config.template_settings:
-                        config.template_settings = {}
-                    config.template_settings["ai_assistant"] = ai_assistant
+                        from ..models.config import TemplateConfig
+
+                        config.template_settings = TemplateConfig(
+                            ai_assistant=ai_assistant
+                        )
+                    else:
+                        # Create new TemplateConfig with updated ai_assistant
+                        from ..models.config import TemplateConfig
+
+                        config.template_settings = TemplateConfig(
+                            ai_assistant=ai_assistant,
+                            config_directory=config.template_settings.config_directory,
+                            custom_templates_dir=config.template_settings.custom_templates_dir,
+                            template_cache_enabled=config.template_settings.template_cache_enabled,
+                            template_variables=config.template_settings.template_variables,
+                        )
                     needs_save = True
 
                 # Update branch naming if provided and different
@@ -677,7 +737,11 @@ class TomlConfigService(ConfigService):
             # If anything fails, return safe defaults without saving
             default_config = ProjectConfig.create_default(project_path.name)
             if ai_assistant:
-                default_config.template_settings = {"ai_assistant": ai_assistant}
+                from ..models.config import TemplateConfig
+
+                default_config.template_settings = TemplateConfig(
+                    ai_assistant=ai_assistant
+                )
             if branch_naming_config:
                 is_valid, error = self.validate_branch_naming_config(
                     branch_naming_config
@@ -685,3 +749,42 @@ class TomlConfigService(ConfigService):
                 if is_valid:
                     default_config.branch_naming = branch_naming_config
             return default_config
+
+    def save_project_config_cross_platform(
+        self, project_path: Path, config: ProjectConfig, platform_name: str
+    ) -> bool:
+        """Save project configuration with cross-platform compatibility.
+
+        Args:
+            project_path: Path to the project directory
+            config: Project configuration to save
+            platform_name: Name of the platform (windows, macos, linux)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        platform_name = platform_name
+
+        try:
+            return self.save_project_config(project_path, config)
+        except Exception:
+            return False
+
+    def load_project_config_cross_platform(
+        self, project_path: Path, platform_name: str
+    ) -> Optional[ProjectConfig]:
+        """Load project configuration with cross-platform compatibility.
+
+        Args:
+            project_path: Path to the project directory
+            platform_name: Name of the platform (windows, macos, linux)
+
+        Returns:
+            Project configuration if successful, None otherwise
+        """
+        platform_name = platform_name
+
+        try:
+            return self.load_project_config(project_path)
+        except Exception:
+            return None

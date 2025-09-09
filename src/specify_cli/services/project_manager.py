@@ -4,7 +4,7 @@ Project Manager service with dynamic, configurable template rendering.
 100% type safe, 100% configurable, 0% hardcoded.
 """
 
-from dataclasses import dataclass, field
+import logging
 from pathlib import Path
 
 # Import types for template service integration
@@ -13,7 +13,14 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from rich.console import Console
 
 from ..models.config import BranchNamingConfig, ProjectConfig, TemplateConfig
-from ..models.project import ProjectInitOptions, ProjectInitResult, ProjectInitStep
+from ..models.defaults import AI_DEFAULTS, PATH_DEFAULTS
+from ..models.project import (
+    ProjectInitOptions,
+    ProjectInitResult,
+    ProjectInitStep,
+    TemplateContext,
+)
+from ..utils.validators import ValidationError, Validators
 from .config_service import ConfigService
 from .git_service import GitService
 
@@ -24,60 +31,8 @@ if TYPE_CHECKING:
     from .template_service import JinjaTemplateService
 
 
-@dataclass
-class TemplateContext:
-    """Type-safe template rendering context"""
-
-    project_name: str
-    ai_assistant: str
-    project_path: Path
-    branch_naming_config: Optional[BranchNamingConfig] = None
-    extra_vars: Dict[str, Any] = field(default_factory=dict)
-
-
 class ProjectManager:
     """Project manager with fully configurable template system"""
-
-    # FIXME: HARDCODED - Default folder mappings hardcoded
-    # TODO: Move to ConfigurableFolderMapping model with configuration-driven approach
-    # Default template folder mappings - fully configurable
-    DEFAULT_FOLDER_MAPPINGS: List[TemplateFolderMapping] = [
-        {
-            "source": "commands",
-            "target_pattern": ".{ai_assistant}/commands",
-            "render": True,
-            "executable_extensions": [],
-        },
-        {
-            "source": "scripts",
-            "target_pattern": ".specify/scripts",
-            "render": True,
-            "executable_extensions": [".py", ".sh"],
-        },
-        {
-            "source": "memory",
-            "target_pattern": ".specify/memory",
-            "render": True,
-            "executable_extensions": [],
-        },
-        {
-            "source": "runtime_templates",
-            "target_pattern": ".specify/templates",
-            "render": False,  # Copy as-is for runtime use
-            "executable_extensions": [],
-        },
-    ]
-
-    # FIXME: HARDCODED - Skip patterns hardcoded
-    # TODO: Move to TemplateProcessingConfig with configurable skip patterns
-    # Files/patterns to skip when processing templates
-    SKIP_PATTERNS: List[str] = [
-        "__init__.py",
-        "__pycache__",
-        ".pyc",
-        ".DS_Store",
-        ".gitkeep",
-    ]
 
     def __init__(
         self,
@@ -108,17 +63,64 @@ class ProjectManager:
         self._template_service = template_service
         self._console = Console()
 
-        # Use custom configurations or defaults
-        self.folder_mappings = folder_mappings or self.DEFAULT_FOLDER_MAPPINGS
+        # Use custom configurations or defaults (will be set dynamically)
+        self._custom_folder_mappings = folder_mappings
+
+    def _get_default_folder_mappings(
+        self, ai_assistant: str = "claude"
+    ) -> List[TemplateFolderMapping]:
+        """Get default folder mappings for the specified AI assistant using configuration."""
+        # Use PATH_DEFAULTS to get configured template categories
+        mappings = []
+
+        for category in PATH_DEFAULTS.TEMPLATE_CATEGORIES:
+            # Determine if this category should be rendered during init
+            render_during_init = (
+                category != "runtime_templates"
+            )  # runtime_templates copied as-is
+
+            # Get target path using AI configuration
+            if category in ["commands", "memory"]:
+                # AI-specific categories use AI_DEFAULTS
+                target_pattern = AI_DEFAULTS.get_target_path_for_category(
+                    ai_assistant, category
+                )
+            elif category == "scripts":
+                # Scripts always go to .specify/scripts
+                target_pattern = ".specify/scripts"
+            elif category == "runtime_templates":
+                # Runtime templates go to .specify/templates
+                target_pattern = ".specify/templates"
+            else:
+                # Fallback for any new categories
+                target_pattern = f".specify/{category}"
+
+            # Determine executable extensions
+            exec_extensions = (
+                PATH_DEFAULTS.EXECUTABLE_EXTENSIONS if category == "scripts" else []
+            )
+
+            mappings.append(
+                TemplateFolderMapping(
+                    source=category,
+                    target_pattern=target_pattern,
+                    render=render_during_init,
+                    executable_extensions=exec_extensions,
+                )
+            )
+
+        return mappings
 
     def initialize_project(self, options: ProjectInitOptions) -> ProjectInitResult:
         """Initialize project with dynamic template rendering"""
+        logging.info(f"Initializing project with AI: {options.ai_assistant}")
         completed_steps: List[ProjectInitStep] = []
         warnings: List[str] = []
 
         try:
             # Determine project path
             project_path = self._resolve_project_path(options)
+            logging.debug(f"Project path resolved: {project_path}")
 
             # Validate project
             is_valid, error = self._validate_project(project_path, options)
@@ -146,12 +148,13 @@ class ProjectManager:
             if self._config_service.save_project_config(project_path, config):
                 completed_steps.append(ProjectInitStep.CONFIG_SAVE)
 
-            # Render templates dynamically
+            # Render templates dynamically using full TemplateContext
             context = TemplateContext(
                 project_name=options.project_name or project_path.name,
                 ai_assistant=options.ai_assistant,
                 project_path=project_path,
-                branch_naming_config=options.branch_naming_config,
+                branch_naming_config=options.branch_naming_config
+                or BranchNamingConfig(),
             )
 
             render_result = self._render_all_templates(context)
@@ -189,9 +192,30 @@ class ProjectManager:
         self, context: TemplateContext, verbose: bool = False
     ) -> RenderResult:
         """Render all templates using JinjaTemplateService"""
-        return self._template_service.render_all_templates_from_mappings(
-            self.folder_mappings, context, verbose=verbose
+        # Get folder mappings dynamically based on AI assistant
+        folder_mappings = (
+            self._custom_folder_mappings
+            or self._get_default_folder_mappings(context.ai_assistant)
         )
+
+        logging.debug(f"folder_mappings count: {len(folder_mappings)}")
+        for i, mapping in enumerate(folder_mappings):
+            logging.debug(
+                f"mapping {i}: source={mapping.source}, target={mapping.target_pattern}"
+            )
+
+        result = self._template_service.render_all_templates_from_mappings(
+            folder_mappings, context, verbose=verbose
+        )
+
+        if result.success:
+            logging.debug("render result: success")
+        else:
+            logging.error("Template rendering failed")
+            for error in result.errors:
+                logging.error(f"Template error: {error}")
+
+        return result
 
     def _resolve_project_path(self, options: ProjectInitOptions) -> Path:
         """Resolve project path from options"""
@@ -217,12 +241,14 @@ class ProjectManager:
 
     def _create_basic_structure(self, project_path: Path, ai_assistant: str) -> None:
         """Create basic project structure"""
-        # FIXME: HARDCODED - Basic structure creation hardcoded
-        # TODO: Move to configuration with customizable project structure
-        # Create .specify directory
-        (project_path / ".specify").mkdir(exist_ok=True)
+        # Get dynamic project structure paths
+        basic_dirs = PATH_DEFAULTS.get_project_structure_paths(ai_assistant)
 
-        # Create specs directory
+        # Create all required directories
+        for dir_path in basic_dirs:
+            (project_path / dir_path).mkdir(parents=True, exist_ok=True)
+
+        # Create specs directory (always needed)
         (project_path / "specs").mkdir(exist_ok=True)
 
         # Create basic README if doesn't exist
@@ -267,12 +293,187 @@ class ProjectManager:
         warnings: List[str],
     ) -> None:
         """Create initial git branch"""
-        branch_context = {"feature_name": "initial-setup"}
-        branch_name = self._config_service.expand_branch_name(
-            config.branch_naming.default_pattern, branch_context
-        )
+        # Get default context variables
+        context_vars = PATH_DEFAULTS.get_default_context_vars(project_path.name)
+        branch_context = {
+            "feature_name": "initial-setup",
+            "project_name": context_vars.project_name,
+            "created_date": context_vars.created_date,
+            "ai_assistant": context_vars.ai_assistant,
+            "config_directory": context_vars.config_directory,
+            "spec_type": context_vars.spec_type,
+        }
+
+        pattern = config.branch_naming.default_pattern or "feature/{{feature_name}}"
+        branch_name = self._config_service.expand_branch_name(pattern, branch_context)
 
         if self._git_service.create_branch(branch_name, project_path):
             completed_steps.append(ProjectInitStep.BRANCH_CREATION)
         else:
             warnings.append(f"Failed to create initial branch: {branch_name}")
+
+    def validate_project_name(self, name: str) -> tuple[bool, Optional[str]]:
+        """Validate project name using existing Validators infrastructure"""
+        try:
+            Validators.project_name(name)
+            return True, None
+        except ValidationError as e:
+            return False, str(e)
+
+    def validate_project_directory(
+        self, project_path: Path, use_current_dir: bool
+    ) -> tuple[bool, Optional[str]]:
+        """Validate project directory using existing Validators infrastructure"""
+        try:
+            if use_current_dir:
+                # For current directory, just check if it's a valid directory
+                Validators.directory_path(project_path, must_exist=True)
+                # Additional check for already initialized
+                if (project_path / ".specify").exists():
+                    return False, "Directory already initialized as spec-kit project"
+            else:
+                # For new directory, check if it can be created or is empty
+                Validators.directory_path(project_path, must_be_empty=True)
+            return True, None
+        except ValidationError as e:
+            return False, str(e)
+
+    def setup_project_structure(self, project_path: Path, ai_assistant: str) -> bool:
+        """Set up basic project structure using existing infrastructure"""
+        logging.debug(
+            f"Setting up project structure for {project_path} with AI: {ai_assistant}"
+        )
+        try:
+            self._create_basic_structure(project_path, ai_assistant)
+            logging.debug(f"Successfully set up project structure for {project_path}")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to setup project structure for {project_path}: {e}")
+            return False
+
+    def configure_branch_naming(
+        self, project_path: Path, interactive: bool = False
+    ) -> bool:
+        """Configure branch naming using existing config service"""
+        logging.debug(
+            f"Configuring branch naming for {project_path} (interactive: {interactive})"
+        )
+        try:
+            # Load existing config or create default
+            config = self._config_service.load_project_config(project_path)
+            if config is None:
+                logging.debug(
+                    f"No existing config found, creating default for {project_path}"
+                )
+                config = ProjectConfig(name=project_path.name)
+            else:
+                logging.debug(f"Loaded existing config for {project_path}")
+
+            # In non-interactive mode, just ensure config exists
+            if not interactive:
+                logging.debug(
+                    f"Saving config in non-interactive mode for {project_path}"
+                )
+                return self._config_service.save_project_config(project_path, config)
+
+            # In interactive mode, would prompt user (not implemented in tests)
+            logging.debug(f"Saving config in interactive mode for {project_path}")
+            return self._config_service.save_project_config(project_path, config)
+        except Exception as e:
+            logging.error(f"Failed to configure branch naming for {project_path}: {e}")
+            return False
+
+    def migrate_existing_project(self, project_path: Path) -> bool:
+        """Migrate existing project using existing infrastructure"""
+        try:
+            # Check if already migrated
+            if (project_path / ".specify").exists():
+                return True
+
+            # Create basic structure
+            self._create_basic_structure(project_path, "claude")
+
+            # Create default config
+            config = ProjectConfig(name=project_path.name)
+            return self._config_service.save_project_config(project_path, config)
+        except Exception as e:
+            logging.error(f"Failed to migrate existing project: {e}")
+            return False
+
+    def get_project_info(self, project_path: Path) -> Optional[Dict[str, Any]]:
+        """Get project information using existing config service"""
+        try:
+            if not project_path.exists():
+                return None
+
+            config = self._config_service.load_project_config(project_path)
+            if config is None:
+                return None
+
+            return {
+                "name": config.name,
+                "ai_assistant": config.template_settings.ai_assistant,
+                "branch_naming": config.branch_naming.to_dict(),
+                "template_settings": config.template_settings.to_dict(),
+                "path": str(project_path),
+                "initialized": (project_path / ".specify").exists(),
+            }
+        except Exception as e:
+            logging.error(f"Failed to get project info: {e}")
+            return None
+
+    def cleanup_failed_init(
+        self, project_path: Path, completed_steps: List[ProjectInitStep]
+    ) -> bool:
+        """Clean up after failed initialization"""
+        try:
+            # Remove any created files/directories based on completed steps
+            if (
+                ProjectInitStep.DIRECTORY_CREATION in completed_steps
+                and project_path.exists()
+                and not any(project_path.iterdir())
+            ):
+                # Only remove if we created the directory and it's empty
+                project_path.rmdir()
+
+            if ProjectInitStep.STRUCTURE_SETUP in completed_steps:
+                # Remove .specify directory if created
+                specify_dir = project_path / ".specify"
+                if specify_dir.exists():
+                    import shutil
+
+                    shutil.rmtree(specify_dir)
+
+            if ProjectInitStep.CONFIG_SAVE in completed_steps:
+                # Remove config file if created
+                config_file = project_path / "config.toml"
+                if config_file.exists():
+                    config_file.unlink()
+
+            return True
+        except Exception as e:
+            logging.error(f"Failed to cleanup failed init: {e}")
+            return False
+
+    def initialize_cross_platform_project(self, options: ProjectInitOptions) -> bool:
+        """Initialize project with cross-platform compatibility.
+
+        Args:
+            options: Project initialization options
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Resolve project path from options (same logic as initialize_project)
+            project_path = self._resolve_project_path(options)
+
+            # Create cross-platform directory structure
+            if not options.use_current_dir:
+                project_path.mkdir(parents=True, exist_ok=True)
+
+            # Initialize with standard project structure
+            result = self.initialize_project(options)
+            return result.success
+        except Exception:
+            return False

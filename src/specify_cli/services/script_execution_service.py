@@ -139,7 +139,7 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
             # Execute with timeout and capture output
             # Dynamically find project root by searching upward for .specify directory
             project_root = self._find_project_root(script_path)
-                
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -228,8 +228,6 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
             if not abs_script_path.is_file():
                 return False
 
-            # FIXME: HARDCODED - Python extension hardcoded
-            # TODO: Make configurable via configuration system
             # Check file extension (must be .py for Python scripts)
             if abs_script_path.suffix.lower() != ".py":
                 return False
@@ -292,10 +290,10 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
     def _find_project_root(self, script_path: Path) -> Path:
         """
         Find project root using git repository root or by searching for .specify directory.
-        
+
         Args:
             script_path: Path to the script being executed
-            
+
         Returns:
             Path to project root, preferring git repo root if available
         """
@@ -308,7 +306,7 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
                 capture_output=True,
                 text=True,
                 timeout=5,
-                shell=False
+                shell=False,
             )
             if result.returncode == 0:
                 git_root = Path(result.stdout.strip())
@@ -317,7 +315,7 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             # Git not available or timeout, continue to fallback
             pass
-        
+
         # Fallback: search upward for .specify directory
         current_dir = script_path.parent.resolve()
         while current_dir != current_dir.parent:  # Stop at filesystem root
@@ -325,6 +323,6 @@ class SubprocessScriptExecutionService(ScriptExecutionService):
             if specify_dir.exists() and specify_dir.is_dir():
                 return current_dir
             current_dir = current_dir.parent
-        
+
         # Final fallback: script's parent directory
         return script_path.parent
