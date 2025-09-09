@@ -153,7 +153,7 @@ class Validators:
         Raises:
             ValidationError: If invalid with reason
         """
-        valid_assistants = ["claude", "gemini", "copilot"]
+        valid_assistants = ["claude", "gemini", "copilot"]  # FIXME: HARDCODED - AI assistant validation list hardcoded
         if assistant not in valid_assistants:
             raise ValidationError(
                 f"Invalid AI assistant '{assistant}'. "
