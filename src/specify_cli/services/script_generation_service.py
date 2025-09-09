@@ -17,6 +17,8 @@ from specify_cli.models.script import GeneratedScript, ScriptState
 from specify_cli.models.template import GranularTemplate, TemplateCategory
 from specify_cli.services.template_service import TemplateService
 
+# FIXME: CRITICAL - This can probably be removed
+
 
 class ScriptGenerationService:
     """Service for generating Python scripts from Jinja2 templates"""
@@ -24,58 +26,58 @@ class ScriptGenerationService:
     def __init__(self, template_service: Optional[TemplateService] = None):
         """
         Initialize script generation service
-        
+
         Args:
             template_service: Optional template service for template operations
         """
         self.template_service = template_service
         self._script_imports_cache: Dict[str, List[str]] = {}
-        
+
     def generate_scripts_from_templates(
         self,
         template_context: TemplateContext,
         output_directory: Path,
-        ai_assistant: Optional[str] = None
+        ai_assistant: Optional[str] = None,
     ) -> List[GeneratedScript]:
         """
         Generate Python scripts from script templates
-        
+
         Args:
             template_context: Template context with variables
             output_directory: Directory where scripts should be created
             ai_assistant: AI assistant for template filtering (defaults to context.ai_assistant)
-            
+
         Returns:
             List of GeneratedScript objects in GENERATED state
-            
+
         Raises:
             ValueError: If template_context is None or output_directory is invalid
             RuntimeError: If script generation fails
         """
         if template_context is None:
             raise ValueError("template_context cannot be None")
-            
+
         if not output_directory:
             raise ValueError("output_directory cannot be empty")
-            
+
         # Create output directory if it doesn't exist
         try:
             output_directory.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             raise RuntimeError(f"Failed to create output directory: {e}") from e
-            
+
         if not output_directory.exists() or not output_directory.is_dir():
             raise ValueError("output_directory must be a valid directory path")
-            
+
         # Use AI assistant from context if not provided
         if ai_assistant is None:
             ai_assistant = template_context.ai_assistant
-            
+
         generated_scripts = []
-        
+
         # Discover script templates from package resources
         script_templates = self._discover_script_templates(ai_assistant)
-        
+
         for template in script_templates:
             try:
                 # Generate script from template
@@ -84,29 +86,32 @@ class ScriptGenerationService:
                 )
                 if script:
                     generated_scripts.append(script)
-                    
+
             except Exception as e:
                 # Log error but continue with other scripts
-                print(f"Warning: Failed to generate script from template '{template.name}': {e}", file=sys.stderr)
+                print(
+                    f"Warning: Failed to generate script from template '{template.name}': {e}",
+                    file=sys.stderr,
+                )
                 continue
-                
+
         return generated_scripts
-        
+
     def set_script_permissions(self, scripts: List[GeneratedScript]) -> bool:
         """
         Set executable permissions on generated scripts
-        
+
         Args:
             scripts: List of GeneratedScript objects
-            
+
         Returns:
             True if all permissions were set successfully, False otherwise
         """
         if not scripts:
             return True
-            
+
         success_count = 0
-        
+
         for script in scripts:
             try:
                 if self._set_single_script_permissions(script):
@@ -114,28 +119,28 @@ class ScriptGenerationService:
                     success_count += 1
                 else:
                     script.mark_validation_error("Failed to set executable permissions")
-                    
+
             except Exception as e:
                 script.mark_validation_error(f"Permission error: {e}")
                 continue
-                
+
         return success_count == len(scripts)
-        
+
     def validate_script_imports(self, scripts: List[GeneratedScript]) -> bool:
         """
         Validate that scripts have valid syntax and SpecifyX imports
-        
+
         Args:
             scripts: List of GeneratedScript objects
-            
+
         Returns:
             True if all scripts are valid, False otherwise
         """
         if not scripts:
             return True
-            
+
         success_count = 0
-        
+
         for script in scripts:
             try:
                 if self._validate_single_script(script):
@@ -146,28 +151,28 @@ class ScriptGenerationService:
                 else:
                     # Error message already set by _validate_single_script
                     pass
-                    
+
             except Exception as e:
                 script.mark_validation_error(f"Validation error: {e}")
                 continue
-                
+
         return success_count == len(scripts)
-        
+
     def test_script_execution(self, scripts: List[GeneratedScript]) -> bool:
         """
         Test script execution and --json flag support
-        
+
         Args:
             scripts: List of GeneratedScript objects to test
-            
+
         Returns:
             True if all scripts execute without syntax errors, False otherwise
         """
         if not scripts:
             return True
-            
+
         success_count = 0
-        
+
         for script in scripts:
             try:
                 if self._test_single_script_execution(script):
@@ -175,13 +180,13 @@ class ScriptGenerationService:
                 else:
                     # Error already logged by _test_single_script_execution
                     pass
-                    
+
             except Exception as e:
                 script.mark_validation_error(f"Execution test error: {e}")
                 continue
-                
+
         return success_count == len(scripts)
-        
+
     def _discover_script_templates(self, ai_assistant: str) -> List[GranularTemplate]:
         """Discover script templates from package resources"""
         if self.template_service:
@@ -196,8 +201,10 @@ class ScriptGenerationService:
                 except AttributeError:
                     # Template service doesn't have discovery methods yet
                     pass
-        
+
         # Fallback: create templates based on known script templates
+        # FIXME: HARDCODED - All script template paths and target paths hardcoded
+        # TODO: Move to configuration-driven template discovery
         script_templates = [
             GranularTemplate(
                 name="create-feature",
@@ -205,52 +212,52 @@ class ScriptGenerationService:
                 target_path=".specify/scripts/create-feature.py",
                 category=TemplateCategory.SCRIPTS.value,
                 ai_aware=False,  # Changed to False since all AI assistants can use these
-                executable=True
+                executable=True,
             ),
             GranularTemplate(
                 name="setup-plan",
-                template_path="scripts/setup-plan.j2", 
+                template_path="scripts/setup-plan.j2",
                 target_path=".specify/scripts/setup-plan.py",
                 category=TemplateCategory.SCRIPTS.value,
                 ai_aware=False,  # Changed to False since all AI assistants can use these
-                executable=True
+                executable=True,
             ),
             GranularTemplate(
-                name="check-prerequisites", 
+                name="check-prerequisites",
                 template_path="scripts/check-prerequisites.j2",
                 target_path=".specify/scripts/check-prerequisites.py",
                 category=TemplateCategory.SCRIPTS.value,
                 ai_aware=False,  # Changed to False since all AI assistants can use these
-                executable=True
-            )
+                executable=True,
+            ),
         ]
-        
+
         # Since ai_aware=False, all templates are compatible with any AI assistant
         return script_templates
-        
+
     def _generate_single_script(
         self,
         template: GranularTemplate,
         context: TemplateContext,
-        output_directory: Path
+        output_directory: Path,
     ) -> Optional[GeneratedScript]:
         """Generate a single script from template"""
         try:
             # Determine target path
             target_path = output_directory / f"{template.name}.py"
-            
+
             # Generate script content (using a mock template for now)
             script_content = self._generate_script_content(template, context)
-            
+
             # Write script to file
-            target_path.write_text(script_content, encoding='utf-8')
-            
+            target_path.write_text(script_content, encoding="utf-8")
+
             # Extract imports from generated content
             imports = self._extract_script_imports(script_content)
-            
+
             # Determine if script supports JSON output
             json_output = "--json" in script_content and "json.dumps" in script_content
-            
+
             # Create GeneratedScript object (inheriting executable from template)
             script = GeneratedScript(
                 name=template.name,
@@ -259,15 +266,19 @@ class ScriptGenerationService:
                 imports=imports,
                 executable=template.executable,  # Inherit from template
                 json_output=json_output,
-                state=ScriptState.GENERATED
+                state=ScriptState.GENERATED,
             )
-            
+
             return script
-            
+
         except Exception as e:
-            raise RuntimeError(f"Failed to generate script '{template.name}': {e}") from e
-            
-    def _generate_script_content(self, template: GranularTemplate, context: TemplateContext) -> str:
+            raise RuntimeError(
+                f"Failed to generate script '{template.name}': {e}"
+            ) from e
+
+    def _generate_script_content(
+        self, template: GranularTemplate, context: TemplateContext
+    ) -> str:
         """Generate script content from template using template service"""
         if self.template_service:
             try:
@@ -276,7 +287,7 @@ class ScriptGenerationService:
             except Exception:
                 # Fallback to mock implementation if template service fails
                 pass
-        
+
         # Fallback: generate based on template type and context
         if template.name == "create-feature":
             return self._generate_create_feature_script(context)
@@ -286,7 +297,7 @@ class ScriptGenerationService:
             return self._generate_check_prerequisites_script(context)
         else:
             return self._generate_generic_script(template, context)
-            
+
     def _generate_create_feature_script(self, context: TemplateContext) -> str:
         """Generate create-feature script content"""
         return f'''#!/usr/bin/env python3
@@ -467,7 +478,7 @@ def main():
 if __name__ == "__main__":
     main()
 '''
-        
+
     def _generate_setup_plan_script(self, context: TemplateContext) -> str:
         """Generate setup-plan script content"""
         return f'''#!/usr/bin/env python3
@@ -508,6 +519,8 @@ def setup_planning_structure(project_path: Path, json_mode: bool = False) -> Tup
         directories = [
             project_path / "specs",
             project_path / "docs" / "planning", 
+            # FIXME: HARDCODED - Directory paths hardcoded
+            # TODO: Make configurable via configuration system
             project_path / ".specify" / "templates",
             project_path / ".specify" / "scripts",
             project_path / ".claude" / "commands"
@@ -518,6 +531,8 @@ def setup_planning_structure(project_path: Path, json_mode: bool = False) -> Tup
             if ensure_directory_exists(directory):
                 created.append(str(directory))
         
+        # FIXME: HARDCODED - Plan file path hardcoded to 'plan.md'
+        # TODO: Make configurable via configuration system
         # Create plan.md if it doesn't exist
         plan_file = project_path / "plan.md"
         if not plan_file.exists():
@@ -628,7 +643,7 @@ def check_prerequisites(project_path: Path, json_mode: bool = False) -> Tuple[bo
             all_passed = False
         
         # Check required directories
-        required_dirs = [".specify", ".specify/scripts", ".claude/commands"]
+        required_dirs = [".specify", ".specify/scripts", ".claude/commands"]  # FIXME: HARDCODED - Required directories hardcoded
         dir_checks = {{}}
         for req_dir in required_dirs:
             dir_path = project_path / req_dir
@@ -640,7 +655,7 @@ def check_prerequisites(project_path: Path, json_mode: bool = False) -> Tuple[bo
         checks["directories"] = dir_checks
         
         # Check project configuration
-        config_file = project_path / ".specify" / "config.toml"
+        config_file = project_path / ".specify" / "config.toml"  # FIXME: HARDCODED - Config file path hardcoded
         config_exists = config_file.exists()
         checks["config"] = {{
             "exists": config_exists,
@@ -693,7 +708,9 @@ if __name__ == "__main__":
     main()
 '''
 
-    def _generate_generic_script(self, template: GranularTemplate, context: TemplateContext) -> str:
+    def _generate_generic_script(
+        self, template: GranularTemplate, context: TemplateContext
+    ) -> str:
         """Generate generic script content"""
         return f'''#!/usr/bin/env python3
 """
@@ -743,104 +760,117 @@ if __name__ == "__main__":
             target_path = script.target_path
             if not target_path.exists():
                 return False
-                
+
             # Get current permissions
             current_stat = target_path.stat()
             current_mode = current_stat.st_mode
-            
+
             # Set executable permissions based on platform
-            if os.name == 'posix':
+            if os.name == "posix":
                 # Unix-like systems: set 755 permissions (rwxr-xr-x)
-                new_mode = current_mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # User: rwx
+                new_mode = (
+                    current_mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+                )  # User: rwx
                 new_mode |= stat.S_IRGRP | stat.S_IXGRP  # Group: r-x
                 new_mode |= stat.S_IROTH | stat.S_IXOTH  # Other: r-x
             else:
                 # Windows: just ensure user has all permissions
                 new_mode = current_mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
-                
+
             target_path.chmod(new_mode)
             return True
-            
+
         except Exception:
             return False
-            
+
     def _validate_single_script(self, script: GeneratedScript) -> bool:
         """Validate syntax and imports for a single script"""
         try:
             if not script.target_path.exists():
                 script.mark_validation_error("Script file does not exist")
                 return False
-                
+
             # Read script content
             try:
-                content = script.target_path.read_text(encoding='utf-8')
+                content = script.target_path.read_text(encoding="utf-8")
             except Exception as e:
                 script.mark_validation_error(f"Cannot read script file: {e}")
                 return False
-                
+
             # Validate Python syntax
             try:
                 ast.parse(content)
             except SyntaxError as e:
                 script.mark_validation_error(f"Python syntax error: {e}")
                 return False
-                
+
             # Check for required imports
             if not script.imports:
                 script.mark_validation_error("No SpecifyX imports found")
                 return False
-                
+
             # Check that imports exist in content
             import_found = False
             for import_stmt in script.imports:
                 # Check if any part of the import statement is in the content
-                import_parts = import_stmt.replace("from ", "").replace("import ", "").split()
-                if any(part in content for part in import_parts if part and len(part) > 3):
+                import_parts = (
+                    import_stmt.replace("from ", "").replace("import ", "").split()
+                )
+                if any(
+                    part in content for part in import_parts if part and len(part) > 3
+                ):
                     import_found = True
                     break
-                    
+
             if not import_found:
-                script.mark_validation_error("SpecifyX imports not found in script content")
+                script.mark_validation_error(
+                    "SpecifyX imports not found in script content"
+                )
                 return False
-                
+
             # Check for main function or entry point
-            if "def main(" not in content and 'if __name__ == "__main__"' not in content:
+            if (
+                "def main(" not in content
+                and 'if __name__ == "__main__"' not in content
+            ):
                 script.mark_validation_error("No main entry point found")
                 return False
-                
+
             return True
-            
+
         except Exception as e:
             script.mark_validation_error(f"Validation failed: {e}")
             return False
-            
+
     def _test_single_script_execution(self, script: GeneratedScript) -> bool:
         """Test execution of a single script"""
         try:
             if not script.target_path.exists():
                 return False
-                
+
             # Test Python syntax compilation
-            content = script.target_path.read_text(encoding='utf-8')
+            content = script.target_path.read_text(encoding="utf-8")
             try:
-                compile(content, str(script.target_path), 'exec')
+                compile(content, str(script.target_path), "exec")
                 return True
             except SyntaxError:
                 return False
-                
+
         except Exception:
             return False
-            
+
     def _extract_script_imports(self, content: str) -> List[str]:
         """Extract SpecifyX import statements from script content"""
         imports = []
-        
+
         # Find import lines that reference specify_cli
-        lines = content.split('\n')
+        lines = content.split("\n")
         for line in lines:
             line = line.strip()
-            if (line.startswith('from specify_cli') or 
-                line.startswith('import specify_cli')) and 'specify_cli' in line:
+            if (
+                line.startswith("from specify_cli")
+                or line.startswith("import specify_cli")
+            ) and "specify_cli" in line:
                 imports.append(line)
-                
+
         return imports

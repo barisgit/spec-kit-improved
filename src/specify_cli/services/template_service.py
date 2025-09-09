@@ -9,12 +9,19 @@ import importlib.resources
 import platform
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, List, Optional, Tuple, TypedDict, Union, cast
 
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateSyntaxError
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    Template,
+    TemplateNotFound,
+    TemplateSyntaxError,
+)
 from jinja2.meta import find_undeclared_variables
+from rich.console import Console
 
 from specify_cli.models.project import TemplateContext, TemplateFile
 from specify_cli.models.template import (
@@ -24,10 +31,36 @@ from specify_cli.models.template import (
 )
 
 
+class TemplateFolderMapping(TypedDict):
+    """Type-safe template folder configuration"""
+
+    source: str  # Source folder in init_templates/
+    target_pattern: str  # Target pattern, supports {ai_assistant}, {project_name}
+    render: bool  # Whether to render .j2 files or copy as-is
+    executable_extensions: List[str]  # File extensions to make executable
+
+
+@dataclass
+class RenderResult:
+    """Type-safe render operation result"""
+
+    rendered_files: List[Path] = field(default_factory=list)
+    copied_files: List[Path] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+
+    @property
+    def success(self) -> bool:
+        return len(self.errors) == 0
+
+    @property
+    def total_files(self) -> int:
+        return len(self.rendered_files) + len(self.copied_files)
+
+
 @dataclass
 class TemplateRenderResult:
     """Result of rendering a single template"""
-    
+
     template: GranularTemplate
     content: str
     target_path: str
@@ -224,12 +257,31 @@ class TemplateService(ABC):
 class JinjaTemplateService(TemplateService):
     """Jinja2-based template service implementation"""
 
-    def __init__(self):
+    def __init__(self, skip_patterns: Optional[List[str]] = None):
         self._template_dir: Optional[Path] = None
         self._custom_template_dir: Optional[Path] = None
         self._ai_assistant: Optional[str] = None
         self._environment: Optional[Environment] = None
         self._discovered_templates: List[GranularTemplate] = []
+
+        # FIXME: HARDCODED - Default patterns to skip when processing templates
+        # TODO: Move to TemplateProcessingConfig with configurable skip patterns
+        self.skip_patterns = skip_patterns or [
+            "__init__.py",
+            "__pycache__",
+            ".pyc",
+            ".DS_Store",
+            ".gitkeep",
+        ]
+
+        # FIXME: HARDCODED - Template root path hardcoded to init_templates
+        # TODO: Make configurable via TemplateProcessingConfig.template_root_path
+        # Get template root from package resources using Traversable API
+        # TODO: This should be configurable, now we are hardcoding it to the init_templates folder
+        self._template_root = importlib.resources.files("specify_cli").joinpath(
+            "init_templates"
+        )
+        self._console = Console()
 
     def load_template_package(self, ai_assistant: str, template_dir: Path) -> bool:
         """Load template package for specified AI assistant"""
@@ -268,15 +320,17 @@ class JinjaTemplateService(TemplateService):
         except Exception:
             return False
 
-    def render_template(self, template_name: Union[str, GranularTemplate], context: TemplateContext) -> str:
+    def render_template(
+        self, template_name: Union[str, GranularTemplate], context: TemplateContext
+    ) -> str:
         """Render a specific template with given context"""
         # Validate inputs
         if context is None:
             raise ValueError("Template context cannot be None")
-        
+
         if not template_name:
             raise ValueError("Template name cannot be empty")
-            
+
         try:
             # Handle GranularTemplate objects
             if isinstance(template_name, GranularTemplate):
@@ -284,14 +338,14 @@ class JinjaTemplateService(TemplateService):
                     # Load the template if not already loaded
                     template_name = self.load_template(template_name.name)
                 return self.render_with_platform_context(template_name, context)
-                
+
             # Handle string template names
             if self._environment is None:
                 # Try to load from package resources if no environment set
                 success = self.load_templates_from_package_resources()
                 if not success:
                     raise RuntimeError("Failed to load template environment")
-                
+
             # Try to load as GranularTemplate first
             try:
                 granular_template = self.load_template(template_name)
@@ -304,20 +358,30 @@ class JinjaTemplateService(TemplateService):
                         context_dict = self._prepare_context(context)
                         return template.render(**context_dict)
                     except TemplateNotFound as te:
-                        raise FileNotFoundError(f"Template not found: {template_name}") from te
+                        raise FileNotFoundError(
+                            f"Template not found: {template_name}"
+                        ) from te
                     except TemplateSyntaxError as tse:
-                        raise RuntimeError(f"Template syntax error in '{template_name}': {str(tse)}") from tse
+                        raise RuntimeError(
+                            f"Template syntax error in '{template_name}': {str(tse)}"
+                        ) from tse
                     except Exception as re:
-                        raise RuntimeError(f"Failed to render template '{template_name}': {str(re)}") from re
+                        raise RuntimeError(
+                            f"Failed to render template '{template_name}': {str(re)}"
+                        ) from re
                 else:
-                    raise FileNotFoundError(f"Template not found: {template_name}") from e
-                    
+                    raise FileNotFoundError(
+                        f"Template not found: {template_name}"
+                    ) from e
+
         except (ValueError, FileNotFoundError, RuntimeError):
             # Re-raise these specific exceptions as-is
             raise
         except Exception as e:
             # Catch any other unexpected errors
-            raise RuntimeError(f"Unexpected error rendering template '{template_name}': {str(e)}") from e
+            raise RuntimeError(
+                f"Unexpected error rendering template '{template_name}': {str(e)}"
+            ) from e
 
     def render_project_templates(
         self, context: TemplateContext, output_dir: Path
@@ -463,7 +527,7 @@ class JinjaTemplateService(TemplateService):
                     context_dict["additional_vars"] = additional_vars
                     # Also merge the values directly for backwards compatibility
                     context_dict.update(additional_vars)
-                    
+
             # Handle date/creation_date variations
             if "creation_date" in context_dict and "date" not in context_dict:
                 context_dict["date"] = context_dict["creation_date"]
@@ -492,6 +556,8 @@ class JinjaTemplateService(TemplateService):
 
     def _is_executable_template(self, template_path: Path, content: str) -> bool:
         """Determine if template should produce an executable file"""
+        # FIXME: HARDCODED - Executable extensions hardcoded
+        # TODO: Move to TemplateProcessingConfig.executable_extensions
         # Check file extension patterns
         executable_extensions = {".sh", ".py", ".rb", ".pl", ".js"}
 
@@ -508,6 +574,8 @@ class JinjaTemplateService(TemplateService):
         if content.startswith("#!"):
             return True
 
+        # FIXME: HARDCODED - Executable patterns hardcoded
+        # TODO: Move to TemplateProcessingConfig.executable_patterns
         # Check for specific executable patterns in filename
         executable_patterns = ["run", "start", "stop", "deploy", "build", "test"]
         return any(pattern in check_name.lower() for pattern in executable_patterns)
@@ -516,33 +584,41 @@ class JinjaTemplateService(TemplateService):
         """Discover templates from package resources"""
         if self._discovered_templates:
             return self._discovered_templates
-            
+
         templates = []
         try:
             # Get reference to the init_templates package
             import specify_cli.init_templates as templates_pkg
-            
+
+            # FIXME: HARDCODED - Template categories hardcoded
+            # TODO: Make configurable via TemplateProcessingConfig.template_categories
             # Discover templates in each category directory
-            categories = ['commands', 'scripts', 'memory', 'runtime_templates']
-            
+            categories = ["commands", "scripts", "memory", "runtime_templates"]
+
             for category in categories:
                 try:
                     # Get files in this category directory
                     category_files = importlib.resources.files(templates_pkg) / category
                     if category_files.is_dir():
                         for file_path in category_files.iterdir():
-                            if file_path.is_file() and file_path.name.endswith('.j2'):
-                                template_name = file_path.name[:-3]  # Remove .j2
-                                
+                            if file_path.is_file() and file_path.name.endswith(".j2"):
+                                # Simple mapping: filename.ext.j2 → filename.ext
+                                # For "create-feature.py.j2" -> "create-feature.py"
+                                # For "create-feature.j2" -> "create-feature"
+                                filename_without_j2 = file_path.name[:-3]  # Remove .j2
+                                template_name = filename_without_j2
+
                                 # Determine target path based on category and template name
-                                target_path = self._determine_target_path(category, template_name)
-                                
+                                target_path = self._determine_target_path(
+                                    category, template_name
+                                )
+
                                 # Determine if executable (scripts only)
-                                executable = (category == 'scripts')
-                                
+                                executable = category == "scripts"
+
                                 # All command and memory templates are AI-aware
-                                ai_aware = category in ['commands', 'memory']
-                                
+                                ai_aware = category in ["commands", "memory"]
+
                                 template = GranularTemplate(
                                     name=template_name,
                                     template_path=f"{category}/{file_path.name}",
@@ -550,47 +626,63 @@ class JinjaTemplateService(TemplateService):
                                     category=category,
                                     ai_aware=ai_aware,
                                     executable=executable,
-                                    state=TemplateState.DISCOVERED
+                                    state=TemplateState.DISCOVERED,
                                 )
-                                
+
                                 templates.append(template)
-                                
+
                 except Exception:
                     # Skip problematic categories but continue with others
                     continue
-                    
+
             self._discovered_templates = templates
             return templates
-            
+
         except Exception:
             return []
 
     def _determine_target_path(self, category: str, template_name: str) -> str:
         """Determine target path for template based on category and name"""
-        if category == 'commands':
+        # FIXME: HARDCODED - Target path patterns hardcoded
+        # TODO: Move to TargetPathConfig configuration model
+        if category == "commands":
             # AI-specific commands will be resolved during rendering based on context
-            return f".claude/commands/{template_name}.md"
-        elif category == 'scripts':
-            return f".specify/scripts/{template_name}.py"
-        elif category == 'memory':
-            return f".specify/memory/{template_name}.md"
-        elif category == 'runtime_templates':
-            return f".specify/templates/{template_name}.j2"
+            # template_name already includes .md extension from .md.j2 files
+            return f".claude/commands/{template_name}"
+        elif category == "scripts":
+            # template_name already includes .py extension from .py.j2 files
+            return f".specify/scripts/{template_name}"
+        elif category == "memory":
+            # template_name already includes .md extension from .md.j2 files
+            return f".specify/memory/{template_name}"
+        elif category == "runtime_templates":
+            # runtime templates keep their .j2 extension in target path
+            # but template_name from .md.j2 becomes .md, so we need to add .j2 back
+            if not template_name.endswith(".j2"):
+                template_name = f"{template_name}.j2"
+            return f".specify/templates/{template_name}"
         else:
             return f".specify/{template_name}"
-            
-    def _determine_ai_specific_target_path(self, category: str, template_name: str, ai_assistant: str) -> str:
+
+    def _get_ai_folder_mapping(self, ai_assistant: str) -> str:
+        """Get AI-specific folder structure"""
+        # FIXME: HARDCODED - AI assistant directory mappings hardcoded
+        # TODO: Move to AIAssistantMapping configuration model
+        ai_folder_mapping = {
+            "claude": ".claude/commands",
+            "gemini": ".gemini/commands",
+            "copilot": ".github/copilot"
+        }
+        return ai_folder_mapping.get(ai_assistant, f".{ai_assistant}/commands")
+
+    def _determine_ai_specific_target_path(
+        self, category: str, template_name: str, ai_assistant: str
+    ) -> str:
         """Determine AI-specific target path for template"""
-        if category == 'commands':
-            if ai_assistant == "claude":
-                return f".claude/commands/{template_name}.md"
-            elif ai_assistant == "gemini":
-                return f".gemini/commands/{template_name}.md"
-            elif ai_assistant == "copilot":
-                return f".github/copilot/{template_name}.md"
-            else:
-                # Default to claude structure
-                return f".claude/commands/{template_name}.md"
+        if category == "commands":
+            # template_name already includes .md extension from .md.j2 files
+            base_folder = self._get_ai_folder_mapping(ai_assistant)
+            return f"{base_folder}/{template_name}"
         else:
             return self._determine_target_path(category, template_name)
 
@@ -602,37 +694,44 @@ class JinjaTemplateService(TemplateService):
     def load_template(self, template_name: str) -> GranularTemplate:
         """Load individual template object"""
         # Find template by name (with or without .j2 extension)
-        search_name = template_name.replace('.j2', '')
-        
+        search_name = template_name.replace(".j2", "")
+
         templates = self.discover_templates()
         template = next((t for t in templates if t.name == search_name), None)
-        
+
         if not template:
             raise FileNotFoundError(f"Template not found: {template_name}")
-            
+
         # Load the Jinja2 template if not already loaded
         if template.state == TemplateState.DISCOVERED:
             try:
                 # Load from package resources
                 import specify_cli.init_templates as templates_pkg
-                template_content = (importlib.resources.files(templates_pkg) / template.template_path).read_text()
-                
+
+                template_content = (
+                    importlib.resources.files(templates_pkg) / template.template_path
+                ).read_text()
+
                 # Create Jinja2 template from content
                 env = Environment(keep_trailing_newline=True)
-                
+
                 # Add custom filters
-                def regex_replace(value: str, pattern: str, replacement: str = "") -> str:
+                def regex_replace(
+                    value: str, pattern: str, replacement: str = ""
+                ) -> str:
                     return self._regex_replace_filter(value, pattern, replacement)
-                
+
                 env.filters["regex_replace"] = cast(Callable[..., Any], regex_replace)
-                
+
                 jinja_template = env.from_string(template_content)
                 template.transition_to_loaded(jinja_template)
-                
+
             except Exception as e:
                 template.mark_error(f"Failed to load template: {str(e)}")
-                raise RuntimeError(f"Failed to load template '{template_name}': {str(e)}") from e
-                
+                raise RuntimeError(
+                    f"Failed to load template '{template_name}': {str(e)}"
+                ) from e
+
         return template
 
     def load_templates_from_package_resources(self) -> bool:
@@ -648,18 +747,18 @@ class JinjaTemplateService(TemplateService):
         try:
             # Check that all templates in package exist
             available_templates = {t.name for t in self.discover_templates()}
-            
+
             for template in package.templates:
                 if template.name not in available_templates:
                     return False
-                    
+
             # Check that templates are compatible with AI assistant
             for template in package.templates:
                 if not template.is_ai_specific_for(package.ai_assistant):
                     return False
-                    
+
             return True
-            
+
         except Exception:
             return False
 
@@ -668,30 +767,30 @@ class JinjaTemplateService(TemplateService):
     ) -> List[TemplateRenderResult]:
         """Render full template package"""
         results = []
-        
+
         # Get processing order (respecting dependencies)
         templates_to_process = package.get_processing_order()
-        
+
         for template in templates_to_process:
             try:
                 # Load template if needed
                 loaded_template = self.load_template(template.name)
-                
+
                 # Render with platform context
                 content = self.render_with_platform_context(loaded_template, context)
-                
+
                 # Mark as rendered
                 loaded_template.transition_to_rendered(content)
-                
+
                 # Create result
                 result = TemplateRenderResult(
                     template=loaded_template,
                     content=content,
                     target_path=loaded_template.target_path,
-                    success=True
+                    success=True,
                 )
                 results.append(result)
-                
+
             except Exception as e:
                 # Create error result
                 template.mark_error(str(e))
@@ -700,10 +799,10 @@ class JinjaTemplateService(TemplateService):
                     content="",
                     target_path=template.target_path,
                     success=False,
-                    error_message=str(e)
+                    error_message=str(e),
                 )
                 results.append(result)
-                
+
         return results
 
     def render_with_platform_context(
@@ -712,65 +811,80 @@ class JinjaTemplateService(TemplateService):
         """Render template with platform-specific context variables"""
         if not template:
             raise ValueError("Template cannot be None")
-            
+
         if not template.loaded_template:
             raise RuntimeError(f"Template '{template.name}' not loaded")
-            
+
         if not context:
             raise ValueError("Context cannot be None")
-        
+
         try:
             # Prepare base context
             context_dict = self._prepare_context(context)
-            
+
             # Add platform-specific variables
             try:
-                context_dict.update({
-                    'platform_system': platform.system(),
-                    'platform_machine': platform.machine(),
-                    'platform_python_version': platform.python_version(),
-                    'is_windows': platform.system().lower() == 'windows',
-                    'is_macos': platform.system().lower() == 'darwin',
-                    'is_linux': platform.system().lower() == 'linux',
-                    'path_separator': '\\' if platform.system().lower() == 'windows' else '/',
-                    'script_extension': '.bat' if platform.system().lower() == 'windows' else '.sh'
-                })
+                context_dict.update(
+                    {
+                        "platform_system": platform.system(),
+                        "platform_machine": platform.machine(),
+                        "platform_python_version": platform.python_version(),
+                        "is_windows": platform.system().lower() == "windows",
+                        "is_macos": platform.system().lower() == "darwin",
+                        "is_linux": platform.system().lower() == "linux",
+                        "path_separator": "\\"
+                        if platform.system().lower() == "windows"
+                        else "/",
+                        "script_extension": ".bat"
+                        if platform.system().lower() == "windows"
+                        else ".sh",
+                    }
+                )
             except Exception:
                 # Continue with basic context if platform detection fails
-                context_dict.update({
-                    'platform_system': 'unknown',
-                    'is_windows': False,
-                    'is_macos': False,
-                    'is_linux': False,
-                    'path_separator': '/',
-                    'script_extension': '.sh'
-                })
-            
+                context_dict.update(
+                    {
+                        "platform_system": "unknown",
+                        "is_windows": False,
+                        "is_macos": False,
+                        "is_linux": False,
+                        "path_separator": "/",
+                        "script_extension": ".sh",
+                    }
+                )
+
             # Add template-specific variables
-            context_dict.update({
-                'template_name': template.name,
-                'template_category': template.category,
-                'is_executable': template.executable,
-                'target_path': template.target_path
-            })
-            
+            context_dict.update(
+                {
+                    "template_name": template.name,
+                    "template_category": template.category,
+                    "is_executable": template.executable,
+                    "target_path": template.target_path,
+                }
+            )
+
             # Add branch pattern context if available
-            if hasattr(context, 'branch_naming_config') and context.branch_naming_config:
+            if (
+                hasattr(context, "branch_naming_config")
+                and context.branch_naming_config
+            ):
                 patterns = context.branch_naming_config.patterns
                 if patterns:
                     # Use first pattern as primary
-                    context_dict['branch_pattern'] = patterns[0]
-                    context_dict['branch_patterns'] = patterns
-            
+                    context_dict["branch_pattern"] = patterns[0]
+                    context_dict["branch_patterns"] = patterns
+
             # Add date alias for creation_date to support templates that expect 'date'
-            if 'creation_date' in context_dict and 'date' not in context_dict:
-                context_dict['date'] = context_dict['creation_date']
-            
+            if "creation_date" in context_dict and "date" not in context_dict:
+                context_dict["date"] = context_dict["creation_date"]
+
             # Render the template with enhanced error information
             try:
                 return template.loaded_template.render(**context_dict)
             except TemplateSyntaxError as e:
-                raise RuntimeError(f"Template syntax error in '{template.name}': {str(e)}") from e
+                raise RuntimeError(
+                    f"Template syntax error in '{template.name}': {str(e)}"
+                ) from e
             except Exception as e:
                 # Add context about what variables were available for debugging
                 available_vars = sorted(context_dict.keys())
@@ -778,10 +892,192 @@ class JinjaTemplateService(TemplateService):
                     f"Failed to render template '{template.name}': {str(e)}. "
                     f"Available variables: {', '.join(available_vars[:10])}{'...' if len(available_vars) > 10 else ''}"
                 ) from e
-                
+
         except (ValueError, RuntimeError):
             # Re-raise validation and template errors as-is
             raise
         except Exception as e:
             # Catch any other unexpected errors
-            raise RuntimeError(f"Unexpected error rendering template '{template.name}': {str(e)}") from e
+            raise RuntimeError(
+                f"Unexpected error rendering template '{template.name}': {str(e)}"
+            ) from e
+
+    def render_all_templates_from_mappings(
+        self,
+        folder_mappings: List[TemplateFolderMapping],
+        context: TemplateContext,
+        verbose: bool = False,
+    ) -> RenderResult:
+        """Render all templates based on dynamic folder mappings"""
+        result = RenderResult()
+
+        for mapping in folder_mappings:
+            try:
+                # Build target path with AI-specific logic for commands
+                if mapping["source"] == "commands":
+                    # Use centralized AI-specific folder structure
+                    target = self._get_ai_folder_mapping(context.ai_assistant)
+                else:
+                    # Use standard pattern formatting for non-command folders
+                    target = mapping["target_pattern"].format(
+                        ai_assistant=context.ai_assistant, project_name=context.project_name
+                    )
+                target_path = context.project_path / target
+
+                if verbose:
+                    self._console.print(
+                        f"[blue]Processing {mapping['source']} → {target}[/blue]"
+                    )
+
+                # Get source folder as Traversable
+                source_traversable = self._template_root.joinpath(mapping["source"])
+
+                # Ensure target directory exists
+                target_path.mkdir(parents=True, exist_ok=True)
+
+                # Process files based on render flag
+                if mapping["render"]:
+                    self._render_templates_from_traversable(
+                        source_traversable,
+                        target_path,
+                        context,
+                        mapping["executable_extensions"],
+                        result,
+                        verbose,
+                    )
+                else:
+                    self._copy_templates_from_traversable(
+                        source_traversable, target_path, result, verbose
+                    )
+
+            except Exception as e:
+                error_msg = f"Error processing {mapping['source']}: {str(e)}"
+                result.errors.append(error_msg)
+                if verbose:
+                    self._console.print(f"[red]Error:[/red] {error_msg}")
+
+        return result
+
+    def _render_templates_from_traversable(
+        self,
+        source_traversable,  # Traversable object from importlib.resources
+        target_path: Path,
+        context: TemplateContext,
+        executable_extensions: List[str],
+        result: RenderResult,
+        verbose: bool = False,
+    ) -> None:
+        """Render .j2 templates from a Traversable resource"""
+        try:
+            # Iterate through items in the traversable
+            for item in source_traversable.iterdir():
+                # Skip files matching skip patterns
+                if any(pattern in item.name for pattern in self.skip_patterns):
+                    if verbose:
+                        self._console.print(f"[yellow]Skipped:[/yellow] {item.name}")
+                    continue
+
+                if item.is_dir():
+                    # Recursively process subdirectories
+                    sub_target = target_path / item.name
+                    sub_target.mkdir(parents=True, exist_ok=True)
+                    self._render_templates_from_traversable(
+                        item,
+                        sub_target,
+                        context,
+                        executable_extensions,
+                        result,
+                        verbose,
+                    )
+                elif item.name.endswith(".j2"):
+                    try:
+                        # Read template content
+                        template_content = item.read_text(encoding="utf-8")
+                        template = Template(template_content)
+
+                        # Output file: remove .j2 extension
+                        output_name = item.name[:-3]
+                        output_file = target_path / output_name
+
+                        if verbose:
+                            self._console.print(
+                                f"[green]Rendering:[/green] {item.name} → {output_name}"
+                            )
+
+                        # Build context for Jinja2
+                        render_context = self._prepare_context(context)
+
+                        # Render and write
+                        rendered = template.render(**render_context)
+                        output_file.write_text(rendered, encoding="utf-8")
+
+                        # Set executable if needed
+                        if any(
+                            str(output_file).endswith(ext)
+                            for ext in executable_extensions
+                        ):
+                            output_file.chmod(0o755)
+                            if verbose:
+                                self._console.print(
+                                    f"[blue]Made executable:[/blue] {output_name}"
+                                )
+
+                        result.rendered_files.append(output_file)
+
+                    except Exception as e:
+                        error_msg = f"Failed to render {item.name}: {str(e)}"
+                        result.errors.append(error_msg)
+                        if verbose:
+                            self._console.print(f"[red]Error:[/red] {error_msg}")
+
+        except Exception as e:
+            error_msg = f"Failed to process templates: {str(e)}"
+            result.errors.append(error_msg)
+            if verbose:
+                self._console.print(f"[red]Error:[/red] {error_msg}")
+
+    def _copy_templates_from_traversable(
+        self,
+        source_traversable,  # Traversable object from importlib.resources
+        target_path: Path,
+        result: RenderResult,
+        verbose: bool = False,
+    ) -> None:
+        """Copy templates as-is from a Traversable resource (for runtime templates)"""
+        try:
+            # Iterate through items in the traversable
+            for item in source_traversable.iterdir():
+                # Skip files matching skip patterns
+                if any(pattern in item.name for pattern in self.skip_patterns):
+                    if verbose:
+                        self._console.print(f"[yellow]Skipped:[/yellow] {item.name}")
+                    continue
+
+                if item.is_dir():
+                    # Recursively process subdirectories
+                    sub_target = target_path / item.name
+                    sub_target.mkdir(parents=True, exist_ok=True)
+                    self._copy_templates_from_traversable(
+                        item, sub_target, result, verbose
+                    )
+                else:
+                    try:
+                        # Copy file as-is
+                        output_file = target_path / item.name
+                        output_file.write_bytes(item.read_bytes())
+                        result.copied_files.append(output_file)
+
+                        if verbose:
+                            self._console.print(f"[cyan]Copied:[/cyan] {item.name}")
+
+                    except Exception as e:
+                        error_msg = f"Failed to copy {item.name}: {str(e)}"
+                        result.errors.append(error_msg)
+                        if verbose:
+                            self._console.print(f"[red]Error:[/red] {error_msg}")
+
+        except Exception as e:
+            error_msg = f"Failed to copy templates: {str(e)}"
+            result.errors.append(error_msg)
+            if verbose:
+                self._console.print(f"[red]Error:[/red] {error_msg}")

@@ -186,13 +186,14 @@ class CommandLineGitService(GitService):
         """Get the name of the current branch"""
         try:
             result = subprocess.run(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                ["git", "branch", "--show-current"],
                 cwd=project_path,
                 check=True,
                 capture_output=True,
                 text=True,
             )
-            return result.stdout.strip()
+            branch = result.stdout.strip()
+            return branch if branch else None
         except (subprocess.CalledProcessError, FileNotFoundError):
             return None
 

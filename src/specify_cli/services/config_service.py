@@ -82,6 +82,13 @@ class ConfigService(ABC):
         pass
 
     @abstractmethod
+    def validate_branch_name_matches_pattern(
+        self, branch_name: str, pattern: str
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate if a branch name matches a given pattern"""
+        pass
+
+    @abstractmethod
     def expand_special_placeholders(self, pattern: str) -> str:
         """Expand special placeholders like {number-3}, {date}, {datetime}"""
         pass
@@ -172,7 +179,9 @@ class TomlConfigService(ConfigService):
             if global_config:
                 # Validate global config first
                 if global_config.branch_naming:
-                    is_valid, error = self.validate_branch_naming_config(global_config.branch_naming)
+                    is_valid, error = self.validate_branch_naming_config(
+                        global_config.branch_naming
+                    )
                     if is_valid:
                         merged.branch_naming = global_config.branch_naming
                 merged.template_settings = global_config.template_settings
@@ -182,21 +191,23 @@ class TomlConfigService(ConfigService):
             if project_config:
                 # Project config overrides global/defaults
                 merged.name = project_config.name
-                
+
                 # Validate project branch naming config
                 if project_config.branch_naming:
-                    is_valid, error = self.validate_branch_naming_config(project_config.branch_naming)
+                    is_valid, error = self.validate_branch_naming_config(
+                        project_config.branch_naming
+                    )
                     if is_valid:
                         merged.branch_naming = project_config.branch_naming
                     # If invalid, keep the default/global config
-                        
+
                 merged.template_settings = project_config.template_settings
             else:
                 # No project config, use project directory name
                 merged.name = project_path.name
 
             return merged
-            
+
         except Exception:
             # If any error occurs, return safe defaults
             default_config = ProjectConfig.create_default(project_path.name)
@@ -218,7 +229,7 @@ class TomlConfigService(ConfigService):
         close_count = pattern.count("}")
         if open_count != close_count:
             return False, "Mismatched braces in pattern"
-        
+
         # Check for properly nested braces (no } before matching {)
         brace_depth = 0
         for char in pattern:
@@ -277,7 +288,11 @@ class TomlConfigService(ConfigService):
 
         for var_name in matches:
             placeholder = f"{{{var_name}}}"
-            value = context.get(var_name, placeholder)  # Keep placeholder if not found
+            # Special handling for spec-id
+            if var_name == 'spec-id':
+                value = context.get('spec_id', context.get('spec-id', placeholder))
+            else:
+                value = context.get(var_name, placeholder)  # Keep placeholder if not found
             result = result.replace(placeholder, value)
 
         return result
@@ -292,7 +307,10 @@ class TomlConfigService(ConfigService):
                 try:
                     max_length = int(rule.split("_")[-1])
                     if len(branch_name) > max_length:
-                        return False, f"Branch name exceeds maximum length of {max_length}"
+                        return (
+                            False,
+                            f"Branch name exceeds maximum length of {max_length}",
+                        )
                 except ValueError:
                     return False, f"Invalid max_length rule: {rule}"
 
@@ -309,12 +327,18 @@ class TomlConfigService(ConfigService):
             # Alphanumeric dash only rule
             elif rule == "alphanumeric_dash_only":
                 if not re.match(r"^[a-z0-9-]+$", branch_name):
-                    return False, "Branch name can only contain lowercase letters, numbers, and dashes"
+                    return (
+                        False,
+                        "Branch name can only contain lowercase letters, numbers, and dashes",
+                    )
 
             # Alphanumeric dash slash only rule
             elif rule == "alphanumeric_dash_slash_only":
                 if not re.match(r"^[a-z0-9-/]+$", branch_name):
-                    return False, "Branch name can only contain lowercase letters, numbers, dashes, and slashes"
+                    return (
+                        False,
+                        "Branch name can only contain lowercase letters, numbers, dashes, and slashes",
+                    )
 
             # No leading/trailing dashes
             elif rule == "no_leading_trailing_dashes":
@@ -337,7 +361,10 @@ class TomlConfigService(ConfigService):
                 invalid_chars = [" ", "~", "^", ":", "?", "*", "[", "\\"]
                 for char in invalid_chars:
                     if char in branch_name:
-                        return False, f"Branch name cannot contain '{char}' (invalid for git)"
+                        return (
+                            False,
+                            f"Branch name cannot contain '{char}' (invalid for git)",
+                        )
 
                 if branch_name.startswith(".") or branch_name.endswith("."):
                     return False, "Branch name cannot start or end with a dot"
@@ -378,10 +405,18 @@ class TomlConfigService(ConfigService):
 
         # Validate validation rules are known
         known_rules = {
-            "max_length_50", "max_length_60", "max_length_80", "max_length_100",
-            "lowercase_only", "no_spaces", "alphanumeric_dash_only",
-            "alphanumeric_dash_slash_only", "no_leading_trailing_dashes",
-            "no_double_dashes", "no_dots", "valid_git_branch"
+            "max_length_50",
+            "max_length_60",
+            "max_length_80",
+            "max_length_100",
+            "lowercase_only",
+            "no_spaces",
+            "alphanumeric_dash_only",
+            "alphanumeric_dash_slash_only",
+            "no_leading_trailing_dashes",
+            "no_double_dashes",
+            "no_dots",
+            "valid_git_branch",
         }
 
         for rule in config.validation_rules:
@@ -417,19 +452,105 @@ class TomlConfigService(ConfigService):
 
         return branch_name, True, None
 
+    def validate_branch_name_matches_pattern(
+        self, branch_name: str, pattern: str
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate if a branch name matches a given pattern"""
+        if not branch_name:
+            return False, "Branch name cannot be empty"
+        
+        if not pattern:
+            return False, "Pattern cannot be empty"
+        
+        # Static patterns (no variables) - exact match
+        if "{" not in pattern:
+            if branch_name == pattern:
+                return True, None
+            else:
+                return False, f"Branch name '{branch_name}' doesn't match static pattern '{pattern}'"
+        
+        # Dynamic patterns with variables
+        # Split both into path segments for validation
+        pattern_parts = pattern.split('/')
+        branch_parts = branch_name.split('/')
+        
+        # Must have same number of path segments
+        if len(pattern_parts) != len(branch_parts):
+            expected_segments = len(pattern_parts)
+            actual_segments = len(branch_parts)
+            return False, f"Branch name has {actual_segments} path segment(s), pattern expects {expected_segments}"
+        
+        # Check each segment
+        for i, (pattern_part, branch_part) in enumerate(zip(pattern_parts, branch_parts)):
+            if "{" not in pattern_part:
+                # Static segment - must match exactly
+                if pattern_part != branch_part:
+                    return False, f"Segment {i+1}: expected '{pattern_part}', got '{branch_part}'"
+            else:
+                # Dynamic segment with variables - convert to regex and validate
+                regex_pattern = self._pattern_to_regex(pattern_part)
+                if not re.match(regex_pattern, branch_part):
+                    expected_format = self._pattern_to_example(pattern_part)
+                    return False, f"Segment {i+1}: '{branch_part}' doesn't match pattern '{pattern_part}' (expected format like '{expected_format}')"
+        
+        return True, None
+    
+    def _pattern_to_regex(self, pattern_part: str) -> str:
+        """Convert a pattern part with variables to a regex pattern"""
+        regex_pattern = pattern_part
+        
+        # Replace common variable patterns with appropriate regex
+        # {spec-id} -> exactly 3 digits
+        regex_pattern = re.sub(r'\{spec-id\}', r'\\d{3}', regex_pattern)
+        
+        # {number-3} or {number} -> digits with optional minimum width (legacy support)
+        regex_pattern = re.sub(r'\{number(?:-(\d+))?\}', lambda m: r'\\d{' + (m.group(1) or '1') + r',}', regex_pattern)
+        
+        # {feature-name}, {feature_name} -> alphanumeric with dashes
+        regex_pattern = re.sub(r'\{[^}]*(?:feature|name)[^}]*\}', r'[a-z0-9-]+', regex_pattern)
+        
+        # {bug-id}, {bug_id} -> alphanumeric with dashes
+        regex_pattern = re.sub(r'\{[^}]*(?:bug|id)[^}]*\}', r'[a-z0-9-]+', regex_pattern)
+        
+        # {version} -> version format (alphanumeric, dots, dashes)
+        regex_pattern = re.sub(r'\{[^}]*version[^}]*\}', r'[a-z0-9.-]+', regex_pattern)
+        
+        # {team} -> alphanumeric with dashes
+        regex_pattern = re.sub(r'\{[^}]*team[^}]*\}', r'[a-z0-9-]+', regex_pattern)
+        
+        # Generic fallback for any other variables
+        regex_pattern = re.sub(r'\{[^}]+\}', r'[a-z0-9-]+', regex_pattern)
+        
+        return f'^{regex_pattern}$'
+    
+    def _pattern_to_example(self, pattern_part: str) -> str:
+        """Convert a pattern part to an example string"""
+        example = pattern_part
+        
+        # Replace variables with example values
+        example = re.sub(r'\{spec-id\}', '001', example)
+        example = re.sub(r'\{number(?:-(\d+))?\}', lambda m: '001' if m.group(1) and int(m.group(1)) >= 3 else '1', example)
+        example = re.sub(r'\{[^}]*(?:feature|name)[^}]*\}', 'feature-name', example)
+        example = re.sub(r'\{[^}]*(?:bug|id)[^}]*\}', 'bug-123', example)
+        example = re.sub(r'\{[^}]*version[^}]*\}', 'v1.0.0', example)
+        example = re.sub(r'\{[^}]*team[^}]*\}', 'team-name', example)
+        example = re.sub(r'\{[^}]+\}', 'value', example)
+        
+        return example
+
     def expand_special_placeholders(self, pattern: str) -> str:
         """Expand special placeholders like {number-3}, {date}, {datetime}"""
         result = pattern
 
         # Handle numbered placeholders like {number-3} -> 001
         number_pattern = re.compile(r"\{number(?:-(\d+))?\}")
-        
+
         def replace_number(match):
             width = int(match.group(1)) if match.group(1) else 3
             # Generate next number (for now, default to 001)
             # In a real implementation, this would query git or a counter
             return "1".zfill(width)
-        
+
         result = number_pattern.sub(replace_number, result)
 
         # Handle date placeholder
@@ -488,61 +609,79 @@ class TomlConfigService(ConfigService):
         except (OSError, PermissionError):
             # Log error in real implementation
             return False
-    
-    def ensure_project_config(self, project_path: Path, ai_assistant: str, branch_naming_config: Optional["BranchNamingConfig"] = None) -> ProjectConfig:
+
+    def ensure_project_config(
+        self,
+        project_path: Path,
+        ai_assistant: str,
+        branch_naming_config: Optional["BranchNamingConfig"] = None,
+    ) -> ProjectConfig:
         """Ensure project has valid configuration, creating defaults if needed"""
         try:
             # Try to get existing config
             config = self.load_project_config(project_path)
-            
+
             if config is None:
                 # Create new default config
                 config = ProjectConfig.create_default(project_path.name)
-                
+
                 # Set AI assistant if provided
                 if ai_assistant:
                     config.template_settings = {"ai_assistant": ai_assistant}
-                
+
                 # Set branch naming config if provided
                 if branch_naming_config:
                     # Validate first
-                    is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                    is_valid, error = self.validate_branch_naming_config(
+                        branch_naming_config
+                    )
                     if is_valid:
                         config.branch_naming = branch_naming_config
-                
+
                 # Save the new config
                 self.save_project_config(project_path, config)
             else:
                 # Update existing config if needed
                 needs_save = False
-                
+
                 # Update AI assistant if different
-                current_ai = config.template_settings.get("ai_assistant") if config.template_settings else None
+                current_ai = (
+                    config.template_settings.get("ai_assistant")
+                    if config.template_settings
+                    else None
+                )
                 if ai_assistant and current_ai != ai_assistant:
                     if not config.template_settings:
                         config.template_settings = {}
                     config.template_settings["ai_assistant"] = ai_assistant
                     needs_save = True
-                
+
                 # Update branch naming if provided and different
-                if branch_naming_config and config.branch_naming != branch_naming_config:
-                    is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                if (
+                    branch_naming_config
+                    and config.branch_naming != branch_naming_config
+                ):
+                    is_valid, error = self.validate_branch_naming_config(
+                        branch_naming_config
+                    )
                     if is_valid:
                         config.branch_naming = branch_naming_config
                         needs_save = True
-                
+
                 if needs_save:
                     self.save_project_config(project_path, config)
-            
+
             return config
-            
+
         except Exception:
             # If anything fails, return safe defaults without saving
             default_config = ProjectConfig.create_default(project_path.name)
             if ai_assistant:
                 default_config.template_settings = {"ai_assistant": ai_assistant}
             if branch_naming_config:
-                is_valid, error = self.validate_branch_naming_config(branch_naming_config)
+                is_valid, error = self.validate_branch_naming_config(
+                    branch_naming_config
+                )
                 if is_valid:
                     default_config.branch_naming = branch_naming_config
             return default_config
