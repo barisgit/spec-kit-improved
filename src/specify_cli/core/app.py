@@ -16,6 +16,8 @@ from typer.core import TyperGroup
 
 # AI assistant choices for validation
 AI_CHOICES: Dict[str, str] = {
+    # FIXME: HARDCODED - AI assistant descriptions hardcoded
+    # TODO: Make configurable via configuration system
     "copilot": "GitHub Copilot",
     "claude": "Claude Code",
     "gemini": "Gemini CLI",
@@ -95,7 +97,7 @@ app = typer.Typer(
     add_completion=True,
     invoke_without_command=True,
     cls=BannerGroup,
-    context_settings={"help_option_names": ["-h", "--help"]}
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 
@@ -133,10 +135,14 @@ def callback(
 def register_commands():
     """Register commands with the main app."""
     from specify_cli.commands import check_command, init_command
+    from specify_cli.commands.run import run_app
 
     # Register commands directly on main app
     app.command("init")(init_command)
     app.command("check")(check_command)
+
+    # Register run command with subcommands - the default command is 'run_command'
+    app.add_typer(run_app, name="run")
 
 
 def main():
