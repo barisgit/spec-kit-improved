@@ -7,15 +7,13 @@ import typer
 from rich.panel import Panel
 
 from specify_cli.models.project import ProjectInitOptions
-
-# Import services
 from specify_cli.services import (
     CommandLineGitService,
-    HttpxDownloadService,
-    JinjaTemplateService,
-    SpecifyProjectManager,
     TomlConfigService,
 )
+
+# Import services
+from specify_cli.services.project_manager import ProjectManager
 from specify_cli.utils.ui import StepTracker
 from specify_cli.utils.ui_helpers import (
     select_ai_assistant,
@@ -26,16 +24,12 @@ from specify_cli.utils.ui_helpers import (
 # Initialize services
 def get_project_manager():
     """Factory function to create ProjectManager with all dependencies."""
-    template_service = JinjaTemplateService()
     config_service = TomlConfigService()
     git_service = CommandLineGitService()
-    download_service = HttpxDownloadService()
 
-    return SpecifyProjectManager(
-        template_service=template_service,
+    return ProjectManager(
         config_service=config_service,
         git_service=git_service,
-        download_service=download_service,
     )
 
 
@@ -46,7 +40,7 @@ def init_command(
     ai_assistant: Optional[str] = typer.Option(
         None,
         "--ai",
-        help="AI assistant to use: claude, gemini, or copilot (interactive if not specified)",
+        help="AI assistant to use: claude, gemini, or copilot (interactive if not specified)",  # FIXME: HARDCODED - AI assistant names hardcoded in help text
     ),
     branch_pattern: Optional[str] = typer.Option(
         None,
@@ -57,6 +51,9 @@ def init_command(
         False,
         "--here",
         help="Initialize project in the current directory instead of creating a new one",
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show detailed output during template rendering"
     ),
 ):
     """
@@ -120,7 +117,7 @@ def init_command(
             raise typer.Exit(0) from None
 
     # Validate AI assistant choice
-    valid_assistants = ["claude", "gemini", "copilot"]
+        valid_assistants = ["claude", "gemini", "copilot"]  # FIXME: HARDCODED - AI assistant validation list hardcoded
     if ai_assistant not in valid_assistants:
         console.print(
             f"[red]Error:[/red] Invalid AI assistant '{ai_assistant}'. Choose from: {', '.join(valid_assistants)}"
@@ -133,9 +130,15 @@ def init_command(
         try:
             branch_naming_config = select_branch_naming_pattern()
             # Get the pattern key from the primary pattern (first in list)
-            primary_pattern = branch_naming_config.patterns[0] if branch_naming_config.patterns else "001-{feature-name}"
+            primary_pattern = (
+                branch_naming_config.patterns[0]
+                if branch_naming_config.patterns
+                else "001-{feature-name}"
+            )
             # Map primary pattern to the simple key format expected by existing code
-            if primary_pattern.startswith("001-") or primary_pattern.startswith("{number"):
+            if primary_pattern.startswith("001-") or primary_pattern.startswith(
+                "{number"
+            ):
                 branch_pattern = "001-feature-name"
             elif primary_pattern.startswith("feature/"):
                 branch_pattern = "feature/{name}"
@@ -150,7 +153,12 @@ def init_command(
             raise typer.Exit(0) from None
 
     # Validate branch pattern (expanded list from ui_helpers)
-    valid_patterns = ["001-feature-name", "feature/{name}", "feature/{number-3}-{name}", "{team}/{name}"]
+    valid_patterns = [
+        "001-feature-name",
+        "feature/{name}",
+        "feature/{number-3}-{name}",
+        "{team}/{name}",
+    ]
     if branch_pattern not in valid_patterns:
         console.print(
             f"[red]Error:[/red] Invalid branch pattern '{branch_pattern}'. Choose from: {', '.join(valid_patterns)}"
@@ -175,7 +183,9 @@ def init_command(
                 branch_pattern=branch_pattern,
                 branch_naming_config=branch_naming_config,
             )
-            tracker.complete_step("validate", f"AI: {ai_assistant}, Pattern: {branch_pattern}")
+            tracker.complete_step(
+                "validate", f"AI: {ai_assistant}, Pattern: {branch_pattern}"
+            )
 
             tracker.add_step("initialize", "Initialize project structure")
             tracker.start_step("initialize")
@@ -201,6 +211,12 @@ def init_command(
     # Show next steps (outside the context manager so tracker is displayed)
     if result:
         console.print("\n[bold green]✓ Project initialized successfully![/bold green]")
+
+        # Show warnings if any occurred during initialization
+        if result.warnings:
+            console.print("\n[yellow]⚠ Warnings during initialization:[/yellow]")
+            for warning in result.warnings:
+                console.print(f"  • {warning}")
 
         # Show next steps with enhanced formatting
         steps_lines = []
