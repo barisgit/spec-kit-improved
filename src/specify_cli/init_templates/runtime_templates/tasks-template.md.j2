@@ -1,7 +1,7 @@
-# Tasks: [FEATURE NAME]
+# Tasks: {{ feature_name | title }}
 
-**Input**: Design documents from `/specs/[###-feature-name]/`
-**Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
+**Input**: Design documents from `{{ feature_dir | default('specs/' + spec_number + '-' + feature_name) }}/`
+**Prerequisites**: plan.md (required){% if 'research.md' in available_documents %}, research.md{% endif %}{% if 'data-model.md' in available_documents %}, data-model.md{% endif %}{% if 'contracts/' in available_documents %}, contracts/{% endif %}
 
 ## Execution Flow (main)
 ```
@@ -44,24 +44,43 @@
 
 ## Phase 3.1: Setup
 - [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
+- [ ] T002 Initialize {{ project_name }} project with required dependencies{% if tech_stack %} ({{ tech_stack | join(', ') }}){% endif %}
 - [ ] T003 [P] Configure linting and formatting tools
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-- [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+{% if contracts %}
+{%- for contract in contracts %}
+- [ ] T{{ '%03d' | format(loop.index + 3) }} [P] Contract test for {{ contract }} in tests/contract/test_{{ contract | replace('.json', '') | replace('.yaml', '') | replace('.yml', '') }}.py
+{%- endfor %}
+{% else %}
+- [ ] T004 [P] Write integration tests based on user stories
+{% endif %}
+{% if test_scenarios %}
+{%- for scenario in test_scenarios %}
+- [ ] T{{ '%03d' | format(loop.index + 10) }} [P] Integration test {{ scenario }} in tests/integration/test_{{ scenario | lower | replace(' ', '_') }}.py
+{%- endfor %}
+{% else %}
+- [ ] T005 [P] Integration test main workflow in tests/integration/test_workflow.py
+{% endif %}
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T008 [P] User model in src/models/user.py
-- [ ] T009 [P] UserService CRUD in src/services/user_service.py
-- [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-- [ ] T011 POST /api/users endpoint
-- [ ] T012 GET /api/users/{id} endpoint
-- [ ] T013 Input validation
-- [ ] T014 Error handling and logging
+{% if entities %}
+{%- for entity in entities %}
+- [ ] T{{ '%03d' | format(loop.index + 20) }} [P] {{ entity | title }} model in src/models/{{ entity | lower }}.py
+- [ ] T{{ '%03d' | format(loop.index + 30) }} [P] {{ entity | title }}Service in src/services/{{ entity | lower }}_service.py
+{%- endfor %}
+{% else %}
+- [ ] T021 [P] Core business logic implementation
+- [ ] T022 [P] Service layer implementation
+{% endif %}
+{% if contracts %}
+{%- for contract in contracts %}
+- [ ] T{{ '%03d' | format(loop.index + 40) }} API endpoint implementation for {{ contract }}
+{%- endfor %}
+{% endif %}
+- [ ] T050 Input validation and sanitization
+- [ ] T051 Error handling and logging
 
 ## Phase 3.4: Integration
 - [ ] T015 Connect UserService to DB
