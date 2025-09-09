@@ -130,22 +130,24 @@ class FileOperations:
             True if successful, False otherwise
         """
         file_path = Path(path)
-        
+
         try:
             # Ensure parent directory exists
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Write content
             file_path.write_text(content, encoding=encoding)
-            
+
             # Set permissions
             if executable:
                 # Make file executable for owner, group, and others
                 current_mode = file_path.stat().st_mode
-                file_path.chmod(current_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-            
+                file_path.chmod(
+                    current_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH
+                )
+
             return True
-            
+
         except Exception:
             return False
 
@@ -161,7 +163,7 @@ class FileOperations:
         """
         # Convert to Path if string and resolve any relative components
         path_obj = Path(path)
-        
+
         # Use forward slashes on all platforms (pathlib handles conversion)
         return path_obj.resolve() if path_obj.is_absolute() else path_obj
 
@@ -176,7 +178,7 @@ class FileOperations:
             List of created Path objects
         """
         created_paths = []
-        
+
         for dir_path in directories:
             path = FileOperations.ensure_cross_platform_path(dir_path)
             try:
@@ -185,7 +187,7 @@ class FileOperations:
             except Exception:
                 # Continue creating other directories even if one fails
                 pass
-                
+
         return created_paths
 
     @staticmethod
