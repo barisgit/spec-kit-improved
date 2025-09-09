@@ -27,8 +27,8 @@ from .project import (
     ProjectInitResult,
     ProjectInitStep,
     TemplateContext,
-    TemplateDict,
     TemplateFile,
+    TemplateVariables,
 )
 
 # Script generation models
@@ -55,7 +55,7 @@ __all__ = [
     "ProjectInitResult",
     "ProjectInitStep",
     "TemplateContext",
-    "TemplateDict",
+    "TemplateVariables",
     "TemplateFile",
     # Script generation
     "GeneratedScript",

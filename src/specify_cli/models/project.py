@@ -14,33 +14,49 @@ from .config import BranchNamingConfig
 from .defaults import PATH_DEFAULTS
 
 
-class TemplateDict(dict):
-    """Custom dict that prioritizes key access over dict methods in Jinja2 templates.
+@dataclass
+class TemplateVariables:
+    """Type-safe container for template variables that avoids dict method conflicts.
 
-    This is needed when template variables might conflict with dict method names
-    (e.g., a variable called 'items' would override dict.items() in Jinja2).
+    This replaces TemplateDict with a more type-safe approach that prevents
+    template variables from conflicting with dictionary methods in Jinja2.
     """
 
-    def __getattribute__(self, name: str) -> Any:
-        # Avoid infinite recursion by checking if this is a dict operation that we need to preserve
-        if name.startswith("_") or name in (
-            "__class__",
-            "__getitem__",
-            "__setitem__",
-            "__contains__",
-        ):
-            return super().__getattribute__(name)
+    variables: Dict[str, Any] = field(default_factory=dict)
 
-        # If the name is a key in the dict, return the value instead of the method
-        try:
-            # Check if this name exists as a key in the dictionary
-            if dict.__contains__(self, name):
-                return dict.__getitem__(self, name)
-        except (AttributeError, TypeError):
-            # If checking membership fails for any reason, fall back to normal behavior
-            pass
+    def __getattr__(self, name: str) -> Any:
+        """Allow attribute access to template variables."""
+        if name in self.variables:
+            return self.variables[name]
+        raise AttributeError(f"Template variable '{name}' not found")
 
-        return super().__getattribute__(name)
+    def __getitem__(self, key: str) -> Any:
+        """Allow dictionary-style access to template variables."""
+        return self.variables[key]
+
+    def __contains__(self, key: str) -> bool:
+        """Check if a template variable exists."""
+        return key in self.variables
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a template variable with a default value."""
+        return self.variables.get(key, default)
+
+    def items(self):
+        """Get all template variables as key-value pairs."""
+        return self.variables.items()
+
+    def keys(self):
+        """Get all template variable keys."""
+        return self.variables.keys()
+
+    def values(self):
+        """Get all template variable values."""
+        return self.variables.values()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to regular dictionary for Jinja2 compatibility."""
+        return self.variables.copy()
 
 
 @dataclass
@@ -148,9 +164,9 @@ class TemplateContext:
             "spec_type": self.spec_type,
             # Backwards compatibility
             "branch_type": self.branch_type,
-            "additional_vars": TemplateDict(
+            "additional_vars": TemplateVariables(
                 self.additional_vars
-            ),  # Use TemplateDict to avoid method conflicts
+            ),  # Use TemplateVariables to avoid method conflicts
             # Template variables (merged with custom fields and additional_vars)
             **self.template_variables,
             **self.custom_fields,

@@ -20,6 +20,16 @@ from typing import Dict, Final, List, Optional
 from .ai_defaults import AI_DEFAULTS
 from .category_defaults import CATEGORY_DEFAULTS, FolderMappingResult
 
+# File permission constants
+EXECUTABLE_PERMISSIONS = 0o755
+REGULAR_FILE_PERMISSIONS = 0o644
+
+# File extension constants
+TEMPLATE_EXTENSION = ".j2"
+PYTHON_EXTENSION = ".py"
+PYTHON_CACHE_EXTENSION = ".pyc"
+PYTHON_CACHE_DIR = "__pycache__"
+
 
 @dataclass(frozen=True)
 class ProjectDefaults:
@@ -61,8 +71,8 @@ class PathDefaults:
     # Files/directories to skip during project creation
     SKIP_PATTERNS: Final[List[str]] = field(
         default_factory=lambda: [
-            "__pycache__",
-            "*.pyc",
+            PYTHON_CACHE_DIR,
+            f"*{PYTHON_CACHE_EXTENSION}",
             ".DS_Store",
             "*.tmp",
             ".git",
@@ -117,7 +127,7 @@ class PathDefaults:
     # File naming conventions
     NAMING_CONVENTIONS: Final[Dict[str, str]] = field(
         default_factory=lambda: {
-            "remove_extensions": ".j2",  # Remove .j2 from template files
+            "remove_extensions": TEMPLATE_EXTENSION,  # Remove .j2 from template files
             "preserve_structure": "true",  # Keep directory structure
             "normalize_names": "true",  # Normalize file names
         }

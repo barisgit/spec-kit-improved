@@ -25,14 +25,16 @@ from jinja2.meta import find_undeclared_variables
 from rich.console import Console
 
 from specify_cli.models.defaults import AI_DEFAULTS, PATH_DEFAULTS
+from specify_cli.models.defaults.path_defaults import (
+    EXECUTABLE_PERMISSIONS,
+    TEMPLATE_EXTENSION,
+)
 from specify_cli.models.project import TemplateContext, TemplateFile
 from specify_cli.models.template import (
     GranularTemplate,
     TemplatePackage,
     TemplateState,
 )
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -293,7 +295,7 @@ class JinjaTemplateService(TemplateService):
                 return False
 
             # Check if directory contains template files
-            template_files = list(template_dir.glob("*.j2"))
+            template_files = list(template_dir.glob(f"*{TEMPLATE_EXTENSION}"))
             if not template_files:
                 # Also check for templates without .j2 extension
                 template_files = [
@@ -406,8 +408,8 @@ class JinjaTemplateService(TemplateService):
             try:
                 # Determine output filename (remove .j2 extension if present)
                 output_filename = template_path.name
-                if output_filename.endswith(".j2"):
-                    output_filename = output_filename[:-3]
+                if output_filename.endswith(TEMPLATE_EXTENSION):
+                    output_filename = output_filename[: -len(TEMPLATE_EXTENSION)]
 
                 output_path = str(output_dir / output_filename)
 
@@ -587,8 +589,8 @@ class JinjaTemplateService(TemplateService):
 
         # Remove .j2 extension if present for checking
         check_name = template_path.name
-        if check_name.endswith(".j2"):
-            check_name = check_name[:-3]
+        if check_name.endswith(TEMPLATE_EXTENSION):
+            check_name = check_name[: -len(TEMPLATE_EXTENSION)]
 
         check_path = Path(check_name)
         if check_path.suffix in executable_extensions:
@@ -607,12 +609,12 @@ class JinjaTemplateService(TemplateService):
     def discover_templates(self) -> List[GranularTemplate]:
         """Discover templates from package resources"""
         if self._discovered_templates:
-            logger.debug(
+            logging.debug(
                 f"Using cached templates: {len(self._discovered_templates)} templates"
             )
             return self._discovered_templates
 
-        logger.debug("Starting template discovery from package resources")
+        logging.debug("Starting template discovery from package resources")
         templates = []
         try:
             # Get reference to the templates package
@@ -621,7 +623,7 @@ class JinjaTemplateService(TemplateService):
             # Use configurable template categories from PATH_DEFAULTS
             # Discover templates in each category directory
             categories = PATH_DEFAULTS.TEMPLATE_CATEGORIES
-            logger.debug(f"Scanning categories: {categories}")
+            logging.debug(f"Scanning categories: {categories}")
 
             for category in categories:
                 try:
@@ -629,11 +631,15 @@ class JinjaTemplateService(TemplateService):
                     category_files = importlib.resources.files(templates_pkg) / category
                     if category_files.is_dir():
                         for file_path in category_files.iterdir():
-                            if file_path.is_file() and file_path.name.endswith(".j2"):
+                            if file_path.is_file() and file_path.name.endswith(
+                                TEMPLATE_EXTENSION
+                            ):
                                 # Simple mapping: filename.ext.j2 → filename.ext
                                 # For "create-feature.py.j2" -> "create-feature.py"
                                 # For "create-feature.j2" -> "create-feature"
-                                filename_without_j2 = file_path.name[:-3]  # Remove .j2
+                                filename_without_j2 = file_path.name[
+                                    : -len(TEMPLATE_EXTENSION)
+                                ]  # Remove .j2
                                 template_name = filename_without_j2
 
                                 # Determine if executable (scripts only)
@@ -676,7 +682,7 @@ class JinjaTemplateService(TemplateService):
     def load_template(self, template_name: str) -> GranularTemplate:
         """Load individual template object"""
         # Find template by name (with or without .j2 extension)
-        search_name = template_name.replace(".j2", "")
+        search_name = template_name.replace(TEMPLATE_EXTENSION, "")
 
         templates = self.discover_templates()
         template = next((t for t in templates if t.name == search_name), None)
@@ -890,31 +896,31 @@ class JinjaTemplateService(TemplateService):
         """Render all templates based on dynamic folder mappings"""
         result = RenderResult()
 
-        logger.debug(
+        logging.debug(
             f"render_all_templates_from_mappings called with {len(folder_mappings)} mappings"
         )
 
         for i, mapping in enumerate(folder_mappings):
             try:
-                logger.debug(f"Processing mapping {i}: source={mapping.source}")
+                logging.debug(f"Processing mapping {i}: source={mapping.source}")
 
                 # Build target path with AI-specific logic for commands
                 if mapping.source == "commands":
                     # Use centralized AI-specific folder structure
                     target = self._get_ai_folder_mapping(context.ai_assistant)
-                    logger.debug(f"Commands target: {target}")
+                    logging.debug(f"Commands target: {target}")
                 else:
                     # Use standard pattern formatting for non-command folders
                     target = mapping.target_pattern.format(
                         ai_assistant=context.ai_assistant,
                         project_name=context.project_name,
                     )
-                    logger.debug(f"Non-commands target: {target}")
+                    logging.debug(f"Non-commands target: {target}")
 
                 if context.project_path is None:
                     raise ValueError("Project path is required for template processing")
                 target_path = context.project_path / target
-                logger.debug(f"Target path: {target_path}")
+                logging.debug(f"Target path: {target_path}")
 
                 if verbose:
                     self._console.print(
@@ -981,14 +987,14 @@ class JinjaTemplateService(TemplateService):
                         result,
                         verbose,
                     )
-                elif item.name.endswith(".j2"):
+                elif item.name.endswith(TEMPLATE_EXTENSION):
                     try:
                         # Read template content
                         template_content = item.read_text(encoding="utf-8")
                         template = Template(template_content)
 
                         # Output file: remove .j2 extension
-                        output_name = item.name[:-3]
+                        output_name = item.name[: -len(TEMPLATE_EXTENSION)]
                         output_file = target_path / output_name
 
                         if verbose:
@@ -1005,7 +1011,7 @@ class JinjaTemplateService(TemplateService):
 
                         # Set executable using PATH_DEFAULTS
                         if PATH_DEFAULTS.should_be_executable(output_file):
-                            output_file.chmod(0o755)
+                            output_file.chmod(EXECUTABLE_PERMISSIONS)
                             if verbose:
                                 self._console.print(
                                     f"[blue]Made executable:[/blue] {output_name}"

@@ -4,6 +4,7 @@ Configuration service for managing project and global settings
 Provides TOML-based configuration management with backup/restore capabilities.
 """
 
+import logging
 import re
 import shutil
 import tomllib
@@ -136,8 +137,8 @@ class TomlConfigService(ConfigService):
             with open(config_file, "rb") as f:
                 data = tomllib.load(f)
             return ProjectConfig.from_dict(data)
-        except (OSError, tomllib.TOMLDecodeError, KeyError):
-            # Log error in real implementation
+        except (OSError, tomllib.TOMLDecodeError, KeyError) as e:
+            logging.error(f"Failed to load project config from {config_file}: {e}")
             return None
 
     def save_project_config(self, project_path: Path, config: ProjectConfig) -> bool:
@@ -152,8 +153,8 @@ class TomlConfigService(ConfigService):
             with open(config_file, "wb") as f:
                 tomli_w.dump(data, f)
             return True
-        except (OSError, PermissionError):
-            # Log error in real implementation
+        except (OSError, PermissionError) as e:
+            logging.error(f"Configuration operation failed: {e}")
             return False
 
     def load_global_config(self) -> Optional[ProjectConfig]:
@@ -165,8 +166,8 @@ class TomlConfigService(ConfigService):
             with open(self._global_config_file, "rb") as f:
                 data = tomllib.load(f)
             return ProjectConfig.from_dict(data)
-        except (OSError, tomllib.TOMLDecodeError, KeyError):
-            # Log error in real implementation
+        except (OSError, tomllib.TOMLDecodeError, KeyError) as e:
+            logging.error(f"Configuration operation failed: {e}")
             return None
 
     def save_global_config(self, config: ProjectConfig) -> bool:
@@ -178,8 +179,8 @@ class TomlConfigService(ConfigService):
             with open(self._global_config_file, "wb") as f:
                 tomli_w.dump(data, f)
             return True
-        except (OSError, PermissionError):
-            # Log error in real implementation
+        except (OSError, PermissionError) as e:
+            logging.error(f"Configuration operation failed: {e}")
             return False
 
     def get_merged_config(self, project_path: Path) -> ProjectConfig:
@@ -650,8 +651,8 @@ class TomlConfigService(ConfigService):
 
             shutil.copy2(backup_path, config_file)
             return True
-        except (OSError, PermissionError):
-            # Log error in real implementation
+        except (OSError, PermissionError) as e:
+            logging.error(f"Configuration operation failed: {e}")
             return False
 
     def ensure_project_config(
