@@ -215,11 +215,11 @@ class ScriptHelpers:
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Validate if a branch name matches any of the given patterns.
-        
+
         Args:
             branch_name: The branch name to validate
             patterns: List of patterns to check against
-            
+
         Returns:
             Tuple of (is_valid, error_message, matched_pattern)
             - is_valid: True if branch name matches at least one pattern
@@ -228,10 +228,10 @@ class ScriptHelpers:
         """
         if not branch_name:
             return False, "Branch name cannot be empty", None
-            
+
         if not patterns:
             return False, "No patterns configured for validation", None
-        
+
         # Try each pattern in order
         errors = []
         for pattern in patterns:
@@ -242,89 +242,99 @@ class ScriptHelpers:
                 return True, None, pattern
             else:
                 errors.append(f"Pattern '{pattern}': {error}")
-        
+
         # None matched - create comprehensive error message
-        error_msg = f"Branch name '{branch_name}' doesn't match any configured pattern:\n"
+        error_msg = (
+            f"Branch name '{branch_name}' doesn't match any configured pattern:\n"
+        )
         for error in errors:
             error_msg += f"  - {error}\n"
         error_msg += f"\nAvailable patterns: {', '.join(patterns)}"
-        
+
         return False, error_msg.strip(), None
 
     def validate_spec_id_format(self, spec_id: str) -> Tuple[bool, Optional[str]]:
         """
         Validate spec ID format (must be 3-digit number like '001', '042').
-        
+
         Args:
             spec_id: The spec ID to validate
-            
+
         Returns:
             Tuple of (is_valid, error_message)
         """
         if not spec_id:
             return False, "Spec ID cannot be empty"
-        
-        if not re.match(r'^\d{3}$', spec_id):
-            return False, f"Spec ID must be a 3-digit number (e.g., '001', '042'), got: '{spec_id}'"
-        
+
+        if not re.match(r"^\d{3}$", spec_id):
+            return (
+                False,
+                f"Spec ID must be a 3-digit number (e.g., '001', '042'), got: '{spec_id}'",
+            )
+
         return True, None
 
-    def check_spec_id_exists(self, spec_id: str, specs_dir: Optional[Path] = None) -> Tuple[bool, Optional[Path]]:
+    def check_spec_id_exists(
+        self, spec_id: str, specs_dir: Optional[Path] = None
+    ) -> Tuple[bool, Optional[Path]]:
         """
         Check if a spec ID already exists in the specs directory.
-        
+
         Args:
             spec_id: The spec ID to check (e.g., '001')
             specs_dir: Directory containing spec folders. Defaults to ./specs/
-            
+
         Returns:
             Tuple of (exists, path_if_exists)
         """
         if specs_dir is None:
             specs_dir = self.get_repo_root() / "specs"
-        
+
         if not specs_dir.exists():
             return False, None
-        
+
         # Look for directories that start with spec_id
         for dir_path in specs_dir.glob(f"{spec_id}-*"):
             if dir_path.is_dir():
                 return True, dir_path
-        
+
         return False, None
 
     def check_branch_exists(self, branch_name: str) -> bool:
         """
         Check if a git branch already exists or was already used for feature creation.
-        
+
         Since git branches don't exist until there's a commit, we check:
         1. If there are commits, use git to check branches
         2. If no commits, check if current branch matches (branch was created but no commits)
-        
+
         Args:
             branch_name: Name of the branch to check
-            
+
         Returns:
             True if branch exists or was already used, False otherwise
         """
         try:
             repo_root = self.get_repo_root()
-            
+
             # Check if we have any commits in the repo
-            has_commits = subprocess.run(
-                ["git", "rev-list", "--count", "HEAD"],
-                capture_output=True,
-                text=True,
-                cwd=repo_root
-            ).returncode == 0
-            
+            has_commits = (
+                subprocess.run(
+                    ["git", "rev-list", "--count", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    cwd=repo_root,
+                ).returncode
+                == 0
+            )
+
             if has_commits:
                 # With commits, we can use standard git branch checking
                 result = subprocess.run(
                     ["git", "branch", "--list", branch_name],
                     capture_output=True,
                     text=True,
-                    cwd=repo_root
+                    cwd=repo_root,
                 )
                 return branch_name in result.stdout
             else:
@@ -333,92 +343,108 @@ class ScriptHelpers:
                     ["git", "branch", "--show-current"],
                     capture_output=True,
                     text=True,
-                    cwd=repo_root
+                    cwd=repo_root,
                 )
                 current_branch = result.stdout.strip()
                 return current_branch == branch_name
-                
+
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
 
-    def complete_branch_name(self, partial_branch: str, patterns: List[str], spec_id: Optional[str] = None) -> Tuple[str, bool, Optional[str]]:
+    def complete_branch_name(
+        self, partial_branch: str, patterns: List[str], spec_id: Optional[str] = None
+    ) -> Tuple[str, bool, Optional[str]]:
         """
         Intelligently complete a partial branch name using configured patterns.
-        
+
         Examples:
-        - "feature/xxx-auth-system" + pattern "feature/{spec-id}-{feature-name}" → "feature/001-auth-system" 
+        - "feature/xxx-auth-system" + pattern "feature/{spec-id}-{feature-name}" → "feature/001-auth-system"
         - "xxx-auth-system" + pattern "{spec-id}-{feature-name}" → "001-auth-system"
         - "feature/020-auth-system" → "feature/020-auth-system" (already complete)
-        
+
         Args:
             partial_branch: User-provided branch name (may contain 'xxx' placeholders)
             patterns: List of valid patterns to match against
             spec_id: Optional specific spec ID to use instead of auto-generating
-            
+
         Returns:
             Tuple of (completed_branch_name, success, error_message)
         """
         if not partial_branch:
             return partial_branch, False, "Branch name cannot be empty"
-        
+
         if not patterns:
             return partial_branch, False, "No patterns available for completion"
-        
+
         # If branch name doesn't contain 'xxx', check if it already matches a pattern
-        if 'xxx' not in partial_branch.lower():
-            is_valid, error, matched_pattern = self.validate_branch_name_against_patterns(partial_branch, patterns)
+        if "xxx" not in partial_branch.lower():
+            is_valid, error, matched_pattern = (
+                self.validate_branch_name_against_patterns(partial_branch, patterns)
+            )
             if is_valid:
                 return partial_branch, True, None  # Already complete and valid
-        
+
         # Try to complete against each pattern
         for pattern in patterns:
-            completed_branch = self._complete_against_pattern(partial_branch, pattern, spec_id)
+            completed_branch = self._complete_against_pattern(
+                partial_branch, pattern, spec_id
+            )
             if completed_branch:
                 # Validate the completed branch
-                is_valid, error, _ = self.validate_branch_name_against_patterns(completed_branch, [pattern])
+                is_valid, error, _ = self.validate_branch_name_against_patterns(
+                    completed_branch, [pattern]
+                )
                 if is_valid:
                     return completed_branch, True, None
-        
-        # No pattern could complete the branch name
-        available_patterns = ', '.join(patterns[:3])
-        return partial_branch, False, f"Cannot complete '{partial_branch}' using available patterns: {available_patterns}"
 
-    def _complete_against_pattern(self, partial_branch: str, pattern: str, spec_id: Optional[str] = None) -> Optional[str]:
+        # No pattern could complete the branch name
+        available_patterns = ", ".join(patterns[:3])
+        return (
+            partial_branch,
+            False,
+            f"Cannot complete '{partial_branch}' using available patterns: {available_patterns}",
+        )
+
+    def _complete_against_pattern(
+        self, partial_branch: str, pattern: str, spec_id: Optional[str] = None
+    ) -> Optional[str]:
         """
         Try to complete a partial branch name against a specific pattern.
-        
+
         Args:
             partial_branch: Partial branch name with 'xxx' placeholders
             pattern: Pattern to complete against
             spec_id: Optional specific spec ID to use
-            
+
         Returns:
             Completed branch name if successful, None otherwise
         """
         # Handle static patterns (no variables)
-        if '{' not in pattern:
+        if "{" not in pattern:
             return partial_branch if partial_branch == pattern else None
-        
+
         # For patterns with variables, try to match structure and complete
         partial_lower = partial_branch.lower()
-        
+
         # Replace 'xxx' with spec-id in partial branch
-        if 'xxx' in partial_lower:
+        if "xxx" in partial_lower:
             if spec_id is None:
                 # Auto-generate spec ID
                 spec_id = self.get_next_feature_number()
-            
+
             # Replace xxx with the spec ID
-            completed_branch = re.sub(r'xxx', spec_id, partial_branch, flags=re.IGNORECASE)
-            
+            completed_branch = re.sub(
+                r"xxx", spec_id, partial_branch, flags=re.IGNORECASE
+            )
+
             # Check if completed branch structure matches pattern structure
-            pattern_parts = pattern.split('/')
-            completed_parts = completed_branch.split('/')
-            
+            pattern_parts = pattern.split("/")
+            completed_parts = completed_branch.split("/")
+
             if len(pattern_parts) == len(completed_parts):
                 # Basic structure matches, return completed branch
                 return completed_branch
-        
+
         return None
 
     def get_next_feature_number(self, specs_dir: Optional[Path] = None) -> str:
@@ -487,10 +513,7 @@ class ScriptHelpers:
 
             # Preserve prefix for context: feature/auth-system -> 001-feature-auth-system
             # Remove redundancy: feature/feature-auth -> 001-feature-auth (not 001-feature-feature-auth)
-            if name.startswith(prefix):
-                # feature/feature-auth -> 001-feature-auth
-                clean_name = name
-            elif name.startswith(f"{prefix}-"):
+            if name.startswith(prefix) or name.startswith(f"{prefix}-"):
                 # feature/feature-auth -> 001-feature-auth
                 clean_name = name
             else:
@@ -626,12 +649,11 @@ class ScriptHelpers:
 
         # Warn about missing project config
         console.print(
-            "⚠️  Warning: No project configuration found. Using fallback branch naming patterns.", 
-            style="yellow"
+            "⚠️  Warning: No project configuration found. Using fallback branch naming patterns.",
+            style="yellow",
         )
         console.print(
-            "   Run 'specifyx init' to create proper configuration.", 
-            style="dim"
+            "   Run 'specifyx init' to create proper configuration.", style="dim"
         )
 
         # Return default configuration if project config not available
@@ -641,8 +663,8 @@ class ScriptHelpers:
         except Exception:
             # Fallback configuration - issue stronger warning
             console.print(
-                "⚠️  Warning: Using emergency fallback configuration. Branch validation may not work correctly.", 
-                style="red"
+                "⚠️  Warning: Using emergency fallback configuration. Branch validation may not work correctly.",
+                style="red",
             )
             return {
                 "patterns": [
@@ -875,7 +897,12 @@ class ScriptHelpers:
                         except Exception:
                             return str(value)
 
-                    env.filters["regex_replace"] = regex_replace
+                    # Type the filter properly for Jinja2
+                    from typing import cast
+
+                    from jinja2 import Environment
+
+                    env.filters["regex_replace"] = cast(Any, regex_replace)
 
                     # Create template and render
                     jinja_template = env.from_string(template_content)
@@ -996,11 +1023,11 @@ class ScriptHelpers:
                 return func(*args, **kwargs)
             except KeyboardInterrupt:
                 console.print("\nOperation cancelled by user.", style="red")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
             except Exception as e:
                 error_msg = str(e)
                 console.print(f"Error: {error_msg}", style="red")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from e
 
         if hasattr(func, "__name__"):
             wrapper.__name__ = func.__name__

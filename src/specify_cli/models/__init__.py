@@ -12,6 +12,15 @@ from .config import (
     TemplateConfig,
 )
 
+# Developer defaults (immutable, packaged with SpecifyX)
+from .defaults import (
+    AI_DEFAULTS,
+    PATH_DEFAULTS,
+    AIAssistant,
+    AIAssistantDefaults,
+    PathDefaults,
+)
+
 # Project and template context models
 from .project import (
     ProjectInitOptions,
@@ -56,4 +65,10 @@ __all__ = [
     "TemplateCategory",
     "TemplatePackage",
     "TemplateState",
+    # Developer defaults
+    "AI_DEFAULTS",
+    "AIAssistant",
+    "AIAssistantDefaults",
+    "PATH_DEFAULTS",
+    "PathDefaults",
 ]

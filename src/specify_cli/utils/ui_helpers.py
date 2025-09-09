@@ -3,9 +3,10 @@
 from typing import Dict
 
 from ..models.config import BranchNamingConfig
+from ..models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
 from .ui.interactive_ui import InteractiveUI
 
-# FIXME: This whole file should be more dynamic with base UI select with content and choices as inputs
+# Branch naming pattern selection using configurable defaults
 
 
 def select_branch_naming_pattern() -> BranchNamingConfig:
@@ -38,77 +39,8 @@ def select_branch_naming_pattern() -> BranchNamingConfig:
     console.print(Panel(info_text, border_style="cyan", padding=(1, 2)))
     console.print()  # Add spacing
 
-    # Define the 4 branch naming options with short names and clear descriptions
-    # TODO: Use strong typing
-    pattern_options = {
-        "traditional-spec": {
-            "description": "Traditional numbered branches with hotfixes",
-            "display": "Traditional numbered branches with hotfixes",
-            "patterns": [
-                "{spec-id}-{feature-name}",
-                "hotfix/{bug-id}",
-                "main",
-                "development",
-            ],
-            "validation_rules": [
-                "max_length_50",
-                "lowercase_only",
-                "no_spaces",
-                "alphanumeric_dash_slash_only",
-            ],
-        },
-        "branch-type": {
-            "description": "Modern namespaced branches with type prefixes",
-            "display": "Modern namespaced branches with type prefixes",
-            "patterns": [
-                "feature/{feature-name}",
-                "hotfix/{bug-id}",
-                "bugfix/{bug-id}",
-                "main",
-                "development",
-            ],
-            "validation_rules": [
-                "max_length_50",
-                "lowercase_only",
-                "no_spaces",
-                "alphanumeric_dash_slash_only",
-            ],
-        },
-        "numbered-type": {
-            "description": "Numbered branches with organized type prefixes",
-            "display": "Numbered branches with organized type prefixes",
-            "patterns": [
-                "feature/{spec-id}-{feature-name}",
-                "hotfix/{bug-id}",
-                "release/{version}",
-                "main",
-                "development",
-            ],
-            "validation_rules": [
-                "max_length_50",
-                "lowercase_only",
-                "no_spaces",
-                "alphanumeric_dash_slash_only",
-            ],
-        },
-        "team-based": {
-            "description": "Team-based organization with workflow support",
-            "display": "Team-based organization with workflow support",
-            "patterns": [
-                "{team}/{feature-name}",
-                "hotfix/{bug-id}",
-                "release/{version}",
-                "main",
-                "development",
-            ],
-            "validation_rules": [
-                "max_length_60",
-                "lowercase_only",
-                "no_spaces",
-                "alphanumeric_dash_slash_only",
-            ],
-        },
-    }
+    # Get branch naming options from configuration system
+    pattern_options = BRANCH_DEFAULTS.get_pattern_options_for_ui()
 
     # Create choices dict with key -> display mapping for UI
     choices: Dict[str, str] = {}
@@ -121,7 +53,7 @@ def select_branch_naming_pattern() -> BranchNamingConfig:
         selected_key = ui.select(
             "Select your preferred branch naming pattern:",
             choices=choices,
-            default="traditional-spec",  # Default to traditional format
+            default=BRANCH_DEFAULTS.DEFAULT_PATTERN_NAME,  # Use configurable default
         )
 
         # Get the selected configuration
@@ -151,12 +83,10 @@ def select_ai_assistant() -> str:
     """
     ui = InteractiveUI()
 
+    # Use configurable AI assistant choices from AI_DEFAULTS
     ai_choices = {
-        # FIXME: HARDCODED - AI assistant choices hardcoded
-        # TODO: Make configurable via configuration system
-        "claude": "Claude Code (Terminal-based AI assistant with / commands)",
-        "gemini": "Gemini CLI (Terminal-based AI assistant)",
-        "copilot": "GitHub Copilot (VS Code/IDE integration)",
+        assistant.name: f"{assistant.display_name} ({assistant.description})"
+        for assistant in AI_DEFAULTS.ASSISTANTS
     }
 
     try:
