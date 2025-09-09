@@ -30,6 +30,7 @@ dependencies = [
     "jinja2",
     "dynaconf",
     "tomli-w",
+    "colorlog",
 ]
 
 [project.optional-dependencies]
@@ -81,3 +82,5 @@ addopts = [
     "--disable-warnings",
     "--import-mode=importlib",
 ]
+
+[tool.pyrefly]
