@@ -144,7 +144,7 @@ class GranularTemplate:
 
         # AI-aware templates are designed to work with all supported AI assistants
         # through conditional logic ({% if ai_assistant == 'claude' %}, etc.)
-        supported_assistants = {"claude", "gemini", "copilot"}
+        supported_assistants = {"claude", "gemini", "copilot"}  # FIXME: HARDCODED - AI assistant validation set hardcoded
         return ai_assistant.lower() in supported_assistants
 
     def get_absolute_target_path(self, project_root: Path) -> Path:
@@ -282,7 +282,7 @@ class TemplatePackage:
 
     def _validate_ai_assistant(self) -> None:
         """Validate AI assistant is supported"""
-        valid_assistants = {"claude", "gemini", "copilot"}
+        valid_assistants = {"claude", "gemini", "copilot"}  # FIXME: HARDCODED - AI assistant validation set hardcoded
         if self.ai_assistant not in valid_assistants:
             raise ValueError(
                 f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"

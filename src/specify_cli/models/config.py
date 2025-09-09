@@ -14,6 +14,8 @@ from typing import Any, Dict, List, Optional
 class BranchNamingConfig:
     """Configuration for branch naming patterns"""
 
+    # FIXME: HARDCODED - Branch naming patterns and validation rules hardcoded
+    # TODO: Make configurable via configuration system
     description: str = "Modern feature branches with hotfixes and main branches"
     patterns: List[str] = field(
         default_factory=lambda: [
@@ -29,7 +31,7 @@ class BranchNamingConfig:
             "max_length_50",
             "lowercase_only",
             "no_spaces",
-            "alphanumeric_dash_only",
+            "alphanumeric_dash_slash_only",
         ]
     )
 
@@ -64,7 +66,7 @@ class BranchNamingConfig:
                     "max_length_50",
                     "lowercase_only",
                     "no_spaces",
-                    "alphanumeric_dash_only",
+                    "alphanumeric_dash_slash_only",
                 ],
             ),
         )
@@ -74,6 +76,8 @@ class BranchNamingConfig:
 class TemplateConfig:
     """Configuration for template engine settings"""
 
+    # FIXME: HARDCODED - AI assistant and config directory defaults hardcoded
+    # TODO: Make configurable via configuration system
     ai_assistant: str = "claude"
     config_directory: str = ".specify"
     custom_templates_dir: Optional[Path] = None

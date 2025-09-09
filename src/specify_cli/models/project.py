@@ -291,7 +291,7 @@ class ProjectInitOptions:
     skip_git: bool = False
     ignore_agent_tools: bool = False
     custom_config: Optional[Dict[str, Any]] = None
-    branch_pattern: Optional[str] = None # TODO: Remove old syntax
+    branch_pattern: Optional[str] = None  # TODO: Remove old syntax
     branch_naming_config: Optional[BranchNamingConfig] = None
 
 
