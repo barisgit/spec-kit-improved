@@ -58,7 +58,7 @@ packages = ["src/specify_cli"]
 
 # Include template files in the package
 [tool.hatch.build.targets.wheel.shared-data]
-"src/specify_cli/init_templates" = "specify_cli/init_templates"
+"src/specify_cli/templates" = "specify_cli/templates"
 
 [tool.ruff]
 src = ["src", "tests"]
