@@ -764,9 +764,31 @@ class TomlConfigService(ConfigService):
         Returns:
             True if successful, False otherwise
         """
-        platform_name = platform_name
-
         try:
+            # Normalize paths for the specific platform
+            if platform_name == "windows":
+                # Ensure Windows-style paths
+                if (
+                    config.template_settings
+                    and config.template_settings.custom_templates_dir
+                ):
+                    config.template_settings.custom_templates_dir = Path(
+                        str(config.template_settings.custom_templates_dir).replace(
+                            "/", "\\"
+                        )
+                    )
+            else:
+                # Ensure Unix-style paths
+                if (
+                    config.template_settings
+                    and config.template_settings.custom_templates_dir
+                ):
+                    config.template_settings.custom_templates_dir = Path(
+                        str(config.template_settings.custom_templates_dir).replace(
+                            "\\", "/"
+                        )
+                    )
+
             return self.save_project_config(project_path, config)
         except Exception:
             return False
@@ -783,9 +805,35 @@ class TomlConfigService(ConfigService):
         Returns:
             Project configuration if successful, None otherwise
         """
-        platform_name = platform_name
-
         try:
-            return self.load_project_config(project_path)
+            config = self.load_project_config(project_path)
+            if config is None:
+                return None
+
+            # Normalize paths for the specific platform
+            if platform_name == "windows":
+                # Ensure Windows-style paths
+                if (
+                    config.template_settings
+                    and config.template_settings.custom_templates_dir
+                ):
+                    config.template_settings.custom_templates_dir = Path(
+                        str(config.template_settings.custom_templates_dir).replace(
+                            "/", "\\"
+                        )
+                    )
+            else:
+                # Ensure Unix-style paths
+                if (
+                    config.template_settings
+                    and config.template_settings.custom_templates_dir
+                ):
+                    config.template_settings.custom_templates_dir = Path(
+                        str(config.template_settings.custom_templates_dir).replace(
+                            "\\", "/"
+                        )
+                    )
+
+            return config
         except Exception:
             return None

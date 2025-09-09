@@ -65,7 +65,7 @@ class TestAIAwareTemplateRendering:
             branch_naming_config=branch_config,
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test/project"),
+            project_path=Path("/test/project").resolve(),
         )
 
     @pytest.fixture
@@ -95,7 +95,7 @@ class TestAIAwareTemplateRendering:
             branch_naming_config=branch_config,
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test/gemini"),
+            project_path=Path("/test/gemini").resolve(),
         )
 
     @pytest.fixture
@@ -123,7 +123,7 @@ class TestAIAwareTemplateRendering:
             branch_naming_config=branch_config,
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test/copilot"),
+            project_path=Path("/test/copilot").resolve(),
         )
 
     @pytest.fixture
@@ -267,7 +267,7 @@ class TestAIAwareTemplateRendering:
             ),
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test/unknown"),
+            project_path=Path("/test/unknown").resolve(),
         )
 
         template_service.load_template("specify.md.j2")
@@ -411,7 +411,7 @@ class TestAIAwareTemplateRendering:
                 ),
                 config_directory=".specify",
                 creation_date="2025-09-08",
-                project_path=Path("/test"),
+                project_path=Path("/test").resolve(),
             )
 
             content = template_service.render_template("specify.md.j2", context)
@@ -441,7 +441,7 @@ class TestAIAwareTemplateRendering:
             branch_naming_config=BranchNamingConfig("", ["test"], []),
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test"),
+            project_path=Path("/test").resolve(),
         )
 
         with pytest.raises(FileNotFoundError):
@@ -470,7 +470,7 @@ class TestAIAwareTemplateRendering:
             branch_naming_config=BranchNamingConfig("", ["test"], []),
             config_directory=".specify",
             creation_date="2025-09-08",
-            project_path=Path("/test"),
+            project_path=Path("/test").resolve(),
         )
 
         # This method doesn't exist yet - will fail initially

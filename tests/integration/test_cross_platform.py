@@ -33,8 +33,20 @@ The tests validate:
 """
 
 import subprocess
+import sys
 import tempfile
-from pathlib import Path, PosixPath, WindowsPath
+from pathlib import Path, PosixPath
+
+# Import WindowsPath only on Windows systems
+if sys.platform == "win32":
+    from pathlib import WindowsPath
+else:
+    # Create a mock WindowsPath class for testing on non-Windows systems
+    class WindowsPath:
+        def __init__(self, *args, **kwargs):
+            raise NotImplementedError("cannot instantiate 'WindowsPath' on your system")
+
+
 from typing import Any, Dict, Generator
 from unittest.mock import patch
 
@@ -240,7 +252,7 @@ class TestCrossPlatformCompatibility:
         template_context = TemplateContext(
             project_name="cross-platform-test",
             ai_assistant="claude",
-            project_path=temp_project_dir,
+            project_path=temp_project_dir.resolve(),
         )
 
         # Test platform-aware template rendering (method is now implemented)
@@ -515,7 +527,7 @@ class TestCrossPlatformCompatibility:
                 context = TemplateContext(
                     project_name="platform-template-test",
                     ai_assistant="claude",
-                    project_path=temp_project_dir,
+                    project_path=temp_project_dir.resolve(),
                 )
 
                 # This should work - platform context enhancement is implemented

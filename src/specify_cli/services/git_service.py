@@ -77,23 +77,33 @@ class CommandLineGitService(GitService):
                 text=True,
             )
 
-            # Add all files
-            subprocess.run(
-                ["git", "add", "."],
+            # Check if there are any files to add
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
                 cwd=project_path,
-                check=True,
                 capture_output=True,
                 text=True,
             )
 
-            # Create initial commit
-            subprocess.run(
-                ["git", "commit", "-m", "Initial commit from SpecifyX template"],
-                cwd=project_path,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # Only add and commit if there are files
+            if result.stdout.strip():
+                # Add all files
+                subprocess.run(
+                    ["git", "add", "."],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+
+                # Create initial commit
+                subprocess.run(
+                    ["git", "commit", "-m", "Initial commit from SpecifyX template"],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
 
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -226,13 +236,34 @@ class CommandLineGitService(GitService):
             True if successful, False otherwise
         """
         try:
-            # Configure git to handle line endings automatically
+            import os
+
+            # Configure git to handle line endings automatically based on platform
+            if os.name == "nt":  # Windows
+                # On Windows, convert LF to CRLF on checkout, CRLF to LF on commit
+                subprocess.run(
+                    ["git", "config", "core.autocrlf", "true"],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                )
+            else:  # Unix-like systems (macOS, Linux)
+                # On Unix, don't convert line endings
+                subprocess.run(
+                    ["git", "config", "core.autocrlf", "false"],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                )
+
+            # Set core.safecrlf to warn about line ending issues
             subprocess.run(
-                ["git", "config", "core.autocrlf", "true"],
+                ["git", "config", "core.safecrlf", "warn"],
                 cwd=project_path,
                 check=True,
                 capture_output=True,
             )
+
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
