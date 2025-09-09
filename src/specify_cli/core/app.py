@@ -95,6 +95,7 @@ app = typer.Typer(
     add_completion=True,
     invoke_without_command=True,
     cls=BannerGroup,
+    context_settings={"help_option_names": ["-h", "--help"]}
 )
 
 
