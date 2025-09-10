@@ -44,13 +44,11 @@ const sidebars: SidebarsConfig = {
         'reference/cli/check',
       ],
     },
-    {
-      type: 'category',
-      label: 'API',
-      items: [
-        'reference/api/template_service',
-      ],
-    },
+    // { TODO: Uncomment when API is implemented
+    //   type: 'category',
+    //   label: 'API',
+    //   items: [],
+    // },
   ],
 };
 
