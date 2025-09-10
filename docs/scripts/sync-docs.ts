@@ -12,11 +12,12 @@ import { resolve } from 'path';
 async function main() {
   const command = process.argv[2] || 'sync';
   
-  console.log(`📚 SpecifyX Documentation Sync - ${command} mode`);
+  console.log(`SpecifyX Documentation Sync - ${command} mode`);
   
   const config: SyncConfiguration = {
     ...DEFAULT_CONFIG,
-    outputDir: resolve(__dirname, '..')  // Output to docs/ directory directly
+    outputDir: resolve(__dirname, '..'),  // Output to docs/ directory directly
+    watch: command === 'watch'  // Enable watch mode when watch command is used
   };
   
   const syncService = new SyncService();
@@ -26,21 +27,21 @@ async function main() {
     
     switch (command) {
       case 'watch':
-        console.log('👀 Watching for documentation changes...');
+        console.log('Watching for documentation changes...');
         await syncService.watch();
         
         // Keep process running
         process.on('SIGINT', async () => {
-          console.log('\n⏹️  Stopping watch mode...');
+          console.log('\nStopping watch mode...');
           await syncService.stopWatching();
           process.exit(0);
         });
         break;
         
       case 'clean':
-        console.log('🧹 Cleaning orphaned documentation files...');
+        console.log('Cleaning orphaned documentation files...');
         const removed = await syncService.clean();
-        console.log(`✅ Removed ${removed.length} orphaned files`);
+        console.log(`Removed ${removed.length} orphaned files`);
         if (removed.length > 0) {
           removed.forEach(file => console.log(`  - ${file}`));
         }
@@ -48,17 +49,17 @@ async function main() {
         
       case 'sync':
       default:
-        console.log('🔄 Syncing documentation...');
+        console.log('Syncing documentation...');
         const result = await syncService.sync();
         
-        console.log(`✅ Sync completed in ${result.duration}ms`);
-        console.log(`  📊 Files processed: ${result.filesProcessed}`);
-        console.log(`  ➕ Added: ${result.filesAdded.length}`);
-        console.log(`  🔄 Updated: ${result.filesUpdated.length}`);
-        console.log(`  ➖ Removed: ${result.filesRemoved.length}`);
+        console.log(`Sync completed in ${result.duration}ms`);
+        console.log(`  Files processed: ${result.filesProcessed}`);
+        console.log(`  Added: ${result.filesAdded.length}`);
+        console.log(`  Updated: ${result.filesUpdated.length}`);
+        console.log(`  Removed: ${result.filesRemoved.length}`);
         
         if (result.errors.length > 0) {
-          console.log(`  ⚠️  Errors: ${result.errors.length}`);
+          console.log(`  Errors: ${result.errors.length}`);
           result.errors.forEach(error => {
             console.log(`    - ${error.file}: ${error.error}`);
           });
@@ -66,7 +67,7 @@ async function main() {
         break;
     }
   } catch (error) {
-    console.error('❌ Error:', error instanceof Error ? error.message : error);
+    console.error('Error:', error instanceof Error ? error.message : error);
     process.exit(1);
   }
 }
