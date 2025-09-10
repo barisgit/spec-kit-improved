@@ -4,9 +4,9 @@ This module contains the Typer app setup, Rich console configuration,
 and main entry point for the SpecifyX CLI tool.
 """
 
+import logging
 import sys
 from importlib.metadata import version
-from typing import Dict
 
 import typer
 from rich.align import Align
@@ -14,12 +14,10 @@ from rich.console import Console
 from rich.text import Text
 from typer.core import TyperGroup
 
-# AI assistant choices for validation
-AI_CHOICES: Dict[str, str] = {
-    "copilot": "GitHub Copilot",
-    "claude": "Claude Code",
-    "gemini": "Gemini CLI",
-}
+from specify_cli.utils.logging_config import setup_logging
+
+# Setup logging for developers
+setup_logging(log_level=logging.CRITICAL)
 
 # ASCII Art Banner
 BANNER = """
@@ -95,6 +93,7 @@ app = typer.Typer(
     add_completion=True,
     invoke_without_command=True,
     cls=BannerGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 
@@ -176,11 +175,14 @@ def callback(
 
 def register_commands():
     """Register commands with the main app."""
-    from specify_cli.commands import check_command, init_command, update_app
+    from specify_cli.commands import check_command, init_command, run_app, update_app
 
     # Register commands directly on main app
     app.command("init")(init_command)
     app.command("check")(check_command)
+
+    # Register run command with subcommands - the default command is 'run_command'
+    app.add_typer(run_app, name="run")
 
     # Register update group
     app.add_typer(update_app, name="update")

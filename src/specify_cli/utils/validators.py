@@ -6,6 +6,8 @@ from typing import Any, Callable, List, Optional, Union
 
 from rich.console import Console
 
+from specify_cli.models.defaults import AI_DEFAULTS
+
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
@@ -44,16 +46,28 @@ class Validators:
             raise ValidationError("Project name too long (max 50 characters)")
 
         # Check for valid characters (alphanumeric, hyphens, underscores)
-        if not re.match(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$", name):
-            raise ValidationError(
-                "Project name must start with letter/number and contain only "
-                "letters, numbers, hyphens, and underscores"
-            )
+        # Must start with letter/number, can contain letters/numbers/hyphens/underscores in middle,
+        # and must end with letter/number (unless it's a single character)
+        if len(name) == 1:
+            if not re.match(r"^[a-zA-Z0-9]$", name):
+                raise ValidationError(
+                    "Single character project names must be letters or numbers"
+                )
+        else:
+            if not re.match(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$", name):
+                raise ValidationError(
+                    "Project name must start and end with letter/number and contain only "
+                    "letters, numbers, hyphens, and underscores"
+                )
 
         # Avoid reserved names
         reserved = {"con", "prn", "aux", "nul", "com1", "com2", "lpt1", "lpt2"}
         if name.lower() in reserved:
             raise ValidationError(f"'{name}' is a reserved name")
+
+        # Reject uppercase names (should be lowercase)
+        if name.isupper():
+            raise ValidationError("Project name cannot be all uppercase")
 
         return True
 
@@ -153,7 +167,8 @@ class Validators:
         Raises:
             ValidationError: If invalid with reason
         """
-        valid_assistants = ["claude", "gemini", "copilot"]
+        # Use configurable AI assistant list from AI_DEFAULTS
+        valid_assistants = [assistant.name for assistant in AI_DEFAULTS.ASSISTANTS]
         if assistant not in valid_assistants:
             raise ValidationError(
                 f"Invalid AI assistant '{assistant}'. "

@@ -56,6 +56,11 @@ class GitService(ABC):
         """Get the remote origin URL"""
         pass
 
+    @abstractmethod
+    def configure_platform_line_endings(self, project_path: Path) -> bool:
+        """Configure git for platform-specific line endings"""
+        pass
+
 
 class CommandLineGitService(GitService):
     """Implementation using command-line git via subprocess"""
@@ -72,23 +77,45 @@ class CommandLineGitService(GitService):
                 text=True,
             )
 
-            # Add all files
-            subprocess.run(
-                ["git", "add", "."],
-                cwd=project_path,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # Check if there are any files to add using a more robust approach
+            try:
+                # First, try to check if there are any files in the directory
+                import os
 
-            # Create initial commit
-            subprocess.run(
-                ["git", "commit", "-m", "Initial commit from SpecifyX template"],
-                cwd=project_path,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+                files_in_dir = [
+                    f
+                    for f in os.listdir(project_path)
+                    if f != ".git" and not f.startswith(".")
+                ]
+
+                if files_in_dir:
+                    # Add all files
+                    subprocess.run(
+                        ["git", "add", "."],
+                        cwd=project_path,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+
+                    # Create initial commit
+                    subprocess.run(
+                        [
+                            "git",
+                            "commit",
+                            "-m",
+                            "Initial commit from SpecifyX template",
+                        ],
+                        cwd=project_path,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+
+            except (subprocess.CalledProcessError, OSError):
+                # If file operations fail, still return True if init succeeded
+                # The repository was initialized successfully
+                pass
 
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -186,13 +213,14 @@ class CommandLineGitService(GitService):
         """Get the name of the current branch"""
         try:
             result = subprocess.run(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                ["git", "branch", "--show-current"],
                 cwd=project_path,
                 check=True,
                 capture_output=True,
                 text=True,
             )
-            return result.stdout.strip()
+            branch = result.stdout.strip()
+            return branch if branch else None
         except (subprocess.CalledProcessError, FileNotFoundError):
             return None
 
@@ -209,3 +237,45 @@ class CommandLineGitService(GitService):
             return result.stdout.strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
             return None
+
+    def configure_platform_line_endings(self, project_path: Path) -> bool:
+        """Configure git for platform-specific line endings.
+
+        Args:
+            project_path: Path to the git repository
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            import os
+
+            # Configure git to handle line endings automatically based on platform
+            if os.name == "nt":  # Windows
+                # On Windows, convert LF to CRLF on checkout, CRLF to LF on commit
+                subprocess.run(
+                    ["git", "config", "core.autocrlf", "true"],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                )
+            else:  # Unix-like systems (macOS, Linux)
+                # On Unix, don't convert line endings
+                subprocess.run(
+                    ["git", "config", "core.autocrlf", "false"],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                )
+
+            # Set core.safecrlf to warn about line ending issues
+            subprocess.run(
+                ["git", "config", "core.safecrlf", "warn"],
+                cwd=project_path,
+                check=True,
+                capture_output=True,
+            )
+
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False

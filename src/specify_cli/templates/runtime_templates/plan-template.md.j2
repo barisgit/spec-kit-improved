@@ -1,7 +1,7 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: {{ feature_name | title }}
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `{{ branch_name }}` | **Date**: {{ creation_date }} | **Spec**: [{{ spec_number }}-{{ feature_name }}/spec.md]({{ feature_dir }}/spec.md)
+**Input**: Feature specification from `{{ feature_dir }}/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -16,7 +16,7 @@
    → Update Progress Tracking: Initial Constitution Check
 4. Execute Phase 0 → research.md
    → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
-5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
+5. Execute Phase 1 → contracts, data-model.md, quickstart.md{% if ai_assistant == 'claude' %}, CLAUDE.md for Claude Code{% elif ai_assistant == 'copilot' %}, .github/copilot-instructions.md for GitHub Copilot{% elif ai_assistant == 'gemini' %}, GEMINI.md for Gemini CLI{% else %}, agent-specific template file{% endif %}.
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
    → Update Progress Tracking: Post-Design Constitution Check
@@ -29,10 +29,11 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-[Extract from feature spec: primary requirement + technical approach from research]
+{{ context | default('[Extract from feature spec: primary requirement + technical approach from research]') }}
 
 ## Technical Context
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Project**: {{ project_name }}  
+**Language/Version**: {% if tech_stack %}{{ tech_stack | join(', ') }}{% else %}[e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]{% endif %}  
 **Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
 **Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
 **Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  

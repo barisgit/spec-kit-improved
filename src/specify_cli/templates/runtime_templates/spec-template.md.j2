@@ -1,9 +1,9 @@
-# Feature Specification: [FEATURE NAME]
+# Feature Specification: {{ feature_name | default('[FEATURE NAME]') }}
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
+**Feature Branch**: `{{ branch_name | default('[###-feature-name]') }}`  
+**Created**: {{ date | default('[DATE]') }}  
 **Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**Input**: User description: "{{ feature_description | default('$ARGUMENTS') }}"
 
 ## Execution Flow (main)
 ```

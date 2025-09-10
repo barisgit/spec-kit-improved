@@ -9,22 +9,32 @@
 
 ## What is SpecifyX?
 
-SpecifyX is a modern, Python-installable CLI tool for spec-driven development that helps organizations focus on product scenarios rather than writing undifferentiated code.
+SpecifyX is a modern, Python-installable CLI tool forked from the popular [spec-kit](https://github.com/github/spec-kit) for spec-driven development that helps organizations focus on product scenarios rather than writing undifferentiated code.
 
-### Key Benefits for Users (envisioned - not implemented yet)
+### Key Benefits for Users
 
-- **Easy Installation**: Install with `uv add specifyx` or `pip install specifyx` - no complex setup required
+- **Easy Installation**: Install with `uv tool install specifyx` or run `uvx specifyx` without installation
 - **Powerful Templating**: Use Jinja2 templates with variables, conditionals, and loops for complex project generation
-- **Flexible Branch Naming**: Customize branch patterns like `feature/{name}` or `task/{id}-{name}` instead of fixed formats
+- **Flexible Branch Naming**: Customize branch patterns like `feature/{name}` or `task/{id}-{name}` and more instead of fixed formats
 - **Enhanced User Experience**: Interactive menus, progress tracking, and better error messages
+- **Project Generation**: Generate projects from templates with variables, conditionals, and loops for complex project generation
+- **Configurable Python Scripts**: Uses python for scripts with utils imported from specifyx to achieve user customizable scripts with low boilerplate
 - **Configuration System**: Save your preferences in TOML files instead of repeating command-line options
 
 ## Installation
 
 ### Using uv (recommended)
 ```bash
-uv add specifyx
+uv tool install specifyx
 ```
+
+#### Alternative if you don't want to install
+
+```bash
+uvx specifyx
+```
+
+> Note: `uvx` is a shortcut for `uv tool run`
 
 ### Using pipx (for CLI tools)
 ```bash
@@ -38,7 +48,7 @@ pip install specifyx
 
 ### From git (development version)
 ```bash
-uv add git+https://github.com/barisgit/spec-kit-improved
+uv tool install --from git+https://github.com/barisgit/spec-kit-improved
 ```
 
 ## Quick Start
@@ -54,11 +64,24 @@ Check tool requirements:
 specifyx check
 ```
 
+Run specifyx python scripts in your project with:
+```bash
+specifyx run my-script
+
+# List available scripts
+specifyx run --list
+
+# Show path to specified script
+specifyx run --which my-script
+```
+
+> Note: Your AI assistant is instructed to use specifyx when you run commands.
+
 ## Attribution and Philosophy
 
 ### Inspiration and Attribution
 
-This project is **inspired by and builds upon** the foundational work of the original [specify](https://github.com/microsoft/specify) project by the Microsoft team, particularly [John Lam](https://github.com/jflam) and [Den Delimarsky](https://github.com/dend). Their pioneering work in spec-driven development methodology laid the groundwork for this enhanced implementation.
+This project is **inspired by and builds upon** the foundational work of the original [specify](https://github.com/github/spec-kit) project by the GitHub team, particularly [John Lam](https://github.com/jflam) and [Den Delimarsky](https://github.com/dend). Their pioneering work in spec-driven development methodology laid the groundwork for this enhanced implementation.
 
 ### Why a Separate Project?
 
@@ -78,11 +101,11 @@ While deeply respecting the original specify project, SpecifyX takes a different
 
 #### **4. Branch Naming Flexibility**
 - **Original specify**: Fixed pattern like "001-feature-name"
-- **SpecifyX**: Customizable patterns to match your team's conventions
+- **SpecifyX**: Customizable patterns to match your team's conventions AND branch validation logic so your AI assistant can't generate invalid branch names
 
 #### **5. User Experience Focus**
 - **Original specify**: Bash scripts with basic output
-- **SpecifyX**: Interactive UI with progress tracking, colored output, and helpful error messages
+- **SpecifyX**: Customizable scripts with utils imported from specifyx to achieve user customizable scripts with low boilerplate
 
 ### Our Vision
 
@@ -118,21 +141,8 @@ Spec-Driven Development **flips the script** on traditional software development
 ## Enhanced Features
 
 ### Jinja2 Templating
-```bash
-# Advanced template rendering with variables and logic
-specifyx init {{ project_name }} --template advanced
-```
 
-### Flexible Configuration  
-```toml
-# ~/.config/specifyx/config.toml
-[branch_naming]
-pattern = "feature/{feature-name}"
-auto_increment = true
-
-[templates]
-custom_dir = "~/my-templates"
-```
+In your generated project, you can see spec, plan and tasks templates in `.specify/templates/` directory. You can customize them to your needs. They will be rendered with your project variables.
 
 ### Enhanced User Interface
 - Interactive menus with keyboard navigation
@@ -144,15 +154,14 @@ custom_dir = "~/my-templates"
 
 For developers interested in the architecture:
 
-- **Modern Architecture**: Modular services instead of monolithic code (870 lines → 32 lines main file)
+- **Modern Architecture**: Modular services instead of monolithic code
 - **Type Safety**: Full type annotations and validation throughout
-- **Comprehensive Testing**: Contract, integration, and unit tests with high coverage
+- **Comprehensive Testing**: Contract, integration, and unit tests
 - **TOML Configuration**: Flexible configuration with dynaconf
 
 ## Documentation
 
-- **[Architecture Overview](./CLAUDE.md)** - Technical architecture and design decisions
-- **[Development Guide](./specs/001-feature-improve-spec/)** - Implementation specifications and contracts
+To be updated.
 
 ## Development
 
@@ -160,7 +169,7 @@ For developers interested in the architecture:
 ```bash
 git clone https://github.com/barisgit/spec-kit-improved
 cd spec-kit-improved
-uv sync --dev
+uv sync --extra dev
 ```
 
 ### Run Tests
@@ -178,13 +187,17 @@ ruff format .             # Formatting
 pyrefly check .           # Type checking
 ```
 
+#### There is also a Makefile in the root of the project for convenience.
+
+You can run `make help` to see the available commands.
+
 ## Contributing
 
-We welcome contributions! Please see our development specifications in `specs/001-feature-improve-spec/` for architecture details and implementation contracts.
+We welcome contributions! Please see `CONTRIBUTING.md` for more details.
 
 ## Support
 
-For support, please open a [GitHub issue](https://github.com/barisgit/spec-kit-improved/issues/new). We welcome bug reports, feature requests, and questions about using spec-driven development.
+For support, please open a [GitHub issue](https://github.com/barisgit/spec-kit-improved/issues/new). We welcome bug reports, feature requests, and questions about using SpecifyX.
 
 ## License
 

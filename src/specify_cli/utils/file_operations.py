@@ -1,6 +1,7 @@
 """File operations utilities for spec-kit CLI."""
 
 import shutil
+import stat
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -109,6 +110,85 @@ class FileOperations:
             if tmp_path and tmp_path.exists():
                 tmp_path.unlink()
             return False
+
+    @staticmethod
+    def write_file_with_permissions(
+        path: Union[str, Path],
+        content: str,
+        executable: bool = False,
+        encoding: str = "utf-8",
+    ) -> bool:
+        """Write file with specific permissions.
+
+        Args:
+            path: File path to write to
+            content: Content to write
+            executable: Whether to make file executable
+            encoding: File encoding
+
+        Returns:
+            True if successful, False otherwise
+        """
+        file_path = Path(path)
+
+        try:
+            # Ensure parent directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write content
+            file_path.write_text(content, encoding=encoding)
+
+            # Set permissions
+            if executable:
+                # Make file executable for owner, group, and others
+                current_mode = file_path.stat().st_mode
+                file_path.chmod(
+                    current_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH
+                )
+
+            return True
+
+        except Exception:
+            return False
+
+    @staticmethod
+    def ensure_cross_platform_path(path: Union[str, Path]) -> Path:
+        """Ensure path is cross-platform compatible.
+
+        Args:
+            path: Path to normalize
+
+        Returns:
+            Normalized Path object
+        """
+        # Convert to Path if string and resolve any relative components
+        path_obj = Path(path)
+
+        # Use forward slashes on all platforms (pathlib handles conversion)
+        return path_obj.resolve() if path_obj.is_absolute() else path_obj
+
+    @staticmethod
+    def create_directory_structure(directories: List[Union[str, Path]]) -> List[Path]:
+        """Create multiple directories ensuring cross-platform compatibility.
+
+        Args:
+            directories: List of directory paths to create
+
+        Returns:
+            List of created Path objects
+        """
+        created_paths = []
+
+        for dir_path in directories:
+            path = FileOperations.ensure_cross_platform_path(dir_path)
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+                created_paths.append(path)
+            except Exception:
+                # Continue creating other directories even if one fails
+                pass
+
+        return created_paths
 
     @staticmethod
     def find_files(
@@ -232,6 +312,95 @@ class FileOperations:
                     FileOperations.safe_write_file(item_path, content)
 
         _create_recursive(base, structure)
+
+    @staticmethod
+    def normalize_path_separators(path: Union[str, Path]) -> str:
+        """Normalize path separators for the current platform.
+
+        Args:
+            path: Path to normalize
+
+        Returns:
+            Path string with platform-specific separators
+        """
+        import os
+
+        path_str = str(Path(path))
+
+        # Convert to platform-specific separators
+        if os.name == "nt":  # Windows
+            return path_str.replace("/", "\\")
+        else:  # Unix-like systems
+            return path_str.replace("\\", "/")
+
+    @staticmethod
+    def set_executable_permissions(path: Union[str, Path]) -> bool:
+        """Set executable permissions on a file.
+
+        Args:
+            path: File path to make executable
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            file_path = Path(path)
+            if not file_path.exists():
+                return False
+
+            # Make file executable for owner, group, and others
+            current_mode = file_path.stat().st_mode
+            file_path.chmod(current_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_platform_specific_line_endings() -> str:
+        """Get platform-specific line ending string.
+
+        Returns:
+            Line ending string for current platform
+        """
+        import os
+
+        return "\r\n" if os.name == "nt" else "\n"
+
+    @staticmethod
+    def create_file_with_inherited_permissions(
+        path: Union[str, Path], content: str, encoding: str = "utf-8"
+    ) -> bool:
+        """Create file with permissions inherited from parent directory.
+
+        Args:
+            path: File path to create
+            content: Content to write
+            encoding: File encoding
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            file_path = Path(path)
+
+            # Ensure parent directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write content
+            file_path.write_text(content, encoding=encoding)
+
+            # Try to inherit permissions from parent directory
+            # This may fail on some platforms, so we make it optional
+            try:
+                parent_mode = file_path.parent.stat().st_mode
+                file_path.chmod(parent_mode)
+            except (OSError, PermissionError):
+                # Permission inheritance failed, but file was created successfully
+                pass
+
+            return True
+        except Exception:
+            return False
 
 
 def ensure_directory(path: Union[str, Path]) -> Path:

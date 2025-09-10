@@ -10,15 +10,53 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .config import BranchNamingConfig
+from .defaults import PATH_DEFAULTS
 
-class TemplateDict(dict):
-    """Custom dict that prioritizes key access over dict methods in Jinja2 templates"""
 
-    def __getattribute__(self, name):
-        # If the name is a key in the dict, return the value instead of the method
-        if name in self:
-            return self[name]
-        return super().__getattribute__(name)
+@dataclass
+class TemplateVariables:
+    """Type-safe container for template variables that avoids dict method conflicts.
+
+    This replaces TemplateDict with a more type-safe approach that prevents
+    template variables from conflicting with dictionary methods in Jinja2.
+    """
+
+    variables: Dict[str, Any] = field(default_factory=dict)
+
+    def __getattr__(self, name: str) -> Any:
+        """Allow attribute access to template variables."""
+        if name in self.variables:
+            return self.variables[name]
+        raise AttributeError(f"Template variable '{name}' not found")
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dictionary-style access to template variables."""
+        return self.variables[key]
+
+    def __contains__(self, key: str) -> bool:
+        """Check if a template variable exists."""
+        return key in self.variables
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a template variable with a default value."""
+        return self.variables.get(key, default)
+
+    def items(self):
+        """Get all template variables as key-value pairs."""
+        return self.variables.items()
+
+    def keys(self):
+        """Get all template variable keys."""
+        return self.variables.keys()
+
+    def values(self):
+        """Get all template variable values."""
+        return self.variables.values()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to regular dictionary for Jinja2 compatibility."""
+        return self.variables.copy()
 
 
 @dataclass
@@ -39,7 +77,9 @@ class TemplateContext:
     author_name: str = ""
     author_email: str = ""
     creation_date: str = field(
-        default_factory=lambda: datetime.now().strftime("%Y-%m-%d")
+        default_factory=lambda: datetime.now().strftime(
+            PATH_DEFAULTS.PROJECT_DEFAULTS.date_format
+        )
     )
     creation_year: str = field(default_factory=lambda: str(datetime.now().year))
 
@@ -47,9 +87,22 @@ class TemplateContext:
     template_variables: Dict[str, Any] = field(default_factory=dict)
     custom_fields: Dict[str, Any] = field(default_factory=dict)
 
-    # AI assistant configuration
-    ai_assistant: str = "claude"
+    # AI assistant configuration (enhanced)
+    ai_assistant: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    )
     ai_context: Dict[str, str] = field(default_factory=dict)
+
+    # Branch naming configuration (new)
+    branch_naming_config: BranchNamingConfig = field(default_factory=BranchNamingConfig)
+
+    # Configuration settings (new)
+    config_directory: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory
+    )
+
+    # Platform information
+    platform_name: str = ""
 
     # Git information
     git_remote_url: str = ""
@@ -58,7 +111,9 @@ class TemplateContext:
     # Specification information
     spec_number: str = ""
     spec_title: str = ""
-    spec_type: str = "feature"  # feature, bugfix, hotfix, epic
+    spec_type: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.spec_type
+    )  # feature, bugfix, hotfix, epic
 
     # Backwards compatibility fields for tests
     branch_type: str = ""
@@ -69,6 +124,13 @@ class TemplateContext:
         # Set branch_type based on spec_type for backwards compatibility
         if not self.branch_type and self.spec_type:
             self.branch_type = self.spec_type
+
+        # Note: AI assistant validation is permissive to allow unknown assistants
+        # Templates handle fallback behavior through conditional logic
+
+        # Validate paths are absolute if project_path is set
+        if self.project_path and not self.project_path.is_absolute():
+            raise ValueError("project_path must be absolute")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for Jinja2 template rendering"""
@@ -86,9 +148,13 @@ class TemplateContext:
             "author_email": self.author_email,
             "creation_date": self.creation_date,
             "creation_year": self.creation_year,
-            # AI assistant
+            # AI assistant configuration
             "ai_assistant": self.ai_assistant,
             "ai_context": self.ai_context.copy(),
+            # Branch naming configuration
+            "branch_naming_config": self.branch_naming_config.to_dict(),
+            # Configuration settings
+            "config_directory": self.config_directory,
             # Git information
             "git_remote_url": self.git_remote_url,
             "git_branch": self.git_branch,
@@ -98,9 +164,9 @@ class TemplateContext:
             "spec_type": self.spec_type,
             # Backwards compatibility
             "branch_type": self.branch_type,
-            "additional_vars": TemplateDict(
+            "additional_vars": TemplateVariables(
                 self.additional_vars
-            ),  # Use TemplateDict to avoid method conflicts
+            ),  # Use TemplateVariables to avoid method conflicts
             # Template variables (merged with custom fields and additional_vars)
             **self.template_variables,
             **self.custom_fields,
@@ -126,6 +192,8 @@ class TemplateContext:
             "creation_year",
             "ai_assistant",
             "ai_context",
+            "branch_naming_config",
+            "config_directory",
             "git_remote_url",
             "git_branch",
             "spec_number",
@@ -147,6 +215,14 @@ class TemplateContext:
         if "project_path" in context_data and context_data["project_path"]:
             context_data["project_path"] = Path(context_data["project_path"])
 
+        # Handle branch_naming_config conversion
+        if "branch_naming_config" in context_data and isinstance(
+            context_data["branch_naming_config"], dict
+        ):
+            context_data["branch_naming_config"] = BranchNamingConfig.from_dict(
+                context_data["branch_naming_config"]
+            )
+
         # Set custom fields
         context_data["custom_fields"] = custom_fields
 
@@ -167,6 +243,8 @@ class TemplateContext:
             creation_year=self.creation_year,
             ai_assistant=self.ai_assistant,
             ai_context=self.ai_context.copy(),
+            branch_naming_config=self.branch_naming_config,
+            config_directory=self.config_directory,
             git_remote_url=self.git_remote_url,
             git_branch=self.git_branch,
             spec_number=self.spec_number,
@@ -184,7 +262,9 @@ class TemplateContext:
             project_name=project_name,
             project_description=f"Project: {project_name}",
             author_name="Developer",
-            ai_assistant="claude",
+            ai_assistant=PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant,
+            branch_naming_config=BranchNamingConfig(),
+            config_directory=PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory,
         )
 
 
@@ -221,12 +301,16 @@ class ProjectInitStep(Enum):
 class ProjectInitOptions:
     """Options for project initialization"""
 
-    project_name: Optional[str]
-    ai_assistant: str = "claude"
+    project_name: Optional[str] = None
+    ai_assistant: str = field(
+        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    )
     use_current_dir: bool = False
     skip_git: bool = False
     ignore_agent_tools: bool = False
     custom_config: Optional[Dict[str, Any]] = None
+    branch_pattern: Optional[str] = None
+    branch_naming_config: Optional[BranchNamingConfig] = None
 
 
 @dataclass

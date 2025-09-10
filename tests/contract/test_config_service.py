@@ -315,8 +315,10 @@ class TestConfigServiceIntegration:
         assert loaded_config.name == "workflow-test"
 
         # Test branch expansion
+        pattern = loaded_config.branch_naming.default_pattern
+        assert pattern is not None, "Default pattern should not be None"
         expanded = config_service.expand_branch_name(
-            loaded_config.branch_naming.default_pattern, {"task-name": "setup-tests"}
+            pattern, {"task-name": "setup-tests"}
         )
         assert expanded == "task/setup-tests"
 

@@ -1,6 +1,6 @@
 [project]
 name = "specifyx"
-version = "0.1.1"
+version = "0.2.0"
 description = "Enhanced spec-driven development CLI with modern architecture and Jinja2 templating"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -31,6 +31,7 @@ dependencies = [
     "dynaconf",
     "tomli-w",
     "packaging",
+    "colorlog",
 ]
 
 [project.optional-dependencies]
@@ -54,6 +55,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/specify_cli"]
 
+[tool.hatch.build.targets.wheel.sources]
+"src/specify_cli" = "specify_cli"
+
+# Include template files in the package
+[tool.hatch.build.targets.wheel.shared-data]
+"src/specify_cli/templates" = "specify_cli/templates"
+
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 88
@@ -75,3 +83,5 @@ addopts = [
     "--disable-warnings",
     "--import-mode=importlib",
 ]
+
+[tool.pyrefly]

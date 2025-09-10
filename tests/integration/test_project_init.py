@@ -22,9 +22,9 @@ class TestProjectInitializationFlow:
     @pytest.fixture
     def project_manager(self) -> ProjectManager:
         """Create ProjectManager instance"""
-        from specify_cli.services.project_manager import SpecifyProjectManager
+        from specify_cli.services.project_manager import ProjectManager
 
-        return SpecifyProjectManager()
+        return ProjectManager()
 
     @pytest.fixture
     def template_service(self) -> TemplateService:
