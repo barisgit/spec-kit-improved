@@ -323,7 +323,15 @@ class FileOperations:
         Returns:
             Path string with platform-specific separators
         """
-        return str(Path(path))
+        import os
+
+        path_str = str(Path(path))
+
+        # Convert to platform-specific separators
+        if os.name == "nt":  # Windows
+            return path_str.replace("/", "\\")
+        else:  # Unix-like systems
+            return path_str.replace("\\", "/")
 
     @staticmethod
     def set_executable_permissions(path: Union[str, Path]) -> bool:

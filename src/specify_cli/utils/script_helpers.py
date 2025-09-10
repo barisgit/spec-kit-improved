@@ -499,9 +499,12 @@ class ScriptHelpers:
 
         # Handle already numbered branches (001-something or 001/something)
         if re.match(r"^\d{3}[-/]", branch_name):
-            # Extract the part after the number and separator
-            part_after_number = re.sub(r"^\d{3}[-/]", "", branch_name)
-            return f"{feature_num}-{part_after_number.replace('/', '-')}"
+            # Extract the user's number and the part after it
+            match = re.match(r"^(\d{3})[-/](.+)", branch_name)
+            if match:
+                user_number = match.group(1)
+                part_after_number = match.group(2)
+                return f"{user_number}-{part_after_number.replace('/', '-')}"
 
         # Handle prefix/name patterns (feature/name, hotfix/name, etc.)
         if "/" in branch_name:

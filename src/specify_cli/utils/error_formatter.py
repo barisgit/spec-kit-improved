@@ -25,15 +25,13 @@ def format_path_error(error_message: str, platform_name: Optional[str] = None) -
     # Determine the appropriate path separator
     separator = "\\" if platform_name == "windows" else "/"
 
-    # Only replace forward slashes with platform-specific separators if we're on Windows
-    # and the path doesn't already contain backslashes (to avoid double conversion)
-    if (
-        platform_name == "windows"
-        and "/" in error_message
-        and "\\" not in error_message
-    ):
+    # For Windows, ensure paths use backslashes
+    if platform_name == "windows":
+        # Always convert forward slashes to backslashes on Windows
+        # This handles both cases: paths with only forward slashes and mixed separators
         formatted_message = error_message.replace("/", separator)
     else:
+        # For Unix-like systems, keep forward slashes
         formatted_message = error_message
 
     return formatted_message

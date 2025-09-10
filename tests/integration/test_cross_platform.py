@@ -44,7 +44,14 @@ else:
     # Create a mock WindowsPath class for testing on non-Windows systems
     class WindowsPath:
         def __init__(self, *args, **kwargs):
-            raise NotImplementedError("cannot instantiate 'WindowsPath' on your system")
+            # Don't raise error, just behave like a regular Path
+            self._path = Path(*args, **kwargs)
+
+        def __str__(self):
+            return str(self._path)
+
+        def __repr__(self):
+            return f"WindowsPath({repr(str(self._path))})"
 
 
 from typing import Any, Dict, Generator
@@ -332,6 +339,18 @@ class TestCrossPlatformCompatibility:
             patch("os.name", platform_ctx["os_name"]),
             patch("sys.platform", platform_ctx["platform"]),
         ):
+            # Set up git configuration for testing
+            subprocess.run(
+                ["git", "config", "--global", "user.name", "Test User"],
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "config", "--global", "user.email", "test@example.com"],
+                capture_output=True,
+                text=True,
+            )
+
             # Create some content in the temp directory for git to commit
             (temp_project_dir / "README.md").write_text("# Test Project")
 

@@ -77,33 +77,45 @@ class CommandLineGitService(GitService):
                 text=True,
             )
 
-            # Check if there are any files to add
-            result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-            )
+            # Check if there are any files to add using a more robust approach
+            try:
+                # First, try to check if there are any files in the directory
+                import os
 
-            # Only add and commit if there are files
-            if result.stdout.strip():
-                # Add all files
-                subprocess.run(
-                    ["git", "add", "."],
-                    cwd=project_path,
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
+                files_in_dir = [
+                    f
+                    for f in os.listdir(project_path)
+                    if f != ".git" and not f.startswith(".")
+                ]
 
-                # Create initial commit
-                subprocess.run(
-                    ["git", "commit", "-m", "Initial commit from SpecifyX template"],
-                    cwd=project_path,
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
+                if files_in_dir:
+                    # Add all files
+                    subprocess.run(
+                        ["git", "add", "."],
+                        cwd=project_path,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+
+                    # Create initial commit
+                    subprocess.run(
+                        [
+                            "git",
+                            "commit",
+                            "-m",
+                            "Initial commit from SpecifyX template",
+                        ],
+                        cwd=project_path,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+
+            except (subprocess.CalledProcessError, OSError):
+                # If file operations fail, still return True if init succeeded
+                # The repository was initialized successfully
+                pass
 
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):

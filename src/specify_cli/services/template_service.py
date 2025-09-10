@@ -698,7 +698,7 @@ class JinjaTemplateService(TemplateService):
 
                 template_content = (
                     importlib.resources.files(templates_pkg) / template.template_path
-                ).read_text()
+                ).read_text(encoding="utf-8")
 
                 # Create Jinja2 template from content
                 env = Environment(keep_trailing_newline=True)
