@@ -62,6 +62,32 @@ jobs:
       if: steps.check_release.outputs.release_exists == 'false'
       run: |
         python -m build
+
+    - name: Build template package
+      if: steps.check_release.outputs.release_exists == 'false'
+      run: |
+        echo "Creating SpecifyX template package..."
+        VERSION=${{ steps.get_version.outputs.version }}
+        
+        # Create package directory
+        mkdir -p specifyx-templates
+        
+        # Copy template directories
+        echo "Copying templates..."
+        cp -r src/specify_cli/templates/* specifyx-templates/
+        
+        # List what we're packaging
+        echo "Template package contents:"
+        find specifyx-templates -type f -name "*.j2" | sort
+        
+        # Create ZIP file
+        cd specifyx-templates
+        zip -r ../specifyx-templates-v${VERSION}.zip .
+        cd ..
+        
+        # Verify ZIP contents
+        echo "ZIP file contents:"
+        unzip -l specifyx-templates-v${VERSION}.zip | head -20
         
     - name: Generate release notes
       if: steps.check_release.outputs.release_exists == 'false'
@@ -102,6 +128,11 @@ jobs:
         fi
 
         cat >> release_notes.md << 'EOF'
+
+        ### What's Included
+
+        - **Python package**: SpecifyX CLI tool with Jinja2 template rendering
+        - **Template package**: Pre-built templates for all AI assistants (Claude, Gemini, Copilot)
 
         ### Installation
 
@@ -154,6 +185,7 @@ jobs:
         files: |
           dist/*.whl
           dist/*.tar.gz
+          specifyx-templates-v${{ steps.get_version.outputs.version }}.zip
         draft: false
         prerelease: false
       env:
