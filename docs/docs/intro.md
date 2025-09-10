@@ -1,19 +1,27 @@
+---
+title: Introduction
+description: Welcome to SpecifyX Documentation
+---
+
 # Welcome to SpecifyX Documentation
 
 SpecifyX is an enhanced Python CLI tool for specification-driven development that helps developers create specifications, implementation plans, and manage project workflows with AI assistant integration.
+
+<img src="/img/logo.svg" alt="SpecifyX Logo" width="120" style={{display: 'block', margin: '2rem auto'}} />
+
 
 ## Getting Started
 
 Choose your path to get started with SpecifyX:
 
-### 🚀 Quick Start (5 minutes)
+### Quick Start (5 minutes)
 - **[Quick Start Guide](./guides/quickstart)** - Get up and running in minutes with AI assistant commands
 
-### 📚 Comprehensive Guides
+### Comprehensive Guides
 - **[Installation Guide](./guides/installation)** - Detailed setup instructions for all platforms
 - **[Development Workflow](./guides/workflow)** - Complete specification-driven development process
 
-### 🔧 Reference Documentation
+### Reference Documentation
 - **[CLI Reference](./reference/cli/init)** - Command-line interface documentation
 - **[API Reference](./reference/api/template_service)** - Service and API documentation
 

@@ -27,7 +27,6 @@ export class SyncService extends EventEmitter {
     super();
     this.fileDiscovery = new FileDiscovery();
     this.frontmatterProcessor = new FrontmatterProcessor();
-    this.pathMapper = new PathMapper();
     this.fileOps = new FileOperations();
   }
   
@@ -35,6 +34,8 @@ export class SyncService extends EventEmitter {
    * Initialize the service with configuration
    */
   async initialize(config: SyncConfiguration): Promise<void> {
+    // Initialize PathMapper with the patterns from config
+    this.pathMapper = new PathMapper(config.sourcePatterns);
     // Validate configuration
     if (!config.outputDir) {
       throw new Error('Output directory is required');

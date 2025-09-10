@@ -1,13 +1,13 @@
 import { join, basename, dirname, extname } from 'path';
 import { mkdir } from 'fs/promises';
-import type { DocumentationType } from './types';
+import type { DocumentationType, PathPattern } from './types';
 
 export class PathMapper {
-  private typeToSubdir: Record<DocumentationType, string> = {
-    command: 'docs/reference/cli',
-    service: 'docs/reference/api',
-    guide: 'docs/guides'
-  };
+  private patterns: PathPattern[];
+  
+  constructor(patterns: PathPattern[]) {
+    this.patterns = patterns;
+  }
   
   /**
    * Map source path to destination path
@@ -24,13 +24,13 @@ export class PathMapper {
    * Get output subdirectory for a documentation type
    */
   getOutputSubdir(type: DocumentationType): string {
-    const subdir = this.typeToSubdir[type];
+    const pattern = this.patterns.find(p => p.type === type);
     
-    if (!subdir) {
+    if (!pattern) {
       throw new Error(`Unknown documentation type: ${type}`);
     }
     
-    return subdir;
+    return pattern.outputSubdir;
   }
   
   /**
@@ -61,7 +61,8 @@ export class PathMapper {
         return basename(dir);
         
       case 'guide':
-        // For guides, use filename without extension
+      case 'about':
+        // For guides and about pages, use filename without extension
         return basename(file, extname(file));
         
       default:
