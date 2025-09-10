@@ -596,7 +596,10 @@ class TestScriptHelpers:
         assert error is None
         assert output_path.exists()
         # Check if file is executable (on Unix systems)
-        if hasattr(output_path.stat(), "st_mode"):
+        # On Windows, executable permissions work differently, so we skip this check
+        import os
+
+        if os.name != "nt" and hasattr(output_path.stat(), "st_mode"):
             assert output_path.stat().st_mode & 0o111
 
     def test_render_template_standalone_template_not_found(

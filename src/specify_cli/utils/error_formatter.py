@@ -31,8 +31,8 @@ def format_path_error(error_message: str, platform_name: Optional[str] = None) -
         # This handles both cases: paths with only forward slashes and mixed separators
         formatted_message = error_message.replace("/", separator)
     else:
-        # For Unix-like systems, keep forward slashes
-        formatted_message = error_message
+        # For Unix-like systems, convert backslashes to forward slashes
+        formatted_message = error_message.replace("\\", separator)
 
     return formatted_message
 

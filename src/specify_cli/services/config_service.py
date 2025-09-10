@@ -765,31 +765,36 @@ class TomlConfigService(ConfigService):
             True if successful, False otherwise
         """
         try:
+            import copy
+
+            # Create a deep copy to avoid modifying the original config
+            config_copy = copy.deepcopy(config)
+
             # Normalize paths for the specific platform
             if platform_name == "windows":
                 # Ensure Windows-style paths
                 if (
-                    config.template_settings
-                    and config.template_settings.custom_templates_dir
+                    config_copy.template_settings
+                    and config_copy.template_settings.custom_templates_dir
                 ):
-                    config.template_settings.custom_templates_dir = Path(
-                        str(config.template_settings.custom_templates_dir).replace(
+                    config_copy.template_settings.custom_templates_dir = Path(
+                        str(config_copy.template_settings.custom_templates_dir).replace(
                             "/", "\\"
                         )
                     )
             else:
                 # Ensure Unix-style paths
                 if (
-                    config.template_settings
-                    and config.template_settings.custom_templates_dir
+                    config_copy.template_settings
+                    and config_copy.template_settings.custom_templates_dir
                 ):
-                    config.template_settings.custom_templates_dir = Path(
-                        str(config.template_settings.custom_templates_dir).replace(
+                    config_copy.template_settings.custom_templates_dir = Path(
+                        str(config_copy.template_settings.custom_templates_dir).replace(
                             "\\", "/"
                         )
                     )
 
-            return self.save_project_config(project_path, config)
+            return self.save_project_config(project_path, config_copy)
         except Exception:
             return False
 
