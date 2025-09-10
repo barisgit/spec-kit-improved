@@ -154,16 +154,12 @@ class TestSelectBranchNamingPattern:
         assert "simple" in choices
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("rich.console.Console")
     @patch("specify_cli.utils.ui_helpers.BRANCH_DEFAULTS")
-    def test_select_branch_naming_pattern_console_output(
-        self, mock_branch_defaults, mock_console_class, mock_ui_class
+    def test_select_branch_naming_pattern_ui_interaction(
+        self, mock_branch_defaults, mock_ui_class
     ):
-        """Test that console output is properly formatted."""
+        """Test that UI interaction is properly configured."""
         # Setup mocks
-        mock_console = Mock()
-        mock_console_class.return_value = mock_console
-
         mock_ui = Mock()
         mock_ui_class.return_value = mock_ui
         mock_ui.select.return_value = "feature-based"
@@ -182,15 +178,24 @@ class TestSelectBranchNamingPattern:
         mock_branch_defaults.DEFAULT_PATTERN_NAME = "feature-based"
 
         # Call function
-        select_branch_naming_pattern()
+        result = select_branch_naming_pattern()
 
-        # Verify console interactions
-        mock_console.print.assert_called()
-        # Check that the info panel was printed
-        panel_calls = [
-            call for call in mock_console.print.call_args_list if "Panel" in str(call)
-        ]
-        assert len(panel_calls) > 0
+        # Verify UI interactions
+        mock_ui_class.assert_called_once()
+        mock_ui.select.assert_called_once()
+
+        # Verify the select call arguments
+        call_args = mock_ui.select.call_args
+        assert call_args[0][0] == "Select your preferred branch naming pattern:"
+        assert "feature-based" in call_args[1]["choices"]
+        assert call_args[1]["default"] == "feature-based"
+        assert "Choose how your project will name branches" in call_args[1]["header"]
+
+        # Verify return value
+        assert isinstance(result, BranchNamingConfig)
+        assert result.description == "Feature-based naming"
+        assert result.patterns == ["feature/{feature-name}"]
+        assert result.validation_rules == ["max_length_50"]
 
 
 class TestSelectAiAssistant:

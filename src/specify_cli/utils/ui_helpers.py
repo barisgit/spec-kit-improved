@@ -22,22 +22,7 @@ def select_branch_naming_pattern() -> BranchNamingConfig:
     Raises:
         KeyboardInterrupt: If user cancels selection
     """
-    from rich.console import Console
-    from rich.panel import Panel
-
-    console = Console()
     ui = InteractiveUI()
-
-    # Show explanatory information
-    # TODO: Improve ui to add this into same panel as the choices
-    info_text = (
-        "[bold cyan]Branch Naming Configuration[/bold cyan]\n\n"
-        "Choose how your project will name branches for features, hotfixes, and releases.\n\n"
-        "[dim]Note: You can customize patterns later in .specify/config.toml[/dim]"
-    )
-
-    console.print(Panel(info_text, border_style="cyan", padding=(1, 2)))
-    console.print()  # Add spacing
 
     # Get branch naming options from configuration system
     pattern_options = BRANCH_DEFAULTS.get_pattern_options_for_ui()
@@ -49,11 +34,18 @@ def select_branch_naming_pattern() -> BranchNamingConfig:
         display_text = f"{config['display']}\n[dim]Patterns: {patterns_text}[/dim]"
         choices[key] = display_text
 
+    # Create header text for panel content only
+    header_text = (
+        "Choose how your project will name branches for features, hotfixes, and releases.\n\n"
+        "[dim]Note: You can customize patterns later in .specify/config.toml[/dim]"
+    )
+
     try:
         selected_key = ui.select(
             "Select your preferred branch naming pattern:",
             choices=choices,
-            default=BRANCH_DEFAULTS.DEFAULT_PATTERN_NAME,  # Use configurable default
+            default=BRANCH_DEFAULTS.DEFAULT_PATTERN_NAME,
+            header=header_text,
         )
 
         # Get the selected configuration
@@ -89,9 +81,18 @@ def select_ai_assistant() -> str:
         for assistant in AI_DEFAULTS.ASSISTANTS
     }
 
+    # Create header text for panel content only
+    header_text = (
+        "Select your preferred AI assistant for code generation and project guidance.\n\n"
+        "[dim]This will configure templates and commands for your chosen assistant.[/dim]"
+    )
+
     try:
         return ui.select(
-            "Choose your AI assistant:", choices=ai_choices, default="claude"
+            "Choose your AI assistant:",
+            choices=ai_choices,
+            default="claude",
+            header=header_text,
         )
     except KeyboardInterrupt:
         # Re-raise to allow caller to handle cancellation
@@ -111,20 +112,9 @@ def select_template_source() -> Tuple[bool, Optional[str]]:
         KeyboardInterrupt: If user cancels selection
     """
     from rich.console import Console
-    from rich.panel import Panel
 
     console = Console()
     ui = InteractiveUI()
-
-    # Show explanatory information
-    info_text = (
-        "[bold cyan]Template Source Configuration[/bold cyan]\n\n"
-        "Choose whether to use embedded templates (faster) or download from remote repository (latest).\n\n"
-        "[dim]Remote templates may have newer features and fixes.[/dim]"
-    )
-
-    console.print(Panel(info_text, border_style="cyan", padding=(1, 2)))
-    console.print()
 
     # Template source choices
     source_choices = {
@@ -132,10 +122,19 @@ def select_template_source() -> Tuple[bool, Optional[str]]:
         "remote": "Remote Templates\n[dim]Download latest templates from GitHub repository[/dim]",
     }
 
+    # Create header text for panel content only
+    header_text = (
+        "Choose whether to use embedded templates (faster) or download from remote repository (latest).\n\n"
+        "[dim]Remote templates may have newer features and fixes.[/dim]"
+    )
+
     try:
         # First choice: embedded vs remote
         source_choice = ui.select(
-            "Choose template source:", choices=source_choices, default="embedded"
+            "Choose template source:",
+            choices=source_choices,
+            default="embedded",
+            header=header_text,
         )
 
         use_remote = source_choice == "remote"

@@ -123,6 +123,11 @@ class CommandLineGitService(GitService):
 
     def create_branch(self, branch_name: str, project_path: Path) -> bool:
         """Create a new branch with the given name"""
+        # Check if we're already on the target branch
+        current_branch = self.get_current_branch(project_path)
+        if current_branch == branch_name:
+            return True
+
         try:
             subprocess.run(
                 ["git", "checkout", "-b", branch_name],
