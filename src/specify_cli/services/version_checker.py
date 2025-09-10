@@ -27,7 +27,6 @@ class PyPIVersionChecker:
         self.user_agent = (
             f"specifyx/{self._get_current_version()} (pypi-update-checker)"
         )
-        self._logger = logging.getLogger(__name__)
 
     def _get_current_version(self) -> str:
         """Get current version from package metadata."""
@@ -110,7 +109,7 @@ class PyPIVersionChecker:
                     return latest_version
 
                 # Any other status: warn and fallback to cached
-                self._logger.warning(
+                logging.warning(
                     "PyPI version check returned status %s for %s",
                     response.status_code,
                     self.api_url,
@@ -122,7 +121,7 @@ class PyPIVersionChecker:
             json.JSONDecodeError,
         ):
             # Network or parsing errors - warn and return cached version if available
-            self._logger.warning(
+            logging.warning(
                 "PyPI version check failed; using cached version if available",
                 exc_info=False,
             )

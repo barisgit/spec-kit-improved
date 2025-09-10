@@ -87,7 +87,7 @@ class PathDefaults:
             ".specify",
             ".specify/scripts",
             ".specify/templates",
-            ".specify/specs",
+            ".specify/memory",
         ]
     )
 
@@ -215,21 +215,15 @@ class PathDefaults:
             # Add base directory
             paths.append(assistant.base_directory)
 
-            # Add commands and memory directories if they're different from base
+            # Add commands directory if it's different from base
             if assistant.commands_directory != assistant.base_directory:
                 paths.append(assistant.commands_directory)
-            if (
-                assistant.memory_directory != assistant.base_directory
-                and assistant.memory_directory != assistant.commands_directory
-            ):
-                paths.append(assistant.memory_directory)
         else:
             # Fallback for unknown assistants
             paths.extend(
                 [
                     f".{ai_assistant}",
                     f".{ai_assistant}/commands",
-                    f".{ai_assistant}/memory",
                 ]
             )
 

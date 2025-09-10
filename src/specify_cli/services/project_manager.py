@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from rich.console import Console
 
 from ..models.config import BranchNamingConfig, ProjectConfig, TemplateConfig
-from ..models.defaults import AI_DEFAULTS, PATH_DEFAULTS
+from ..models.defaults import PATH_DEFAULTS
 from ..models.project import (
     ProjectInitOptions,
     ProjectInitResult,
@@ -70,41 +70,21 @@ class ProjectManager:
         self, ai_assistant: str = "claude"
     ) -> List[TemplateFolderMapping]:
         """Get default folder mappings for the specified AI assistant using configuration."""
-        # Use PATH_DEFAULTS to get configured template categories
-        mappings = []
+        results = PATH_DEFAULTS.get_folder_mappings(ai_assistant)
 
-        for category in PATH_DEFAULTS.TEMPLATE_CATEGORIES:
-            # Determine if this category should be rendered during init
-            render_during_init = (
-                category != "runtime_templates"
-            )  # runtime_templates copied as-is
-
-            # Get target path using AI configuration
-            if category in ["commands", "memory"]:
-                # AI-specific categories use AI_DEFAULTS
-                target_pattern = AI_DEFAULTS.get_target_path_for_category(
-                    ai_assistant, category
-                )
-            elif category == "scripts":
-                # Scripts always go to .specify/scripts
-                target_pattern = ".specify/scripts"
-            elif category == "runtime_templates":
-                # Runtime templates go to .specify/templates
-                target_pattern = ".specify/templates"
-            else:
-                # Fallback for any new categories
-                target_pattern = f".specify/{category}"
-
-            # Determine executable extensions
+        mappings: List[TemplateFolderMapping] = []
+        for result in results:
             exec_extensions = (
-                PATH_DEFAULTS.EXECUTABLE_EXTENSIONS if category == "scripts" else []
+                PATH_DEFAULTS.EXECUTABLE_EXTENSIONS
+                if result.category == "scripts"
+                else []
             )
 
             mappings.append(
                 TemplateFolderMapping(
-                    source=category,
-                    target_pattern=target_pattern,
-                    render=render_during_init,
+                    source=result.source_path,
+                    target_pattern=result.target_path,
+                    render=result.should_render,
                     executable_extensions=exec_extensions,
                 )
             )
@@ -231,13 +211,18 @@ class ProjectManager:
     ) -> tuple[bool, Optional[str]]:
         """Validate project directory"""
         if options.use_current_dir:
-            if (project_path / ".specify").exists():
+            # Only check for existing initialization if force is not used
+            if self.is_project_initialized(project_path) and not options.force:
                 return False, "Directory already initialized as spec-kit project"
         else:
             if project_path.exists() and any(project_path.iterdir()):
                 return False, f"Directory not empty: {project_path}"
 
         return True, None
+
+    def is_project_initialized(self, project_path: Path) -> bool:
+        """Check if a directory is already initialized as a SpecifyX project"""
+        return (project_path / ".specify").exists()
 
     def _create_basic_structure(self, project_path: Path, ai_assistant: str) -> None:
         """Create basic project structure"""
@@ -287,25 +272,16 @@ class ProjectManager:
 
     def _create_initial_branch(
         self,
-        config: ProjectConfig,
+        _config: ProjectConfig,
         project_path: Path,
         completed_steps: List[ProjectInitStep],
         warnings: List[str],
     ) -> None:
         """Create initial git branch"""
         # Get default context variables
-        context_vars = PATH_DEFAULTS.get_default_context_vars(project_path.name)
-        branch_context = {
-            "feature_name": "initial-setup",
-            "project_name": context_vars.project_name,
-            "created_date": context_vars.created_date,
-            "ai_assistant": context_vars.ai_assistant,
-            "config_directory": context_vars.config_directory,
-            "spec_type": context_vars.spec_type,
-        }
+        PATH_DEFAULTS.get_default_context_vars(project_path.name)
 
-        pattern = config.branch_naming.default_pattern or "feature/{{feature_name}}"
-        branch_name = self._config_service.expand_branch_name(pattern, branch_context)
+        branch_name = "main"
 
         if self._git_service.create_branch(branch_name, project_path):
             completed_steps.append(ProjectInitStep.BRANCH_CREATION)

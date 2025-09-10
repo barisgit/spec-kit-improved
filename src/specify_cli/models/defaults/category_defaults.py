@@ -85,9 +85,9 @@ class CategoryDefaults:
             CategoryMapping(
                 name="memory",
                 source="memory",
-                target_pattern="{ai_dir}/memory",
+                target_pattern=".specify/memory",
                 render_templates=True,
-                is_ai_specific=True,
+                is_ai_specific=False,
                 description="AI assistant memory/constitution files",
             ),
             CategoryMapping(

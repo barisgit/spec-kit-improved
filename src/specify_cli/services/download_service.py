@@ -245,17 +245,27 @@ class HttpxDownloadService(DownloadService):
             response.raise_for_status()
             release_data = response.json()
 
-            # Find the template asset for the specified AI assistant
-            pattern = f"spec-kit-template-{ai_assistant}"
-            matching_assets = [
-                asset
-                for asset in release_data.get("assets", [])
-                if pattern in asset["name"] and asset["name"].endswith(".zip")
+            # Find the generic template asset (single package for all AI assistants)
+            # Look for specifyx-templates or spec-kit-template patterns
+            patterns = [
+                "specifyx-templates",  # New SpecifyX format
+                f"spec-kit-template-{ai_assistant}",  # Legacy per-AI format (fallback)
+                "spec-kit-template",  # Generic format
             ]
+
+            matching_assets = []
+            for pattern in patterns:
+                matching_assets = [
+                    asset
+                    for asset in release_data.get("assets", [])
+                    if pattern in asset["name"] and asset["name"].endswith(".zip")
+                ]
+                if matching_assets:
+                    break
 
             if not matching_assets:
                 self.console.print(
-                    f"[red]Error:[/red] No template found for AI assistant '{ai_assistant}'"
+                    f"[red]Error:[/red] No template package found (searched for: {', '.join(patterns)})"
                 )
                 available_assets = [
                     asset["name"] for asset in release_data.get("assets", [])

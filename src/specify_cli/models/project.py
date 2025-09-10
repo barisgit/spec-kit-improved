@@ -311,6 +311,7 @@ class ProjectInitOptions:
     custom_config: Optional[Dict[str, Any]] = None
     branch_pattern: Optional[str] = None
     branch_naming_config: Optional[BranchNamingConfig] = None
+    force: bool = False
 
 
 @dataclass

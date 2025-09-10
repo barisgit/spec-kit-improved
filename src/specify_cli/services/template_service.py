@@ -24,6 +24,7 @@ from jinja2 import (
 from jinja2.meta import find_undeclared_variables
 from rich.console import Console
 
+from specify_cli.models.config import BranchNamingConfig
 from specify_cli.models.defaults import AI_DEFAULTS, PATH_DEFAULTS
 from specify_cli.models.defaults.path_defaults import (
     EXECUTABLE_PERMISSIONS,
@@ -278,6 +279,8 @@ class JinjaTemplateService(TemplateService):
         self._ai_assistant: Optional[str] = None
         self._environment: Optional[Environment] = None
         self._discovered_templates: List[GranularTemplate] = []
+        self._use_filesystem: bool = False  # Flag for filesystem vs importlib access
+        self._filesystem_root: Optional[Path] = None  # Store filesystem root separately
 
         # Use configurable skip patterns from PATH_DEFAULTS
         self.skip_patterns = skip_patterns or PATH_DEFAULTS.SKIP_PATTERNS
@@ -927,26 +930,53 @@ class JinjaTemplateService(TemplateService):
                         f"[blue]Processing {mapping.source} → {target}[/blue]"
                     )
 
-                # Get source folder as Traversable
-                source_traversable = self._template_root.joinpath(mapping.source)
+                # Get source folder and process templates
+                if self._use_filesystem:
+                    if self._filesystem_root is None:
+                        raise ValueError("Filesystem root not set")
+                    source_path = self._filesystem_root / mapping.source
+                    if not source_path.exists():
+                        raise FileNotFoundError(
+                            f"Template source not found: {source_path}"
+                        )
 
-                # Ensure target directory exists
-                target_path.mkdir(parents=True, exist_ok=True)
+                    # Ensure target directory exists
+                    target_path.mkdir(parents=True, exist_ok=True)
 
-                # Process files based on render flag
-                if mapping.render:
-                    self._render_templates_from_traversable(
-                        source_traversable,
-                        target_path,
-                        context,
-                        mapping.executable_extensions,
-                        result,
-                        verbose,
-                    )
+                    # Process files based on render flag
+                    if mapping.render:
+                        self._render_templates_from_path(
+                            source_path,
+                            target_path,
+                            context,
+                            mapping.executable_extensions,
+                            result,
+                            verbose,
+                        )
+                    else:
+                        self._copy_templates_from_path(
+                            source_path, target_path, result, verbose
+                        )
                 else:
-                    self._copy_templates_from_traversable(
-                        source_traversable, target_path, result, verbose
-                    )
+                    source_traversable = self._template_root.joinpath(mapping.source)
+
+                    # Ensure target directory exists
+                    target_path.mkdir(parents=True, exist_ok=True)
+
+                    # Process files based on render flag
+                    if mapping.render:
+                        self._render_templates_from_traversable(
+                            source_traversable,
+                            target_path,
+                            context,
+                            mapping.executable_extensions,
+                            result,
+                            verbose,
+                        )
+                    else:
+                        self._copy_templates_from_traversable(
+                            source_traversable, target_path, result, verbose
+                        )
 
             except Exception as e:
                 error_msg = f"Error processing {mapping.source}: {str(e)}"
@@ -1103,3 +1133,178 @@ class JinjaTemplateService(TemplateService):
         enhanced_context.platform_name = platform_name
 
         return enhanced_context
+
+    def _render_templates_from_path(
+        self,
+        source_path: Path,
+        target_path: Path,
+        context: TemplateContext,
+        executable_extensions: List[str],
+        result: RenderResult,
+        verbose: bool = False,
+    ) -> None:
+        """Render .j2 templates from a filesystem Path"""
+        try:
+            for item in source_path.iterdir():
+                if PATH_DEFAULTS.should_skip_file(item):
+                    if verbose:
+                        self._console.print(f"[yellow]Skipped:[/yellow] {item.name}")
+                    continue
+
+                if item.is_dir():
+                    sub_target = target_path / item.name
+                    sub_target.mkdir(parents=True, exist_ok=True)
+                    self._render_templates_from_path(
+                        item,
+                        sub_target,
+                        context,
+                        executable_extensions,
+                        result,
+                        verbose,
+                    )
+                else:
+                    try:
+                        if item.name.endswith(TEMPLATE_EXTENSION):
+                            output_name = item.name[: -len(TEMPLATE_EXTENSION)]
+                            template_content = item.read_text()
+
+                            env = Environment(
+                                loader=FileSystemLoader(str(item.parent)),
+                                keep_trailing_newline=True,
+                            )
+                            template = env.from_string(template_content)
+                            rendered = template.render(context.to_dict())
+
+                            output_file = target_path / output_name
+                            output_file.write_text(rendered)
+
+                            if any(
+                                output_name.endswith(ext)
+                                for ext in executable_extensions
+                            ):
+                                output_file.chmod(EXECUTABLE_PERMISSIONS)
+                                if verbose:
+                                    self._console.print(
+                                        f"[blue]Made executable:[/blue] {output_name}"
+                                    )
+
+                            result.rendered_files.append(output_file)
+                            if verbose:
+                                self._console.print(
+                                    f"[green]Rendered:[/green] {item.name} → {output_name}"
+                                )
+
+                    except Exception as e:
+                        error_msg = f"Failed to render {item.name}: {str(e)}"
+                        result.errors.append(error_msg)
+                        if verbose:
+                            self._console.print(f"[red]Error:[/red] {error_msg}")
+
+        except Exception as e:
+            error_msg = f"Failed to process templates: {str(e)}"
+            result.errors.append(error_msg)
+            if verbose:
+                self._console.print(f"[red]Error:[/red] {error_msg}")
+
+    def _copy_templates_from_path(
+        self,
+        source_path: Path,
+        target_path: Path,
+        result: RenderResult,
+        verbose: bool = False,
+    ) -> None:
+        """Copy templates as-is from a filesystem Path"""
+        try:
+            for item in source_path.iterdir():
+                if PATH_DEFAULTS.should_skip_file(item):
+                    if verbose:
+                        self._console.print(f"[yellow]Skipped:[/yellow] {item.name}")
+                    continue
+
+                if item.is_dir():
+                    sub_target = target_path / item.name
+                    sub_target.mkdir(parents=True, exist_ok=True)
+                    self._copy_templates_from_path(item, sub_target, result, verbose)
+                else:
+                    try:
+                        output_file = target_path / item.name
+                        output_file.write_bytes(item.read_bytes())
+                        result.copied_files.append(output_file)
+                        if verbose:
+                            self._console.print(f"[cyan]Copied:[/cyan] {item.name}")
+
+                    except Exception as e:
+                        error_msg = f"Failed to copy {item.name}: {str(e)}"
+                        result.errors.append(error_msg)
+                        if verbose:
+                            self._console.print(f"[red]Error:[/red] {error_msg}")
+
+        except Exception as e:
+            error_msg = f"Failed to copy templates: {str(e)}"
+            result.errors.append(error_msg)
+            if verbose:
+                self._console.print(f"[red]Error:[/red] {error_msg}")
+
+    def render_templates(
+        self,
+        templates_path: Path,
+        destination_path: Path,
+        ai_assistant: str,
+        project_name: str,
+        branch_pattern: str,
+    ) -> RenderResult:
+        """
+        Render templates from a given path (used by fallback mechanism)
+
+        Args:
+            templates_path: Path to templates directory
+            destination_path: Target project directory
+            ai_assistant: AI assistant name (e.g., "claude")
+            project_name: Name of the project
+            branch_pattern: Branch naming pattern
+
+        Returns:
+            RenderResult with success status and processed files
+        """
+        _branch_pattern = branch_pattern
+
+        # Create template context
+        context = TemplateContext(
+            project_name=project_name,
+            ai_assistant=ai_assistant,
+            project_path=destination_path,
+            branch_naming_config=BranchNamingConfig(),
+        )
+
+        # Get default folder mappings for this AI assistant
+        # Import here to avoid circular imports
+        import specify_cli.services.project_manager as pm
+
+        manager = pm.ProjectManager()
+        folder_mappings = manager._get_default_folder_mappings(ai_assistant)
+
+        # Temporarily set the filesystem root to the provided path
+        original_filesystem_root = self._filesystem_root
+        original_use_filesystem = self._use_filesystem
+        try:
+            # For fallback, we need to use FileSystem access instead of importlib.resources
+            self._filesystem_root = templates_path
+            self._use_filesystem = True
+
+            return self.render_all_templates_from_mappings(
+                folder_mappings, context, verbose=True
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to render templates: {str(e)}") from e
+        finally:
+            # Restore original state
+            self._filesystem_root = original_filesystem_root
+            self._use_filesystem = original_use_filesystem
+
+        # Fallback explicit return for static analyzers
+        return RenderResult()
+
+
+def get_template_service() -> JinjaTemplateService:
+    """Factory function to create a JinjaTemplateService instance"""
+    return JinjaTemplateService()
