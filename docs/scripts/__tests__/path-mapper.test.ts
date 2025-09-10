@@ -17,21 +17,21 @@ describe('PathMapper', () => {
       const source = '../src/specify_cli/commands/init/docs.mdx';
       const dest = mapper.mapPath(source, 'command', outputDir);
       
-      expect(dest).toBe(path.join(outputDir, 'reference/cli/init.mdx'));
+      expect(dest).toBe(path.join(outputDir, 'docs/reference/cli/init.mdx'));
     });
 
     it('should map service paths correctly', () => {
       const source = '../src/specify_cli/services/template_service/docs.md';
       const dest = mapper.mapPath(source, 'service', outputDir);
       
-      expect(dest).toBe(path.join(outputDir, 'reference/api/template_service.md'));
+      expect(dest).toBe(path.join(outputDir, 'docs/reference/api/template_service.md'));
     });
 
     it('should map guide paths correctly', () => {
       const source = '../src/specify_cli/guides/getting-started.mdx';
       const dest = mapper.mapPath(source, 'guide', outputDir);
       
-      expect(dest).toBe(path.join(outputDir, 'guides/getting-started.mdx'));
+      expect(dest).toBe(path.join(outputDir, 'docs/guides/getting-started.mdx'));
     });
 
     it('should preserve file extensions', () => {
@@ -51,21 +51,21 @@ describe('PathMapper', () => {
       const dest = mapper.mapPath(source, 'command', outputDir);
       
       // Should extract the immediate parent directory name
-      expect(dest).toBe(path.join(outputDir, 'reference/cli/nested.mdx'));
+      expect(dest).toBe(path.join(outputDir, 'docs/reference/cli/nested.mdx'));
     });
   });
 
   describe('getOutputSubdir', () => {
     it('should return correct output subdirectory for commands', () => {
-      expect(mapper.getOutputSubdir('command')).toBe('reference/cli');
+      expect(mapper.getOutputSubdir('command')).toBe('docs/reference/cli');
     });
 
     it('should return correct output subdirectory for services', () => {
-      expect(mapper.getOutputSubdir('service')).toBe('reference/api');
+      expect(mapper.getOutputSubdir('service')).toBe('docs/reference/api');
     });
 
     it('should return correct output subdirectory for guides', () => {
-      expect(mapper.getOutputSubdir('guide')).toBe('guides');
+      expect(mapper.getOutputSubdir('guide')).toBe('docs/guides');
     });
 
     it('should throw for unknown type', () => {

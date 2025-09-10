@@ -1,12 +1,13 @@
 import { join, basename, dirname, extname } from 'path';
 import { mkdir } from 'fs/promises';
 import type { DocumentationType, PathPattern } from './types';
+import { DEFAULT_CONFIG } from './config';
 
 export class PathMapper {
   private patterns: PathPattern[];
   
-  constructor(patterns: PathPattern[]) {
-    this.patterns = patterns;
+  constructor(patterns?: PathPattern[]) {
+    this.patterns = patterns || DEFAULT_CONFIG.sourcePatterns;
   }
   
   /**
