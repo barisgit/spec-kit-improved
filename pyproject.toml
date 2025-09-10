@@ -1,6 +1,6 @@
 [project]
 name = "specifyx"
-version = "0.2.3"
+version = "0.2.4"
 description = "Enhanced spec-driven development CLI with modern architecture and Jinja2 templating"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -58,11 +58,14 @@ packages = ["src/specify_cli"]
 [tool.hatch.build.targets.wheel.sources]
 "src/specify_cli" = "specify_cli"
 
-[tool.hatch.build.targets.wheel.force-include]
-"src/specify_cli/templates" = "specify_cli/templates"
-
-[tool.hatch.build.targets.sdist.force-include]
-"src/specify_cli/templates" = "src/specify_cli/templates"
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+    "MANIFEST.in",
+]
 
 [tool.ruff]
 src = ["src", "tests"]
