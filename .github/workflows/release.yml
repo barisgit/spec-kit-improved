@@ -22,10 +22,8 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
 
     - name: Get version from pyproject.toml
       id: get_version
@@ -48,20 +46,20 @@ jobs:
     - name: Run tests
       if: steps.check_release.outputs.release_exists == 'false'
       run: |
-        pip install -e ".[dev]"
-        pytest
+        uv sync --extra dev
+        uv run pytest
         
     - name: Run linting
       if: steps.check_release.outputs.release_exists == 'false'
       run: |
-        ruff check .
-        ruff format --check .
-        pyrefly check .
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run pyrefly check .
         
     - name: Build package
       if: steps.check_release.outputs.release_exists == 'false'
       run: |
-        python -m build
+        uv build
 
     - name: Build template package
       if: steps.check_release.outputs.release_exists == 'false'

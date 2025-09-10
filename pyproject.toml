@@ -61,6 +61,9 @@ packages = ["src/specify_cli"]
 [tool.hatch.build.targets.wheel.force-include]
 "src/specify_cli/templates" = "specify_cli/templates"
 
+[tool.hatch.build.targets.sdist.force-include]
+"src/specify_cli/templates" = "src/specify_cli/templates"
+
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 88
