@@ -12,23 +12,23 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from rich.console import Console
 
-from ..models.config import BranchNamingConfig, ProjectConfig, TemplateConfig
-from ..models.defaults import PATH_DEFAULTS
-from ..models.project import (
+from specify_cli.models.config import BranchNamingConfig, ProjectConfig, TemplateConfig
+from specify_cli.models.defaults import PATH_DEFAULTS
+from specify_cli.models.project import (
     ProjectInitOptions,
     ProjectInitResult,
     ProjectInitStep,
     TemplateContext,
 )
-from ..utils.validators import ValidationError, Validators
-from .config_service import ConfigService
-from .git_service import GitService
+from specify_cli.services.config_service import ConfigService
+from specify_cli.services.git_service import GitService
 
 # Import types that we need at runtime
-from .template_service import RenderResult, TemplateFolderMapping
+from specify_cli.services.template_service import RenderResult, TemplateFolderMapping
+from specify_cli.utils.validators import ValidationError, Validators
 
 if TYPE_CHECKING:
-    from .template_service import JinjaTemplateService
+    from specify_cli.services.template_service import JinjaTemplateService
 
 
 class ProjectManager:
@@ -44,17 +44,17 @@ class ProjectManager:
         """Initialize with optional service dependencies and custom configurations"""
         # Use provided services or create defaults
         if config_service is None:
-            from .config_service import TomlConfigService
+            from specify_cli.services.config_service import TomlConfigService
 
             config_service = TomlConfigService()
 
         if git_service is None:
-            from .git_service import CommandLineGitService
+            from specify_cli.services.git_service import CommandLineGitService
 
             git_service = CommandLineGitService()
 
         if template_service is None:
-            from .template_service import JinjaTemplateService
+            from specify_cli.services.template_service import JinjaTemplateService
 
             template_service = JinjaTemplateService()
 

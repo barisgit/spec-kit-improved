@@ -1278,9 +1278,9 @@ class JinjaTemplateService(TemplateService):
 
         # Get default folder mappings for this AI assistant
         # Import here to avoid circular imports
-        import specify_cli.services.project_manager as pm
+        from specify_cli.services.project_manager import ProjectManager
 
-        manager = pm.ProjectManager()
+        manager = ProjectManager()
         folder_mappings = manager._get_default_folder_mappings(ai_assistant)
 
         # Temporarily set the filesystem root to the provided path

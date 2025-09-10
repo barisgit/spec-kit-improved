@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import tomli_w
 
-from ..models.config import ProjectConfig
+from specify_cli.models.config import ProjectConfig
 
 if TYPE_CHECKING:
-    from ..models.config import BranchNamingConfig
+    from specify_cli.models.config import BranchNamingConfig
 
 
 class ConfigService(ABC):
@@ -408,7 +408,7 @@ class TomlConfigService(ConfigService):
         self, config: "BranchNamingConfig"
     ) -> Tuple[bool, Optional[str]]:
         """Validate a complete BranchNamingConfig object"""
-        from ..models.config import BranchNamingConfig
+        from specify_cli.models.config import BranchNamingConfig
 
         if not isinstance(config, BranchNamingConfig):
             return False, "Config must be a BranchNamingConfig instance"
@@ -672,7 +672,7 @@ class TomlConfigService(ConfigService):
 
                 # Set AI assistant if provided
                 if ai_assistant:
-                    from ..models.config import TemplateConfig
+                    from specify_cli.models.config import TemplateConfig
 
                     config.template_settings = TemplateConfig(ai_assistant=ai_assistant)
 
@@ -699,14 +699,14 @@ class TomlConfigService(ConfigService):
                 )
                 if ai_assistant and current_ai != ai_assistant:
                     if not config.template_settings:
-                        from ..models.config import TemplateConfig
+                        from specify_cli.models.config import TemplateConfig
 
                         config.template_settings = TemplateConfig(
                             ai_assistant=ai_assistant
                         )
                     else:
                         # Create new TemplateConfig with updated ai_assistant
-                        from ..models.config import TemplateConfig
+                        from specify_cli.models.config import TemplateConfig
 
                         config.template_settings = TemplateConfig(
                             ai_assistant=ai_assistant,
@@ -738,7 +738,7 @@ class TomlConfigService(ConfigService):
             # If anything fails, return safe defaults without saving
             default_config = ProjectConfig.create_default(project_path.name)
             if ai_assistant:
-                from ..models.config import TemplateConfig
+                from specify_cli.models.config import TemplateConfig
 
                 default_config.template_settings = TemplateConfig(
                     ai_assistant=ai_assistant

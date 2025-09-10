@@ -5,8 +5,11 @@ from typing import Any, Dict, Optional
 from rich.console import Console
 from rich.panel import Panel
 
-from .update_installer import InstallationMethodDetector, UpdateInstaller
-from .version_checker import PyPIVersionChecker
+from specify_cli.services.update_installer import (
+    InstallationMethodDetector,
+    UpdateInstaller,
+)
+from specify_cli.services.version_checker import PyPIVersionChecker
 
 
 class UpdateService:

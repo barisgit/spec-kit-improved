@@ -2,8 +2,9 @@
 
 from typing import Dict, Optional, Tuple
 
-from ..models.config import BranchNamingConfig
-from ..models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
+from specify_cli.models.config import BranchNamingConfig
+from specify_cli.models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
+
 from .ui.interactive_ui import InteractiveUI
 
 # Branch naming pattern selection using configurable defaults

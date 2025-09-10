@@ -11,7 +11,7 @@ import httpx
 from packaging.version import parse
 from platformdirs import user_cache_dir
 
-from ..utils.file_operations import ensure_directory
+from specify_cli.utils.file_operations import ensure_directory
 
 
 class PyPIVersionChecker:
