@@ -53,29 +53,26 @@ uv tool install --from git+https://github.com/barisgit/spec-kit-improved
 
 ## Quick Start
 
-Initialize a new spec-driven project:
+See SpecifyX in action - initialize a new project and start building:
+
+![SpecifyX Demo](docs/static/img/gifs/specifyx-init.webm)
+
 ```bash
+# Install SpecifyX
+uv tool install specifyx
+
+# Create a new project
 specifyx init my-project
-specifyx init --here  # in current directory
-```
+cd my-project
 
-Check tool requirements:
-```bash
+# Check system requirements
 specifyx check
-```
 
-Run specifyx python scripts in your project with:
-```bash
-specifyx run my-script
-
-# List available scripts
+# Run project scripts
 specifyx run --list
-
-# Show path to specified script
-specifyx run --which my-script
 ```
 
-> Note: Your AI assistant is instructed to use specifyx when you run commands.
+> For detailed guides, examples, and API documentation, visit our [Documentation](https://specifyx.dev).
 
 ## Attribution and Philosophy
 
