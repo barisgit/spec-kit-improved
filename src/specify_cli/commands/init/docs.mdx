@@ -1,0 +1,70 @@
+# init Command
+
+The `specifyx init` command initializes a new project with specification-driven development templates and structure.
+
+## Usage
+
+```bash
+specifyx init [PROJECT_NAME] [OPTIONS]
+```
+
+## Description
+
+This command sets up a new project with:
+- Specification templates for features
+- AI assistant integration (Claude, Gemini, Copilot)
+- Branch naming patterns configuration
+- Python scripts for cross-platform compatibility
+
+## Options
+
+- `--here`: Initialize in the current directory instead of creating a new one
+- `--ai-assistant`: Choose AI assistant (claude, gemini, copilot)
+- `--branch-pattern`: Select branch naming pattern
+
+## Interactive Mode
+
+When run without options, the command enters interactive mode:
+1. Prompts for project name (if not provided)
+2. Asks for AI assistant preference
+3. Offers branch naming pattern selection
+4. Creates project structure
+
+## Examples
+
+```bash
+# Create new project with interactive prompts
+specifyx init my-project
+
+# Initialize in current directory
+specifyx init --here
+
+# Skip prompts with specific assistant
+specifyx init my-project --ai-assistant claude
+```
+
+## Generated Structure
+
+```
+my-project/
+├── .specify/
+│   ├── config.toml         # Project configuration
+│   ├── scripts/            # Python utility scripts
+│   ├── templates/          # Runtime templates
+│   └── memory/             # Project constitution
+├── .claude/                # AI assistant commands
+├── specs/                  # Feature specifications
+└── README.md              # Project documentation
+```
+
+## Configuration
+
+The command creates a `.specify/config.toml` file with:
+- Branch naming patterns
+- AI assistant preferences
+- Project metadata
+
+## See Also
+
+- [Getting Started Guide](/docs/guides/getting-started)
+- [Template Service API](/docs/reference/api/template_service)

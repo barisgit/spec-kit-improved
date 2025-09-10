@@ -1,0 +1,84 @@
+# check Command
+
+The `specifyx check` command validates system requirements and project configuration.
+
+## Usage
+
+```bash
+specifyx check [OPTIONS]
+```
+
+## Description
+
+Performs comprehensive checks to ensure your environment is properly configured for SpecifyX:
+- Python version compatibility
+- Required dependencies
+- Git repository status
+- Configuration file validity
+- Template availability
+
+## Options
+
+- `--verbose`: Show detailed check results
+- `--fix`: Attempt to fix common issues automatically
+
+## Checks Performed
+
+### System Requirements
+- Python 3.11 or higher
+- Git installed and accessible
+- Required Python packages
+
+### Project Configuration
+- Valid `.specify/config.toml` file
+- Template files present
+- Branch patterns configured
+
+### Repository Status
+- Git initialized
+- Clean working directory
+- Current branch information
+
+## Output
+
+The command provides colored output indicating:
+- ✅ Passing checks
+- ⚠️ Warnings (non-critical issues)
+- ❌ Failures (must be fixed)
+
+## Examples
+
+```bash
+# Basic system check
+specifyx check
+
+# Verbose output with details
+specifyx check --verbose
+
+# Auto-fix common issues
+specifyx check --fix
+```
+
+## Exit Codes
+
+- `0`: All checks passed
+- `1`: One or more checks failed
+- `2`: Critical error during checking
+
+## Troubleshooting
+
+Common issues and solutions:
+
+### Python Version
+If Python version check fails, ensure Python 3.11+ is installed and in PATH.
+
+### Missing Dependencies
+Run `pip install specifyx --upgrade` to update dependencies.
+
+### Git Not Found
+Install Git from https://git-scm.com/ and ensure it's in PATH.
+
+## See Also
+
+- [Getting Started Guide](/docs/guides/getting-started)
+- [CLI Reference](/docs/reference/cli/init)
