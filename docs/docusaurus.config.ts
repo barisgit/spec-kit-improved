@@ -84,7 +84,7 @@ const config: Config = {
           label: 'Contributing',
         },
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/barisgit/spec-kit-improved',
           label: 'GitHub',
           position: 'right',
         },
@@ -133,7 +133,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} SpecifyX, Inc. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
