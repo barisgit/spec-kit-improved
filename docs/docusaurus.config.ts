@@ -78,6 +78,12 @@ const config: Config = {
           label: 'Reference',
         },
         {
+          type: 'docSidebar',
+          sidebarId: 'contributingSidebar',
+          position: 'left',
+          label: 'Contributing',
+        },
+        {
           href: 'https://github.com/facebook/docusaurus',
           label: 'GitHub',
           position: 'right',
@@ -135,6 +141,14 @@ const config: Config = {
       additionalLanguages: ['python', 'bash'],
     },
   } satisfies Preset.ThemeConfig,
+  plugins: [
+    [
+      require.resolve('docusaurus-lunr-search'),
+      {
+        languages: ['en'],
+      },
+    ],
+  ],
 };
 
 export default config;
