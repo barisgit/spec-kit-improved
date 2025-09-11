@@ -41,6 +41,23 @@ When working on SpecifyX:
 2. Test commands with your coding agent of choice when you create a sample project
 3. All templates are in `src/specify_cli/templates/` directory
 
+## Documentation Strategy
+
+SpecifyX follows a **docs-by-code** approach where almost all documentation lives alongside the code and is automatically synced to the website:
+
+- **Service docs**: Located in `src/specify_cli/services/*/docs.mdx` 
+- **Command docs**: Located in `src/specify_cli/commands/*/docs.mdx`
+- **Guides**: Located in `src/specify_cli/guides/*.mdx`
+- **API reference**: Auto-generated from docstrings and MDX files
+
+The documentation website automatically includes content from the source tree during build/development. This ensures documentation stays current with code changes and reduces duplication between source and published docs.
+
+**When contributing**:
+- Update MDX files in the source tree, not in `docs/` directory
+- Keep service documentation focused and concise
+- Use docstrings for API documentation
+- The sync process handles publishing to the docs site
+
 ## Resources
 
 - [Spec-Driven Development Methodology](./spec-driven.md)

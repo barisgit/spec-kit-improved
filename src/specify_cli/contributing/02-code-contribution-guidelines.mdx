@@ -469,4 +469,25 @@ if PATH_DEFAULTS.should_skip_file(file_path):
 # HACK: Temporary workaround for Jinja2 environment sharing
 ```
 
+## Documentation Strategy
+
+SpecifyX uses a **docs-by-code** approach where documentation lives alongside source code and automatically syncs to the website:
+
+### File Organization
+- **Service docs**: `src/specify_cli/services/*/docs.mdx`
+- **Command docs**: `src/specify_cli/commands/*/docs.mdx` 
+- **Guides**: `src/specify_cli/guides/*.mdx`
+- **Contributing**: `src/specify_cli/contributing/*.mdx`
+- **API reference**: Auto-generated from docstrings
+
+### Documentation Guidelines
+- Update MDX files in source tree, not `docs/` directory
+- Keep documentation focused and current with code changes
+- Use docstrings for detailed API documentation
+- Let the sync process handle website publishing
+- Service documentation should focus on architecture and patterns
+- Guides should be user-focused and actionable
+
+The build/development process automatically includes content from the source tree, ensuring documentation stays synchronized with code and reducing duplication.
+
 By following these guidelines, you'll contribute high-quality, maintainable code that fits seamlessly into the SpecifyX architecture. Remember that consistency and clarity are more important than cleverness!

@@ -8,712 +8,138 @@ tags: [troubleshooting, debugging, issues, solutions]
 
 # Troubleshooting Guide
 
-This guide covers common issues you might encounter while using SpecifyX and their solutions.
-
 ## Quick Diagnostics
 
-Start with these diagnostic commands to identify issues:
-
 ```bash
-# Check SpecifyX installation and system requirements
-specifyx check
-
-# Verify configuration
-specifyx config validate
-
-# Check project structure
-specifyx run --list
-
-# View detailed version information
-specifyx --version
+specifyx check              # Verify installation and requirements
+specifyx config validate    # Check configuration
+specifyx --version          # Show version info
+specifyx run --list         # Check project structure
 ```
 
 ## Installation Issues
 
-### SpecifyX Command Not Found
-
-**Symptoms:**
+### Command Not Found
 ```bash
-specifyx: command not found
+# Check installation
+uv tool list | grep specifyx
+pipx list | grep specifyx
+
+# Reinstall
+uv tool install specifyx    # Recommended
+pipx install specifyx       # Alternative
+uvx specifyx                # Run without install
 ```
-
-**Solutions:**
-
-1. **Verify Installation**
-   ```bash
-   # Check if installed with uv
-   uv tool list | grep specifyx
-   
-   # Check if installed with pipx
-   pipx list | grep specifyx
-   
-   # Check if installed with pip
-   pip list | grep specifyx
-   ```
-
-2. **Reinstall SpecifyX**
-   ```bash
-   # Using uv (recommended)
-   uv tool install specifyx
-   
-   # Using pipx
-   pipx install specifyx
-   
-   # Using pip
-   pip install specifyx
-   ```
-
-3. **PATH Issues**
-   ```bash
-   # Add uv tools to PATH
-   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-   source ~/.bashrc
-   
-   # Or use uvx to run without installation
-   uvx specifyx --version
-   ```
 
 ### Python Version Issues
-
-**Symptoms:**
+SpecifyX requires Python 3.11+. Check with `python --version` and install newer version if needed:
 ```bash
-ERROR: Python 3.11 or higher is required
+uv python install 3.11     # Using uv
+pyenv install 3.11.5       # Using pyenv
 ```
-
-**Solutions:**
-
-1. **Check Python Version**
-   ```bash
-   python --version
-   python3 --version
-   ```
-
-2. **Install Newer Python**
-   ```bash
-   # Using uv
-   uv python install 3.11
-   
-   # Using pyenv
-   pyenv install 3.11.5
-   pyenv global 3.11.5
-   
-   # Using system package manager (Ubuntu)
-   sudo apt update
-   sudo apt install python3.11
-   ```
-
-3. **Use Specific Python Version**
-   ```bash
-   # Install with specific Python
-   python3.11 -m pip install specifyx
-   ```
 
 ### Permission Issues
-
-**Symptoms:**
 ```bash
-Permission denied: '/usr/local/bin/specifyx'
-PermissionError: [Errno 13] Permission denied
+# Fix PATH issues
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Use user install
+pip install --user specifyx
 ```
-
-**Solutions:**
-
-1. **Use User Installation**
-   ```bash
-   # Install for current user only
-   pip install --user specifyx
-   pipx install specifyx
-   uv tool install specifyx
-   ```
-
-2. **Fix Permissions (Linux/macOS)**
-   ```bash
-   # Make sure ~/.local/bin is in PATH
-   export PATH="$HOME/.local/bin:$PATH"
-   
-   # Fix directory permissions
-   chmod 755 ~/.local/bin
-   ```
 
 ## Configuration Issues
 
-### Invalid Configuration File
+### Invalid Configuration
+**Error**: `Invalid branch pattern` or `Configuration validation failed`
 
-**Symptoms:**
-```bash
-ERROR: Failed to load config: Invalid TOML syntax
-ERROR: Configuration validation failed
+**Fix**: Check `.specify/config.toml` syntax:
+```toml
+[project]
+name = "my-project"
+
+[branching] 
+patterns = ["feature/{feature-name}", "main"]
+validation_rules = ["lowercase_only"]
 ```
 
-**Solutions:**
+### Template Errors
+**Error**: `Template not found` or `Jinja2 syntax error`
 
-1. **Validate TOML Syntax**
-   ```bash
-   # Check configuration syntax
-   specifyx config validate .specify/config.toml
-   
-   # Use online TOML validator
-   # Copy config content to https://toml-validator.com/
-   ```
-
-2. **Restore Default Configuration**
-   ```bash
-   # Backup current config
-   cp .specify/config.toml .specify/config.toml.backup
-   
-   # Generate new default config
-   specifyx init --here --ai-assistant claude
-   ```
-
-3. **Fix Common TOML Issues**
-   ```toml
-   # ❌ Wrong: Unquoted strings with spaces
-   name = My Project Name
-   
-   # ✅ Correct: Quoted strings
-   name = "My Project Name"
-   
-   # ❌ Wrong: Missing quotes in array
-   patterns = [feature/{name}, main]
-   
-   # ✅ Correct: Quoted array elements
-   patterns = ["feature/{name}", "main"]
-   
-   # ❌ Wrong: Invalid escape sequences
-   path = "C:\Projects\MyProject"
-   
-   # ✅ Correct: Proper escaping
-   path = "C:\\Projects\\MyProject"
-   # Or use forward slashes
-   path = "C:/Projects/MyProject"
-   ```
-
-### Branch Pattern Validation Errors
-
-**Symptoms:**
-```bash
-ERROR: Invalid branch pattern: feature/{name}
-ERROR: Branch name validation failed
-```
-
-**Solutions:**
-
-1. **Check Pattern Syntax**
-   ```bash
-   # Test branch pattern
-   specifyx config test-pattern "feature/{feature-name}" --context feature-name=test
-   ```
-
-2. **Common Pattern Issues**
-   ```toml
-   # ❌ Wrong: Empty braces
-   patterns = ["feature/{}"]
-   
-   # ✅ Correct: Named variables
-   patterns = ["feature/{feature-name}"]
-   
-   # ❌ Wrong: Spaces in pattern
-   patterns = ["feature / {name}"]
-   
-   # ✅ Correct: No spaces
-   patterns = ["feature/{name}"]
-   
-   # ❌ Wrong: Invalid characters
-   patterns = ["feature:{name}"]
-   
-   # ✅ Correct: Valid characters
-   patterns = ["feature/{name}", "feature-{name}"]
-   ```
-
-3. **Validation Rule Conflicts**
-   ```toml
-   # Check for conflicting rules
-   validation_rules = [
-       "max_length_50",
-       "alphanumeric_dash_slash_only",  # Allows slashes
-       "no_slashes"  # ❌ Conflicts with above
-   ]
-   
-   # ✅ Use compatible rules
-   validation_rules = [
-       "max_length_50",
-       "alphanumeric_dash_slash_only"
-   ]
-   ```
+**Fix**:
+1. Check template exists in `.specify/templates/`
+2. Validate Jinja2 syntax
+3. Reset templates: `rm -rf .specify/templates && specifyx init --here`
 
 ## Project Issues
 
-### Git Repository Not Found
+### Git Repository Required
+**Error**: `Not a git repository`
 
-**Symptoms:**
-```bash
-ERROR: Not in a git repository
-ERROR: Could not determine git branch
-```
-
-**Solutions:**
-
-1. **Initialize Git Repository**
-   ```bash
-   # Initialize git repo
-   git init
-   
-   # Create initial commit
-   git add .
-   git commit -m "Initial commit"
-   
-   # Create main branch
-   git branch -M main
-   ```
-
-2. **Check Git Configuration**
-   ```bash
-   # Check git status
-   git status
-   
-   # Verify git is installed
-   git --version
-   
-   # Check git configuration
-   git config --list
-   ```
+**Fix**: Initialize git repo: `git init && git add . && git commit -m "Initial commit"`
 
 ### Branch Creation Failures
+**Error**: `Branch already exists` or `Invalid branch name`
 
-**Symptoms:**
-```bash
-ERROR: Branch 'feature/my-feature' already exists
-ERROR: Could not create branch
-```
+**Fix**:
+1. Use unique branch names
+2. Check branch naming patterns in config
+3. Delete existing branch: `git branch -D branch-name`
 
-**Solutions:**
-
-1. **Switch to Existing Branch**
-   ```bash
-   # List all branches
-   git branch -a
-   
-   # Switch to existing branch
-   git checkout feature/my-feature
-   
-   # Or create with different name
-   specifyx run create-feature "my feature" --branch-name "feature/my-feature-v2"
-   ```
-
-2. **Force Branch Creation**
-   ```bash
-   # Delete existing branch (if safe)
-   git branch -D feature/my-feature
-   
-   # Create new branch
-   specifyx run create-feature "my feature"
-   ```
-
-### Template Rendering Errors
-
-**Symptoms:**
-```bash
-ERROR: Template 'spec-template.md.j2' not found
-ERROR: Template syntax error
-ERROR: Undefined variable 'feature_name'
-```
-
-**Solutions:**
-
-1. **Check Template Location**
-   ```bash
-   # List available templates
-   ls -la .specify/templates/
-   
-   # Verify template exists
-   ls -la .specify/templates/spec-template.md.j2
-   ```
-
-2. **Fix Template Syntax**
-   ```bash
-   # Validate template syntax
-   specifyx template validate .specify/templates/spec-template.md.j2
-   
-   # Test template rendering
-   specifyx template test spec-template.md.j2 --context feature_name=test
-   ```
-
-3. **Common Template Issues**
-   ```jinja2
-   {# ❌ Wrong: Missing endif #}
-   {% if condition %}
-   Content here
-   {# Missing {% endif %} #}
-   
-   {# ✅ Correct: Matched tags #}
-   {% if condition %}
-   Content here
-   {% endif %}
-   
-   {# ❌ Wrong: Undefined variable #}
-   {{ missing_variable }}
-   
-   {# ✅ Correct: With default #}
-   {{ missing_variable | default('[DEFAULT]') }}
-   ```
-
-## Command Execution Issues
+## Command Execution
 
 ### Script Not Found
+**Error**: `Script 'xyz' not found`
 
-**Symptoms:**
-```bash
-ERROR: Script 'create-feature' not found
-No executable scripts found
-```
+**Fix**:
+1. List available scripts: `specifyx run --list`
+2. Check `.specify/scripts/` directory
+3. Regenerate scripts: `specifyx init --here`
 
-**Solutions:**
+### Execution Failures
+**Error**: Scripts fail to run
 
-1. **Check Script Location**
-   ```bash
-   # List available scripts
-   specifyx run --list
-   
-   # Check script directory
-   ls -la .specify/scripts/
-   ```
-
-2. **Regenerate Scripts**
-   ```bash
-   # Reinitialize project
-   specifyx init --here --ai-assistant claude
-   
-   # Or manually create missing scripts
-   specifyx template generate scripts
-   ```
-
-3. **Fix Script Permissions**
-   ```bash
-   # Make scripts executable (Linux/macOS)
-   chmod +x .specify/scripts/*.py
-   
-   # Check Python path in scripts
-   head -1 .specify/scripts/create-feature.py
-   ```
-
-### Script Execution Failures
-
-**Symptoms:**
-```bash
-ERROR: Python module not found
-ERROR: SpecifyX utilities not available
-```
-
-**Solutions:**
-
-1. **Check Python Environment**
-   ```bash
-   # Verify SpecifyX is accessible
-   python -c "import specify_cli; print('OK')"
-   
-   # Check Python path
-   which python
-   python --version
-   ```
-
-2. **Fix Import Issues**
-   ```bash
-   # Install SpecifyX in current environment
-   pip install specifyx
-   
-   # Or use absolute path to SpecifyX Python
-   which specifyx  # Note the Python path
-   ```
-
-3. **Virtual Environment Issues**
-   ```bash
-   # Activate correct virtual environment
-   source venv/bin/activate  # Linux/macOS
-   venv\Scripts\activate     # Windows
-   
-   # Verify SpecifyX is installed in active environment
-   pip list | grep specifyx
-   ```
-
-## AI Assistant Integration Issues
-
-### Commands Not Generated
-
-**Symptoms:**
-- Missing `.claude/commands/` directory
-- AI assistant can't find commands
-- Commands have wrong AI assistant type
-
-**Solutions:**
-
-1. **Regenerate Commands**
-   ```bash
-   # Reinitialize with correct AI assistant
-   specifyx init --here --ai-assistant claude
-   
-   # Check generated commands
-   ls -la .claude/commands/
-   ```
-
-2. **Fix AI Assistant Configuration**
-   ```toml
-   # In .specify/config.toml
-   [project.template_settings]
-   ai_assistant = "claude"  # or "gemini", "copilot"
-   ```
-
-3. **Manual Command Creation**
-   ```bash
-   # Create commands directory
-   mkdir -p .claude/commands/
-   
-   # Generate commands for specific AI
-   specifyx template generate commands --ai-assistant claude
-   ```
-
-### Command Files Corrupted
-
-**Symptoms:**
-- Commands have invalid YAML frontmatter
-- Commands contain template syntax errors
-- AI assistant can't parse commands
-
-**Solutions:**
-
-1. **Validate Command Files**
-   ```bash
-   # Check command file syntax
-   specifyx template validate .claude/commands/specify.md
-   
-   # Test command rendering
-   cat .claude/commands/specify.md
-   ```
-
-2. **Regenerate Corrupted Commands**
-   ```bash
-   # Backup existing commands
-   cp -r .claude/commands .claude/commands.backup
-   
-   # Regenerate all commands
-   rm -rf .claude/commands
-   specifyx init --here --ai-assistant claude
-   ```
+**Fix**:
+1. Check Python dependencies: `pip install -r requirements.txt`
+2. Verify script permissions: `chmod +x .specify/scripts/*`
+3. Check script syntax manually
 
 ## Performance Issues
 
-### Slow Template Rendering
+### Slow Operations
+- **Template rendering**: Reduce template complexity
+- **Large projects**: Use `.specifyignore` to exclude files
+- **Network issues**: Check internet connection for updates
 
-**Symptoms:**
-- Commands take long time to complete
-- Template generation is slow
-- High CPU usage during operations
+## Platform-Specific
 
-**Solutions:**
+### Windows
+- Use WSL2 for best compatibility
+- Install Python via Microsoft Store or python.org
+- Check PATH includes Python and Scripts directories
 
-1. **Enable Template Caching**
-   ```toml
-   # In .specify/config.toml
-   [project.template_settings]
-   template_cache_enabled = true
-   ```
+### macOS  
+- Install via Homebrew: `brew install python@3.11`
+- May need to install Xcode Command Line Tools
 
-2. **Optimize Templates**
-   ```jinja2
-   {# ❌ Slow: Complex loops #}
-   {% for i in range(1000) %}
-   {{ complex_operation(i) }}
-   {% endfor %}
-   
-   {# ✅ Better: Precompute values #}
-   {% set computed_values = precompute_values() %}
-   {% for value in computed_values %}
-   {{ value }}
-   {% endfor %}
-   ```
+### Linux
+- Install Python dev packages: `apt install python3.11-dev`
+- Check `$HOME/.local/bin` is in PATH
 
-3. **Check System Resources**
-   ```bash
-   # Monitor system resources
-   top
-   htop
-   
-   # Check disk space
-   df -h
-   
-   # Check available memory
-   free -h
-   ```
+## Getting Help
 
-### Large Project Issues
-
-**Symptoms:**
-- Out of memory errors
-- Very slow git operations
-- Template generation timeouts
-
-**Solutions:**
-
-1. **Optimize Git Repository**
-   ```bash
-   # Clean up git history
-   git gc --aggressive
-   
-   # Remove large files from history
-   git filter-branch --tree-filter 'rm -f large-file.bin' HEAD
-   
-   # Use git LFS for large files
-   git lfs track "*.bin"
-   ```
-
-2. **Reduce Template Complexity**
-   ```bash
-   # Split large templates into smaller ones
-   specifyx template split large-template.md.j2
-   
-   # Use template inheritance instead of duplication
-   specifyx template optimize
-   ```
-
-## Platform-Specific Issues
-
-### Windows Issues
-
-**Common Windows Problems:**
-
-1. **Path Separator Issues**
-   ```python
-   # ❌ Wrong: Unix paths on Windows
-   path = "/usr/local/bin/specifyx"
-   
-   # ✅ Correct: Cross-platform paths
-   from pathlib import Path
-   path = Path.home() / ".local" / "bin" / "specifyx"
-   ```
-
-2. **PowerShell Execution Policy**
-   ```powershell
-   # Allow script execution
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-   
-   # Check current policy
-   Get-ExecutionPolicy
-   ```
-
-3. **WSL2 Integration**
-   ```bash
-   # Install in WSL2 environment
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   uv tool install specifyx
-   ```
-
-### macOS Issues
-
-**Common macOS Problems:**
-
-1. **Homebrew Python Conflicts**
-   ```bash
-   # Use system Python or specific version
-   /usr/bin/python3 -m pip install specifyx
-   
-   # Or use pyenv
-   pyenv install 3.11.5
-   pyenv global 3.11.5
-   ```
-
-2. **Gatekeeper Issues**
-   ```bash
-   # Allow SpecifyX to run
-   sudo spctl --add /path/to/specifyx
-   
-   # Or disable Gatekeeper temporarily
-   sudo spctl --master-disable
-   ```
-
-### Linux Issues
-
-**Common Linux Problems:**
-
-1. **Package Manager Conflicts**
-   ```bash
-   # Use user installation to avoid conflicts
-   pip install --user specifyx
-   
-   # Or use virtual environment
-   python -m venv venv
-   source venv/bin/activate
-   pip install specifyx
-   ```
-
-2. **Missing Development Headers**
-   ```bash
-   # Ubuntu/Debian
-   sudo apt install python3-dev python3-pip
-   
-   # CentOS/RHEL
-   sudo yum install python3-devel python3-pip
-   
-   # Arch
-   sudo pacman -S python python-pip
-   ```
-
-## Getting Additional Help
-
-### Diagnostic Information Collection
-
-When reporting issues, collect this information:
-
+### Collect Diagnostics
 ```bash
-# System information
-specifyx --version
-python --version
-git --version
-uname -a  # Linux/macOS
-systeminfo  # Windows
-
-# SpecifyX diagnostics
-specifyx check --verbose
-specifyx config show
-
-# Project structure
-tree .specify/  # or ls -R .specify/
-git status
-git branch -a
+specifyx check --verbose     # Detailed system info
+specifyx --version          # Version info
+python --version            # Python version
+uv --version               # UV version (if used)
 ```
 
-### Log Files and Debugging
+### Log Files
+Check `~/.cache/specifyx/logs/` for detailed error logs.
 
-```bash
-# Enable verbose logging
-export SPECIFYX_DEBUG=1
-specifyx run create-feature "test" --verbose
-
-# Check log files (if available)
-ls -la ~/.specify/logs/
-cat ~/.specify/logs/latest.log
-
-# Create debug report
-specifyx debug report --output debug-report.zip
-```
-
-### Community Support
-
-1. **GitHub Issues**: [Report bugs and request features](https://github.com/barisgit/spec-kit-improved/issues)
-2. **Discussions**: [Community discussions](https://github.com/barisgit/spec-kit-improved/discussions)
-3. **Documentation**: [Official documentation](https://specifyx.dev)
-
-### Providing Feedback
-
-When reporting issues:
-
-1. **Use the issue template** provided in the repository
-2. **Include system information** from diagnostic commands
-3. **Provide minimal reproduction steps**
-4. **Attach relevant configuration files** (remove sensitive data)
-5. **Include error messages** in full, not just summaries
-
-## Next Steps
-
-- [Configuration Management](/docs/guides/configuration) - Fix configuration issues
-- [Best Practices Guide](/docs/guides/best-practices) - Avoid common problems
-- [CLI Reference](/docs/reference/cli/init) - Complete command documentation
-- [GitHub Issues](https://github.com/barisgit/spec-kit-improved/issues) - Report new issues
+### Support
+- [GitHub Issues](https://github.com/barisgit/spec-kit-improved/issues) for bugs
+- Check [Documentation](https://specifyx.dev) for guides
+- Include diagnostic output when reporting issues

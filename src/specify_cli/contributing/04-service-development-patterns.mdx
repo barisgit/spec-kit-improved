@@ -1,629 +1,169 @@
 ---
 title: "Service Development Patterns"
-description: "Architectural patterns and design principles for developing services in SpecifyX, including abstract base classes, dependency injection, and service contracts"
+description: "Architectural patterns and design principles for developing services in SpecifyX"
 category: "contributing"
-tags: ["architecture", "services", "patterns", "design", "abstractions", "dependency-injection"]
+tags: ["architecture", "services", "patterns", "design"]
 ---
 
 # Service Development Patterns
 
-SpecifyX uses a service-oriented architecture with well-defined patterns for building maintainable, testable, and extensible services. This guide covers the architectural patterns and best practices for developing services within the SpecifyX ecosystem.
+SpecifyX uses service-oriented architecture with well-defined patterns for maintainable, testable services.
 
 ## Architecture Overview
 
-### Service-Oriented Design Principles
-
-1. **Contract-First Development** - Define interfaces before implementations
+### Design Principles
+1. **Contract-First** - Define interfaces before implementations
 2. **Single Responsibility** - Each service has one clear purpose
 3. **Dependency Inversion** - Depend on abstractions, not concretions
-4. **Testability** - Services are designed for easy testing and mocking
-5. **Configuration-Driven** - Behavior controlled by external configuration
+4. **Testability** - Services designed for easy testing and mocking
 
-### Service Layer Architecture
-
+### Service Layers
 ```
-┌─────────────────┐
-│   CLI Commands  │  ← Typer commands (presentation layer)
-└─────────┬───────┘
-          │
-┌─────────▼───────┐
-│ Service Manager │  ← Orchestration and coordination
-└─────────┬───────┘
-          │
-┌─────────▼───────┐
-│ Business Logic  │  ← Core services (template, config, etc.)
-│    Services     │
-└─────────┬───────┘
-          │
-┌─────────▼───────┐
-│ Utility Layer   │  ← File operations, validation, etc.
-└─────────────────┘
+CLI Commands → Service Manager → Business Services → Utilities
 ```
 
 ## Abstract Base Class Pattern
 
-### Defining Service Contracts
-
-All services start with an abstract base class that defines the contract:
+Define service contracts with abstract base classes:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
-from pathlib import Path
+from typing import Generic, TypeVar, Union
+
+T = TypeVar('T')
+
+class ServiceResult(Generic[T]):
+    def __init__(self, success: bool, data: T = None, error: str = None):
+        self.success = success
+        self.data = data
+        self.error = error
 
 class TemplateService(ABC):
-    """Abstract base class for template processing services"""
-    
     @abstractmethod
-    def render_template(self, template_name: str, context: TemplateContext) -> str:
-        """
-        Render a specific template with given context
-        
-        Args:
-            template_name: Name of template file to render
-            context: Template context with variables
-            
-        Returns:
-            Rendered template content as string
-            
-        Raises:
-            FileNotFoundError: If template not found
-            RuntimeError: If template rendering fails
-        """
-        pass
-    
-    @abstractmethod
-    def validate_template_syntax(self, template_path: Path) -> Tuple[bool, Optional[str]]:
-        """
-        Validate template syntax
-        
-        Args:
-            template_path: Path to template file
-            
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
-        pass
-    
-    @abstractmethod
-    def discover_templates(self) -> List[GranularTemplate]:
-        """
-        Discover available templates
-        
-        Returns:
-            List of discovered template objects
-        """
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
+        """Render template with given context."""
         pass
 ```
 
-### Contract Design Guidelines
+## Implementation Pattern
 
-**Clear Method Signatures:**
-```python
-# ✅ Good - Explicit types and clear purpose
-def save_config(self, config: ProjectConfig, config_path: Path) -> bool:
-    """Save project configuration to specified path"""
-    pass
-
-# ❌ Bad - Vague parameters and unclear return
-def save(self, data: Any, path: str) -> Any:
-    """Save data"""
-    pass
-```
-
-**Comprehensive Documentation:**
-```python
-@abstractmethod
-def initialize_project(
-    self, 
-    project_name: str, 
-    target_directory: Optional[Path] = None,
-    ai_assistant: str = "claude",
-    **kwargs: Any
-) -> ProjectInitResult:
-    """
-    Initialize a new project with spec-driven development setup
-    
-    This method orchestrates the complete project initialization process,
-    including directory structure creation, template rendering, and 
-    configuration file generation.
-    
-    Args:
-        project_name: Name of the project to create
-        target_directory: Parent directory for project (defaults to current dir)
-        ai_assistant: AI assistant preference (claude, gpt, gemini)
-        **kwargs: Additional configuration options
-        
-    Returns:
-        ProjectInitResult with success status, paths, and any warnings
-        
-    Raises:
-        ValueError: If project_name is invalid
-        PermissionError: If target directory is not writable
-        RuntimeError: If initialization process fails
-        
-    Example:
-        >>> manager = ProjectManager()
-        >>> result = manager.initialize_project(
-        ...     "my-project", 
-        ...     ai_assistant="claude"
-        ... )
-        >>> if result.success:
-        ...     print(f"Created: {result.project_path}")
-    """
-    pass
-```
-
-**Error Handling Contracts:**
-```python
-class ServiceError(Exception):
-    """Base exception for service-level errors"""
-    pass
-
-class ConfigurationError(ServiceError):
-    """Raised when configuration is invalid or missing"""
-    pass
-
-class TemplateError(ServiceError):
-    """Raised when template operations fail"""
-    pass
-
-# Services should raise specific exception types
-@abstractmethod
-def load_config(self, config_path: Path) -> ProjectConfig:
-    """
-    Load project configuration from file
-    
-    Raises:
-        ConfigurationError: If config file is invalid or corrupted
-        FileNotFoundError: If config file doesn't exist
-        PermissionError: If config file is not readable
-    """
-    pass
-```
-
-## Concrete Implementation Pattern
-
-### Implementation Structure
+Implement concrete services:
 
 ```python
+from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
+
 class JinjaTemplateService(TemplateService):
-    """Jinja2-based template service implementation"""
+    def __init__(self, template_dir: Path):
+        self.env = Environment(loader=FileSystemLoader(template_dir))
     
-    def __init__(self, skip_patterns: Optional[List[str]] = None):
-        # Initialize state with safe defaults
-        self._template_dir: Optional[Path] = None
-        self._custom_template_dir: Optional[Path] = None
-        self._environment: Optional[Environment] = None
-        self._discovered_templates: List[GranularTemplate] = []
-        
-        # Use configuration-driven defaults
-        self.skip_patterns = skip_patterns or PATH_DEFAULTS.SKIP_PATTERNS
-        self._template_root = importlib.resources.files("specify_cli").joinpath(
-            PATH_DEFAULTS.TEMPLATE_ROOT
-        )
-        self._console = Console()
-    
-    def render_template(self, template_name: str, context: TemplateContext) -> str:
-        """Implement abstract method with full error handling"""
-        # Input validation
-        if context is None:
-            raise ValueError("Template context cannot be None")
-        if not template_name:
-            raise ValueError("Template name cannot be empty")
-        
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
         try:
-            # Implementation logic with comprehensive error handling
-            if isinstance(template_name, GranularTemplate):
-                return self.render_with_platform_context(template_name, context)
-            
-            # Fallback logic and error recovery
-            granular_template = self.load_template(template_name)
-            return self.render_with_platform_context(granular_template, context)
-            
-        except (ValueError, FileNotFoundError, RuntimeError):
-            # Re-raise expected exceptions
-            raise
+            template = self.env.get_template(name)
+            result = template.render(**context)
+            return ServiceResult(success=True, data=result)
         except Exception as e:
-            # Wrap unexpected exceptions
-            raise RuntimeError(
-                f"Unexpected error rendering template '{template_name}': {str(e)}"
-            ) from e
+            return ServiceResult(success=False, error=str(e))
 ```
 
-### Implementation Best Practices
+## Dependency Injection
 
-**State Management:**
-```python
-class ConfigService:
-    """Service for configuration management"""
-    
-    def __init__(self):
-        # Initialize with immutable defaults
-        self._config_cache: Dict[Path, ProjectConfig] = {}
-        self._cache_enabled: bool = True
-        self._last_load_time: Optional[datetime] = None
-    
-    def _clear_cache(self) -> None:
-        """Clear configuration cache"""
-        self._config_cache.clear()
-        self._last_load_time = None
-    
-    def _get_cached_config(self, config_path: Path) -> Optional[ProjectConfig]:
-        """Get configuration from cache if valid"""
-        if not self._cache_enabled:
-            return None
-            
-        if config_path not in self._config_cache:
-            return None
-            
-        # Check if file has been modified since caching
-        try:
-            file_mtime = config_path.stat().st_mtime
-            if self._last_load_time and file_mtime > self._last_load_time.timestamp():
-                # File modified, invalidate cache
-                del self._config_cache[config_path]
-                return None
-        except OSError:
-            # File doesn't exist, remove from cache
-            self._config_cache.pop(config_path, None)
-            return None
-            
-        return self._config_cache[config_path]
-```
-
-**Resource Management:**
-```python
-class DownloadService:
-    """Service for downloading templates and resources"""
-    
-    def __init__(self, timeout: float = 30.0, max_retries: int = 3):
-        self._client = httpx.Client(timeout=timeout)
-        self._max_retries = max_retries
-    
-    def __enter__(self) -> "DownloadService":
-        """Context manager entry"""
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Context manager exit with cleanup"""
-        self._client.close()
-    
-    def download_template(self, url: str, destination: Path) -> bool:
-        """Download template with retry logic and proper cleanup"""
-        for attempt in range(self._max_retries):
-            try:
-                response = self._client.get(url)
-                response.raise_for_status()
-                
-                # Atomic write to prevent corruption
-                temp_file = destination.with_suffix('.tmp')
-                temp_file.write_bytes(response.content)
-                temp_file.rename(destination)
-                
-                return True
-                
-            except httpx.RequestError as e:
-                if attempt == self._max_retries - 1:
-                    raise RuntimeError(f"Failed to download after {self._max_retries} attempts: {e}")
-                time.sleep(2 ** attempt)  # Exponential backoff
-            except Exception as e:
-                # Clean up partial downloads
-                if temp_file.exists():
-                    temp_file.unlink()
-                raise
-        
-        return False
-```
-
-## Dependency Injection Pattern
-
-### Constructor Injection
+Use constructor injection with factory functions:
 
 ```python
-class ProjectManager:
-    """High-level service for project management operations"""
+def create_project_manager() -> ProjectManager:
+    """Factory function to create ProjectManager with dependencies."""
+    template_service = JinjaTemplateService(Path("templates"))
+    config_service = TomlConfigService()
+    git_service = CommandLineGitService()
     
-    def __init__(
-        self,
-        template_service: Optional[TemplateService] = None,
-        config_service: Optional[ConfigService] = None,
-        git_service: Optional[GitService] = None,
-    ):
-        # Use dependency injection with sensible defaults
-        self._template_service = template_service or get_template_service()
-        self._config_service = config_service or get_config_service()
-        self._git_service = git_service or get_git_service()
-        
-        # Validate dependencies
-        self._validate_dependencies()
-    
-    def _validate_dependencies(self) -> None:
-        """Validate that all required services are available"""
-        if not isinstance(self._template_service, TemplateService):
-            raise TypeError("template_service must implement TemplateService")
-        if not isinstance(self._config_service, ConfigService):
-            raise TypeError("config_service must implement ConfigService")
-        if not isinstance(self._git_service, GitService):
-            raise TypeError("git_service must implement GitService")
-```
-
-### Service Factory Pattern
-
-```python
-# Service factory functions for consistent instantiation
-def get_template_service(config: Optional[Dict[str, Any]] = None) -> TemplateService:
-    """Factory function to create template service instance"""
-    service_config = config or {}
-    skip_patterns = service_config.get("skip_patterns")
-    
-    return JinjaTemplateService(skip_patterns=skip_patterns)
-
-def get_config_service(cache_enabled: bool = True) -> ConfigService:
-    """Factory function to create config service instance"""
-    service = TomlConfigService()
-    service.set_cache_enabled(cache_enabled)
-    return service
-
-def get_project_manager(
-    template_service: Optional[TemplateService] = None,
-    config_service: Optional[ConfigService] = None,
-) -> ProjectManager:
-    """Factory function to create project manager with dependencies"""
     return ProjectManager(
         template_service=template_service,
         config_service=config_service,
+        git_service=git_service
     )
-
-# Usage in CLI commands
-@app.command()
-def init(project_name: str) -> None:
-    """Initialize project using dependency injection"""
-    # Services are created with proper dependencies
-    manager = get_project_manager()
-    result = manager.initialize_project(project_name)
-    
-    if result.success:
-        console.print(f"[green]✓[/green] Project created: {result.project_path}")
-    else:
-        console.print(f"[red]✗[/red] Failed: {result.error_message}")
 ```
 
-## Result Objects Pattern
+## Service Testing
 
-### Structured Result Types
-
+### Contract Testing
 ```python
-@dataclass
-class ServiceResult:
-    """Base result type for service operations"""
-    
-    success: bool
-    error_message: Optional[str] = None
-    warnings: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    @property
-    def has_warnings(self) -> bool:
-        return len(self.warnings) > 0
-    
-    def add_warning(self, message: str) -> None:
-        self.warnings.append(message)
+import pytest
+from abc import ABC
 
-@dataclass
-class ProjectInitResult(ServiceResult):
-    """Result type for project initialization operations"""
-    
-    project_path: Optional[Path] = None
-    config_path: Optional[Path] = None
-    rendered_files: List[Path] = field(default_factory=list)
-    created_directories: List[Path] = field(default_factory=list)
-    
-    @property
-    def total_files_created(self) -> int:
-        return len(self.rendered_files)
-
-@dataclass
-class TemplateRenderResult(ServiceResult):
-    """Result type for template rendering operations"""
-    
-    template: Optional[GranularTemplate] = None
-    content: str = ""
-    output_path: Optional[Path] = None
-    is_executable: bool = False
-    
-    @property
-    def content_length(self) -> int:
-        return len(self.content)
-
-# Service methods return structured results
-class ProjectManager:
-    def initialize_project(self, project_name: str, **kwargs) -> ProjectInitResult:
-        """Initialize project with structured result"""
-        result = ProjectInitResult(success=False)
-        
-        try:
-            # Validation
-            if not self._validate_project_name(project_name):
-                result.error_message = f"Invalid project name: {project_name}"
-                return result
-            
-            # Create project directory
-            project_path = self._create_project_directory(project_name, **kwargs)
-            result.project_path = project_path
-            result.created_directories.append(project_path)
-            
-            # Render templates
-            template_results = self._render_project_templates(project_path, **kwargs)
-            result.rendered_files.extend([r.output_path for r in template_results if r.success])
-            
-            # Save configuration
-            config_path = self._save_project_config(project_path, project_name, **kwargs)
-            result.config_path = config_path
-            
-            # Check for any warnings
-            for template_result in template_results:
-                if template_result.has_warnings:
-                    result.warnings.extend(template_result.warnings)
-            
-            result.success = True
-            return result
-            
-        except Exception as e:
-            result.error_message = str(e)
-            return result
+def test_template_service_contract(template_service: TemplateService):
+    """Test that service implements contract correctly."""
+    result = template_service.render_template("test.txt", {"name": "test"})
+    assert isinstance(result, ServiceResult)
+    assert hasattr(result, 'success')
+    assert hasattr(result, 'data')
+    assert hasattr(result, 'error')
 ```
 
-## Service Testing Patterns
-
-### Contract Testing for Services
-
-```python
-class TestTemplateServiceContract:
-    """Contract tests that all TemplateService implementations must pass"""
-    
-    @pytest.fixture
-    def service(self) -> TemplateService:
-        """Override in concrete test classes"""
-        raise NotImplementedError
-    
-    def test_render_template_success(self, service: TemplateService):
-        """Test successful template rendering"""
-        context = TemplateContext(project_name="test", ai_assistant="claude")
-        result = service.render_template("basic-template", context)
-        
-        assert isinstance(result, str)
-        assert len(result) > 0
-        assert "test" in result
-    
-    def test_render_template_missing_template(self, service: TemplateService):
-        """Test error handling for missing templates"""
-        context = TemplateContext(project_name="test", ai_assistant="claude")
-        
-        with pytest.raises(FileNotFoundError):
-            service.render_template("nonexistent", context)
-
-# Concrete implementation tests inherit contract tests
-class TestJinjaTemplateService(TestTemplateServiceContract):
-    @pytest.fixture
-    def service(self) -> JinjaTemplateService:
-        return JinjaTemplateService()
-    
-    def test_jinja_specific_features(self, service: JinjaTemplateService):
-        """Test Jinja2-specific functionality"""
-        # Additional implementation-specific tests
-        pass
-```
-
-### Service Mocking for Integration Tests
-
+### Mock Services
 ```python
 class MockTemplateService(TemplateService):
-    """Mock template service for testing"""
+    def __init__(self, mock_result: str = "mock content"):
+        self.mock_result = mock_result
     
-    def __init__(self):
-        self.rendered_templates: List[str] = []
-        self.render_results: Dict[str, str] = {}
-    
-    def render_template(self, template_name: str, context: TemplateContext) -> str:
-        self.rendered_templates.append(template_name)
-        return self.render_results.get(template_name, f"Rendered {template_name}")
-    
-    def validate_template_syntax(self, template_path: Path) -> Tuple[bool, Optional[str]]:
-        return True, None
-    
-    def discover_templates(self) -> List[GranularTemplate]:
-        return []
-
-# Usage in integration tests
-def test_project_initialization_workflow():
-    """Test complete project initialization with mocked services"""
-    mock_template_service = MockTemplateService()
-    mock_template_service.render_results = {
-        "project-config": "# Mock config",
-        "readme-template": "# Mock README",
-    }
-    
-    manager = ProjectManager(template_service=mock_template_service)
-    result = manager.initialize_project("test-project")
-    
-    assert result.success
-    assert "project-config" in mock_template_service.rendered_templates
-    assert "readme-template" in mock_template_service.rendered_templates
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
+        return ServiceResult(success=True, data=self.mock_result)
 ```
 
-## Service Documentation Patterns
+## Key Guidelines
 
-### Service API Documentation
+### Service Structure
+- Place services in `src/specify_cli/services/service_name/`
+- Use `__init__.py` to expose public interface
+- Include `docs.mdx` for service documentation
 
+### Error Handling
+- Use `ServiceResult` objects for consistent error handling
+- Log errors appropriately but don't raise exceptions in service methods
+- Provide meaningful error messages
+
+### Configuration
+- Accept configuration through constructor parameters
+- Use dependency injection for external dependencies
+- Make services stateless when possible
+
+### Documentation
+- Document service contracts with docstrings
+- Include usage examples in service docstrings
+- Keep MDX docs focused on architecture patterns
+
+## Common Patterns
+
+### File Operations
 ```python
-class TemplateService(ABC):
-    """
-    Abstract template processing service
-    
-    This service provides template rendering capabilities with support for
-    Jinja2 templates, platform-specific rendering, and template discovery.
-    
-    Example:
-        >>> service = get_template_service()
-        >>> context = TemplateContext(project_name="my-project", ai_assistant="claude")
-        >>> content = service.render_template("basic-template", context)
-        >>> print(content)
-        # Rendered template content
-    
-    Thread Safety:
-        This service is thread-safe for read operations but not for
-        configuration changes. Use separate instances for concurrent
-        configuration modifications.
-    
-    Performance Notes:
-        - Template compilation is cached automatically
-        - Template discovery results are cached for 5 minutes
-        - Large templates (>1MB) may benefit from streaming
-    """
-    
-    @abstractmethod
-    def render_template(self, template_name: str, context: TemplateContext) -> str:
-        """
-        Render template with comprehensive error handling
-        
-        This method provides the core template rendering functionality with
-        support for platform-specific variables, AI-aware content, and
-        comprehensive error reporting.
-        
-        Args:
-            template_name: Name of the template to render. Can be a simple name
-                         like "basic-template" or a path like "scripts/deploy.py.j2"
-            context: Template context containing all variables needed for rendering.
-                    Must include at minimum project_name and ai_assistant.
-        
-        Returns:
-            Rendered template content as a string. The content will include
-            platform-specific variables and AI-assistant-specific sections
-            based on the context provided.
-        
-        Raises:
-            ValueError: If template_name is empty or context is None
-            FileNotFoundError: If the specified template cannot be found
-            TemplateError: If template syntax is invalid or rendering fails
-            RuntimeError: For unexpected errors during rendering
-        
-        Performance:
-            - First render: 50-100ms (includes template compilation)
-            - Subsequent renders: 1-5ms (uses compiled template cache)
-            - Large templates (>10KB): Add 10-50ms depending on complexity
-        
-        Example:
-            >>> context = TemplateContext(
-            ...     project_name="my-api",
-            ...     ai_assistant="claude",
-            ...     branch_naming_config=BranchNamingConfig()
-            ... )
-            >>> content = service.render_template("api-script", context)
-            >>> assert "my-api" in content
-            >>> assert content.startswith("#!/bin/bash")  # Platform-specific
-        """
-        pass
+from specify_cli.utils.file_operations import ensure_directory, safe_write_file
+
+class FileService:
+    def save_content(self, path: Path, content: str) -> ServiceResult[None]:
+        try:
+            ensure_directory(path.parent)
+            safe_write_file(path, content)
+            return ServiceResult(success=True)
+        except Exception as e:
+            return ServiceResult(success=False, error=str(e))
 ```
 
-By following these service development patterns, you'll create maintainable, testable, and extensible services that fit seamlessly into the SpecifyX architecture. These patterns promote consistency, reliability, and long-term maintainability of the codebase.
+### Async Operations
+```python
+import asyncio
+from typing import Awaitable
+
+class AsyncService:
+    async def process_async(self, data: str) -> ServiceResult[str]:
+        try:
+            result = await self._async_operation(data)
+            return ServiceResult(success=True, data=result)
+        except Exception as e:
+            return ServiceResult(success=False, error=str(e))
+    
+    async def _async_operation(self, data: str) -> str:
+        await asyncio.sleep(0.1)  # Simulate async work
+        return f"processed: {data}"
+```
+
+This pattern ensures consistency, testability, and maintainability across all SpecifyX services.

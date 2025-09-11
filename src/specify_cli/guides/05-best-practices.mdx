@@ -8,526 +8,176 @@ tags: [best-practices, workflow, patterns, guidelines]
 
 # Best Practices Guide
 
-This guide covers best practices for using SpecifyX effectively in your development workflow, from project setup to team collaboration.
+Essential patterns for effective SpecifyX usage in development workflows.
 
 ## Project Organization
 
 ### Directory Structure
-
-Maintain a clean, organized project structure:
-
 ```
 my-project/
-├── .specify/                   # SpecifyX configuration
-│   ├── config.toml            # Project configuration
-│   ├── scripts/               # Python utility scripts
-│   ├── templates/             # Custom templates
-│   └── memory/                # Project constitution
-├── .claude/                   # AI assistant integration
-│   └── commands/              # Claude commands
-├── specs/                     # Feature specifications
-│   ├── 001-user-auth/
-│   │   ├── spec.md
-│   │   ├── plan.md
-│   │   └── tasks.md
-│   └── 002-data-validation/
-│       ├── spec.md
-│       ├── plan.md
-│       └── tasks.md
-├── src/                       # Source code
-├── tests/                     # Test files
-├── docs/                      # Documentation
-└── README.md                  # Project overview
+├── .specify/               # SpecifyX configuration
+│   ├── config.toml        # Project settings
+│   ├── scripts/           # Python utilities
+│   └── templates/         # Custom templates
+├── .claude/commands/      # AI assistant commands  
+├── specs/                 # Feature specifications
+│   └── 001-user-auth/     # Spec directories
+└── src/                   # Implementation code
 ```
 
 ### Naming Conventions
 
-Use consistent naming patterns throughout your project:
-
-#### Branch Names
-```bash
-# Good: Clear and descriptive
-feature/user-authentication
-feature/002-data-validation
-hotfix/login-bug
-
-# Bad: Vague or unclear
-feature/stuff
-fix/bug
-feature/update
+**Branch Names**: Use descriptive patterns matching your team's conventions:
+```toml
+# .specify/config.toml
+[branching]
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "chore/{task-name}"
+]
 ```
 
-#### Specification IDs
-```bash
-# Good: Sequential numbering
-001-user-auth
-002-data-validation
-003-payment-system
-
-# Bad: Random or inconsistent
-feature-1
-auth
-payment_stuff
+**Specification IDs**: Use numeric prefixes for ordered development:
 ```
-
-#### File Names
-```bash
-# Good: Consistent and descriptive
-spec.md
-plan.md
-tasks.md
-
-# Bad: Inconsistent or unclear
-specification.md
-implementation.md
-todo.md
+001-user-authentication/
+002-payment-integration/
+003-admin-dashboard/
 ```
 
 ## Configuration Management
 
-### Global vs Project Configuration
-
-**Use global configuration for:**
-- Default AI assistant preferences
-- Common template variables (author, company)
-- Standard branch naming patterns
-- Default validation rules
-
-**Use project configuration for:**
-- Project-specific branch patterns
-- Technology stack variables
-- Project-specific template settings
-- Custom validation rules
-
-### Configuration Examples
-
-#### Good Global Configuration
+### Global Configuration
+Place team-wide settings in `~/.config/specifyx/config.toml`:
 ```toml
-[project]
-name = "global-defaults"
-
-[project.template_settings]
+[defaults]
 ai_assistant = "claude"
-template_cache_enabled = true
 
-[project.template_settings.template_variables]
-author_name = "Your Name"
-author_email = "your.email@company.com"
-company_name = "Your Company"
-default_license = "MIT"
-
-[project.branch_naming]
-patterns = [
-    "feature/{feature-name}",
-    "hotfix/{bug-id}",
-    "main"
-]
-validation_rules = [
-    "max_length_50",
-    "lowercase_only",
-    "no_spaces",
-    "alphanumeric_dash_slash_only"
-]
+[branching]
+patterns = ["feature/{feature-name}", "main"]
+validation_rules = ["lowercase_only", "no_spaces"]
 ```
 
-#### Good Project Configuration
+### Project Configuration
+Override globals in `.specify/config.toml`:
 ```toml
 [project]
-name = "web-app-project"
+name = "my-app"
+description = "Project description"
 
-[project.template_settings]
-ai_assistant = "claude"
-
-[project.template_settings.template_variables]
-project_type = "web-application"
-framework = "react"
-api_type = "graphql"
-database = "postgresql"
-deployment_platform = "vercel"
-
-[project.branch_naming]
-patterns = [
-    "feature/{spec-id}-{feature-name}",
-    "hotfix/{bug-id}",
-    "release/{version}",
-    "main",
-    "develop"
-]
+[branching]
+patterns = ["feature/{feature-name}", "hotfix/{bug-id}", "main"]
 ```
 
 ## Specification Writing
 
-### Structure and Clarity
-
-**Write specifications that focus on the "what" and "why":**
-
+### Structure Template
 ```markdown
-# Good Example
-## User Story
-As a customer, I want to reset my password so that I can regain access to my account when I forget it.
+# Feature Name
+
+## Overview
+Brief description and business value.
+
+## User Stories
+- As a [user type], I want [goal] so that [benefit]
 
 ## Acceptance Criteria
-- [ ] User can request password reset via email
-- [ ] Reset link expires after 24 hours
-- [ ] User must confirm new password twice
-- [ ] System logs all password reset attempts
+- [ ] Specific testable requirements
+- [ ] Error handling scenarios
+- [ ] Performance requirements
 
-# Bad Example
-## User Story
-Implement password reset functionality.
-
-## Technical Details
-Create a reset endpoint that generates JWT tokens and sends emails using SendGrid.
+## Technical Notes
+- Architecture decisions
+- Dependencies
+- Constraints
 ```
 
-### Avoid Implementation Details
+### Writing Guidelines
+- **Be specific**: Avoid vague requirements
+- **Include examples**: Show expected inputs/outputs
+- **Define edge cases**: Handle error scenarios
+- **Keep updated**: Sync specs with implementation changes
 
-**Good - Focuses on requirements:**
-```markdown
-## Requirements
-- **FR-001**: System MUST validate user email addresses
-- **FR-002**: System MUST prevent duplicate user registrations
-- **FR-003**: Users MUST be able to update their profile information
-```
+## Development Workflow
 
-**Bad - Includes implementation details:**
-```markdown
-## Requirements
-- **FR-001**: Use regex pattern to validate emails in the UserService class
-- **FR-002**: Check the users table for existing emails before INSERT
-- **FR-003**: Create a PUT /api/users/{id} endpoint with JWT authentication
-```
+### Branch-Based Development
+1. **Create feature branch**: `specifyx init feature-name`
+2. **Write specification**: Complete spec.md before coding
+3. **Implement feature**: Use generated scripts and templates
+4. **Update documentation**: Keep specs current with changes
+5. **Clean merge**: Ensure branch is ready for integration
 
-### Use Clear Acceptance Criteria
-
-**Good - Testable and specific:**
-```markdown
-## Acceptance Criteria
-- [ ] Given a user is logged in, when they click "Edit Profile", then a form appears with current information
-- [ ] Given a user updates their email, when they save changes, then they receive a verification email
-- [ ] Given an invalid email format, when user tries to save, then an error message appears
-```
-
-**Bad - Vague and untestable:**
-```markdown
-## Acceptance Criteria
-- [ ] User can edit their profile
-- [ ] Email validation works
-- [ ] Errors are handled properly
-```
-
-## Branch Management
-
-### Branch Workflow
-
-1. **Always create feature branches from main:**
-   ```bash
-   git checkout main
-   git pull origin main
-   specifyx run create-feature "user authentication system"
-   ```
-
-2. **Use descriptive branch names:**
-   ```bash
-   # Good
-   feature/001-user-authentication
-   feature/user-profile-management
-   hotfix/login-timeout-bug
-   
-   # Bad
-   feature/auth
-   fix/bug
-   update/stuff
-   ```
-
-3. **Keep branches focused:**
-   - One feature per branch
-   - Avoid mixing unrelated changes
-   - Break large features into smaller specs
-
-### Branch Naming Patterns
-
-Choose patterns that fit your workflow:
-
-#### For Small Teams
-```toml
-patterns = [
-    "feature/{feature-name}",
-    "fix/{bug-description}",
-    "main"
-]
-```
-
-#### For Larger Teams
-```toml
-patterns = [
-    "feature/{team}-{feature-name}",
-    "hotfix/{team}-{bug-id}",
-    "release/{version}",
-    "main",
-    "develop"
-]
-```
-
-#### For Enterprise
-```toml
-patterns = [
-    "feature/{project}-{spec-id}-{feature-name}",
-    "hotfix/{project}-{bug-id}",
-    "release/{project}-{version}",
-    "main",
-    "develop"
-]
-```
-
-## Template Design
-
-### Template Organization
-
-**Keep templates modular and reusable:**
-
-```jinja2
-{# Good: Modular design #}
-{% include 'common/header.j2' %}
-
-## Feature Overview
-{{ feature_description }}
-
-{% include 'common/requirements-section.j2' %}
-{% include 'common/acceptance-criteria.j2' %}
-
-{# Bad: Monolithic template #}
-# Feature: {{ feature_name }}
-[Everything hardcoded in one template]
-```
-
-### Variable Management
-
-**Use meaningful variable names with defaults:**
-
-```jinja2
-{# Good: Clear names with fallbacks #}
-**Author**: {{ template_variables.author_name | default('TBD') }}
-**Project Type**: {{ template_variables.project_type | default('General') }}
-**Framework**: {{ template_variables.framework | default('Not specified') }}
-
-{# Bad: Unclear names without defaults #}
-**Author**: {{ author }}
-**Type**: {{ type }}
-**Framework**: {{ fw }}
-```
-
-### Conditional Logic
-
-**Keep template logic simple and readable:**
-
-```jinja2
-{# Good: Simple, clear conditions #}
-{% if template_variables.has_database %}
-## Database Design
-### Entities
-- **{{ feature_name | title }}**: [Entity description]
-{% endif %}
-
-{# Bad: Complex nested logic #}
-{% if template_variables.has_database and template_variables.database_type == 'sql' and template_variables.use_orm %}
-{% if template_variables.orm_type == 'sequelize' or template_variables.orm_type == 'typeorm' %}
-[Complex nested conditions]
-{% endif %}
-{% endif %}
-```
-
-## AI Assistant Integration
-
-### Command Usage Patterns
-
-**Use commands consistently in your workflow:**
-
-1. **Start with `/specify`** for new features
-2. **Follow with `/plan`** for technical design
-3. **Generate `/tasks`** for implementation breakdown
-4. **Use `/review`** before merging
-
-### Writing Effective Prompts
-
-**Good prompts are specific and contextual:**
-
-```bash
-# Good: Specific and actionable
-/specify Build a user authentication system that supports email/password login, 
-password reset via email, account lockout after failed attempts, and session 
-management. The system should integrate with our existing user database and 
-support both web and mobile clients.
-
-# Bad: Vague and unclear
-/specify Add authentication
-```
-
-### Iterative Refinement
-
-**Use AI assistants for iterative improvement:**
-
-```bash
-# First iteration
-/specify [Initial feature description]
-
-# Review and refine
-"Please refine the acceptance criteria to be more specific about error handling"
-
-# Add missing details
-"Add requirements for password complexity and account lockout policies"
-```
+### Template Customization
+- **Start small**: Modify existing templates before creating new ones
+- **Test templates**: Verify Jinja2 syntax and variable substitution
+- **Document changes**: Add comments explaining custom logic
+- **Version control**: Track template changes with project
 
 ## Team Collaboration
 
-### Shared Configuration
+### Specification Reviews
+- **Peer review specs** before implementation starts
+- **Use clear acceptance criteria** for validation
+- **Document decisions** in spec files, not just comments
+- **Update specs** when requirements change
 
-**Create team standards for consistency:**
+### Configuration Sharing
+- **Commit project config** (`.specify/config.toml`) to version control
+- **Document team conventions** in README or CONTRIBUTING guides
+- **Standardize patterns** across projects in organization
+- **Share global configs** for consistent team experience
 
+## AI Integration
+
+### Command Organization
+- **Separate by function**: Different commands for different tasks
+- **Use descriptive names**: Make command purpose clear
+- **Include examples**: Show expected usage patterns
+- **Keep updated**: Sync with project evolution
+
+### Template Variables
+```jinja2
+# Use consistent variable naming
+{{ project_name }}          # snake_case for technical
+{{ project_title }}         # Title Case for display
+{{ ai_assistant }}          # lowercase for tools
+```
+
+## Performance & Maintenance
+
+### Project Hygiene
+- **Clean unused templates**: Remove obsolete template files
+- **Update dependencies**: Keep project requirements current
+- **Archive old specs**: Move completed features to archive folder
+- **Review configuration**: Regularly audit settings for relevance
+
+### Troubleshooting Prevention
+- **Validate configuration**: Use `specifyx config validate`
+- **Test templates locally**: Verify before committing changes
+- **Document custom patterns**: Explain non-standard configurations
+- **Monitor script permissions**: Ensure execution rights are maintained
+
+## Common Patterns
+
+### Multi-Environment Setup
 ```toml
-# team-standards.toml
-[project.template_settings.template_variables]
-company_name = "Acme Corp"
-code_style = "prettier"
-test_framework = "jest"
-deployment_platform = "aws"
-monitoring_tool = "datadog"
+# Development
+[dev]
+branch_patterns = ["feature/{name}", "experiment/{name}"]
 
-[project.branch_naming]
-patterns = [
-    "feature/{team}-{spec-id}-{feature-name}",
-    "hotfix/{team}-{bug-id}",
-    "release/{version}",
-    "main",
-    "develop"
-]
-validation_rules = [
-    "max_length_60",
-    "lowercase_only",
-    "no_spaces",
-    "alphanumeric_dash_slash_only"
-]
+# Production  
+[prod]
+branch_patterns = ["hotfix/{id}", "release/{version}"]
 ```
 
-### Documentation Standards
+### Custom Script Integration
+```python
+# .specify/scripts/custom_task.py
+from specify_cli.utils import get_project_config
 
-**Maintain consistent documentation:**
-
-1. **Specification Reviews:**
-   - All specs must pass review checklist
-   - Acceptance criteria must be testable
-   - No implementation details in specs
-
-2. **Plan Reviews:**
-   - Technical decisions must be documented
-   - Architecture diagrams for complex features
-   - Security considerations addressed
-
-3. **Task Breakdown:**
-   - Clear deliverables and dependencies
-   - Effort estimates included
-   - Testing requirements specified
-
-## Quality Assurance
-
-### Specification Quality Checklist
-
-Before finalizing any specification:
-
-- [ ] **Clear user value** - Spec explains why this feature matters
-- [ ] **Testable criteria** - All acceptance criteria can be verified
-- [ ] **Complete scope** - All edge cases and error scenarios covered
-- [ ] **No implementation details** - Focus on "what" not "how"
-- [ ] **Stakeholder reviewed** - Business requirements validated
-
-### Plan Quality Checklist
-
-Before starting implementation:
-
-- [ ] **Architecture documented** - High-level design is clear
-- [ ] **Technology justified** - Tech choices are explained
-- [ ] **Security considered** - Security implications addressed
-- [ ] **Performance planned** - Performance requirements defined
-- [ ] **Testing strategy** - Test approach is documented
-
-### Task Quality Checklist
-
-Before development begins:
-
-- [ ] **Clear deliverables** - Each task has specific outcomes
-- [ ] **Proper estimates** - Effort is realistically estimated
-- [ ] **Dependencies mapped** - Task order is logical
-- [ ] **Testing included** - Testing tasks are specified
-- [ ] **Definition of done** - Completion criteria are clear
-
-## Error Prevention
-
-### Common Pitfalls to Avoid
-
-1. **Mixing specifications with implementation**
-   - Keep specs focused on requirements
-   - Save technical details for plans
-
-2. **Inconsistent naming conventions**
-   - Establish patterns early
-   - Document naming standards
-   - Use validation rules consistently
-
-3. **Overcomplicating templates**
-   - Keep template logic simple
-   - Use includes for reusability
-   - Test templates thoroughly
-
-4. **Ignoring configuration validation**
-   - Validate config files regularly
-   - Use meaningful error messages
-   - Provide clear examples
-
-## Maintenance and Evolution
-
-### Regular Maintenance Tasks
-
-**Weekly:**
-- Review and update template variables
-- Validate configuration files
-- Clean up old feature branches
-
-**Monthly:**
-- Review branch naming patterns
-- Update team standards
-- Audit specification quality
-
-**Quarterly:**
-- Evaluate workflow effectiveness
-- Update global configuration
-- Review and improve templates
-
-### Template Evolution
-
-**Track template changes:**
-
-```bash
-# Version control templates
-git add .specify/templates/
-git commit -m "Update spec template with security section"
-
-# Document template changes
-# Update template documentation
-# Communicate changes to team
+def main():
+    config = get_project_config()
+    # Custom logic using SpecifyX utilities
 ```
 
-## Troubleshooting Best Practices
-
-### Prevention Strategies
-
-1. **Use version control** for all configuration
-2. **Validate frequently** during development
-3. **Test templates** before deployment
-4. **Document known issues** and solutions
-5. **Keep backups** of working configurations
-
-## Next Steps
-
-- [Configuration Management](/docs/guides/configuration) - Set up robust configuration
-- [Template Customization](/docs/guides/template-customization) - Create effective templates
-- [Troubleshooting Guide](/docs/guides/troubleshooting) - Solve common problems
+Following these patterns ensures consistent, maintainable, and effective use of SpecifyX across your development workflow.
