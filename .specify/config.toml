@@ -1,0 +1,24 @@
+[project]
+name = "spec-kit-improved"
+
+[project.branch_naming]
+description = "Modern namespaced branches with type prefixes"
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "bugfix/{bug-id}",
+    "main",
+    "development",
+]
+validation_rules = [
+    "max_length_50",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_slash_only",
+]
+default_pattern = "feature/{feature-name}"
+
+[project.template_settings]
+ai_assistant = "claude"
+config_directory = ".specify"
+template_cache_enabled = true
