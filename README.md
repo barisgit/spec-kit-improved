@@ -13,9 +13,7 @@
 
 ## What is SpecifyX?
 
-<video align="right" width="1000" src="docs/static/img/gifs/specifyx-init.webm" alt="SpecifyX Demo" autoplay loop>
-  Your browser does not support the video tag.
-</video>
+![SpecifyX Demo](docs/static/img/gifs/specifyx-init.gif)
 
 SpecifyX is a modern Python CLI tool for spec-driven development that helps teams focus on product scenarios rather than writing boilerplate code. Enhanced fork of GitHub's [spec-kit](https://github.com/github/spec-kit).
 
@@ -31,7 +29,7 @@ SpecifyX is a modern Python CLI tool for spec-driven development that helps team
 
 ## Installation
 
-### Using uv (recommended)
+### Using uv (recommended )
 ```bash
 uv tool install specifyx
 ```
