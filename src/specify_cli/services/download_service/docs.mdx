@@ -1,0 +1,325 @@
+---
+title: Download Service
+description: HTTP-based download and archive extraction service for SpecifyX template management
+category: service
+tags: [downloads, github, archives, templates, http, progress-tracking]
+---
+
+# Download Service
+
+The Download Service provides comprehensive HTTP download capabilities for SpecifyX template management. It handles GitHub repository downloads, archive extraction, template validation, and progress tracking with robust error handling and retry logic.
+
+## Overview
+
+The service is built around two main components:
+- **DownloadService** (abstract interface) - Defines the contract for download operations
+- **HttpxDownloadService** (concrete implementation) - Implements HTTP-based downloads using httpx
+
+## Key Features
+
+### HTTP Download Capabilities
+- GitHub repository and release downloads
+- Generic URL downloads with progress tracking
+- Automatic redirect handling and timeout management
+- Support for streaming downloads with progress bars
+
+### Archive Handling
+- ZIP and TAR archive extraction with format auto-detection
+- GitHub-style archive flattening (removes nested root directories)
+- Cross-platform archive support (ZIP, TAR, TAR.GZ, TAR.BZ2)
+- Atomic extraction with cleanup on failure
+
+### Template Management
+- SpecifyX template package downloads from GitHub releases
+- Template validation and structure verification
+- AI-assistant-aware template discovery
+- Backward compatibility with legacy template formats
+
+### Progress & Feedback
+- Rich console integration with colored output
+- Progress bars for large downloads with size tracking
+- Spinner animations for indeterminate operations
+- Detailed error reporting with context
+
+## Core Classes
+
+### DownloadService (Abstract)
+```python
+class DownloadService(ABC):
+    def download_template(self, template_url: str, destination_path: Path) -> bool
+    def download_github_repo(self, repo_url: str, destination_path: Path, branch: str = "main") -> bool
+    def extract_archive(self, archive_path: Path, destination_path: Path) -> bool
+    def validate_template_package(self, template_path: Path) -> Tuple[bool, Optional[str]]
+    def get_available_templates(self, repo_url: str) -> List[str]
+    def download_specific_template(self, repo_url: str, template_name: str, destination_path: Path) -> bool
+```
+
+### HttpxDownloadService (Implementation)
+```python
+service = HttpxDownloadService(
+    console=console,
+    timeout=30,
+    default_repo_owner="barisgit",
+    default_repo_name="spec-kit-improved"
+)
+success = service.download_github_repo("owner/repo", destination_path)
+```
+
+## Download Operations
+
+### Basic Downloads
+```python
+# Download from any URL
+success = service.download_template(
+    "https://example.com/template.zip",
+    Path("/path/to/template.zip")
+)
+
+# Download GitHub repository
+success = service.download_github_repo(
+    "owner/repository",
+    Path("/path/to/destination"),
+    branch="main"
+)
+```
+
+### SpecifyX Template Downloads
+```python
+# Download SpecifyX templates from releases
+success, metadata = service.download_github_release_template(
+    ai_assistant="claude",
+    destination_path=Path("/path/to/templates")
+)
+
+if success:
+    print(f"Downloaded: {metadata['filename']}")
+    print(f"Release: {metadata['release']}")
+    print(f"Size: {metadata['size']} bytes")
+```
+
+### Template Discovery
+```python
+# Get available templates from repository
+templates = service.get_available_templates("owner/template-repo")
+print(f"Available templates: {templates}")
+
+# Download specific template
+success = service.download_specific_template(
+    "owner/template-repo",
+    "claude",
+    Path("/path/to/destination")
+)
+```
+
+## Archive Extraction
+
+### Supported Formats
+- **ZIP**: `.zip` files with automatic compression detection
+- **TAR**: `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2` files
+- **Auto-detection**: Format determined by file extension
+
+### Extraction Features
+```python
+# Extract any supported archive
+success = service.extract_archive(
+    Path("/path/to/archive.zip"),
+    Path("/path/to/destination")
+)
+
+# Automatic GitHub-style flattening
+# Input:  archive.zip containing "repo-main/" directory
+# Output: Contents extracted directly to destination (flattened)
+```
+
+### Archive Handling
+- **Nested Directory Flattening**: Removes single root directories common in GitHub archives
+- **Atomic Operations**: Ensures clean state on extraction failure
+- **Permission Preservation**: Maintains file permissions where supported
+- **Cross-Platform**: Handles path separators and file systems appropriately
+
+## Template Validation
+
+### Structure Validation
+```python
+# Validate template package structure
+is_valid, error_message = service.validate_template_package(
+    Path("/path/to/template")
+)
+
+if not is_valid:
+    print(f"Template validation failed: {error_message}")
+```
+
+### Expected Template Structure
+Templates are validated for essential files:
+- `README.md` - Template documentation
+- `CONSTITUTION.md` - Template constitution and guidelines
+
+## Configuration & Customization
+
+### Service Configuration
+```python
+service = HttpxDownloadService(
+    console=Console(),                    # Rich console for output
+    timeout=30,                          # Request timeout in seconds
+    default_repo_owner="barisgit",       # Default GitHub repo owner
+    default_repo_name="spec-kit-improved" # Default GitHub repo name
+)
+```
+
+### Download Patterns
+The service supports multiple template discovery patterns:
+```python
+# Template asset patterns (searched in order)
+patterns = [
+    "specifyx-templates",              # New SpecifyX format
+    f"spec-kit-template-{ai_assistant}", # Legacy per-AI format
+    "spec-kit-template"                # Generic format
+]
+```
+
+## Progress Tracking
+
+### Download Progress
+```python
+# Downloads show progress bars for files with known size
+# Progress includes:
+# - Spinner animation
+# - Percentage completion
+# - Transfer speed (implicit in progress updates)
+
+# Example output:
+# ⠋ Downloading... 45%
+```
+
+### Console Integration
+```python
+from rich.console import Console
+
+console = Console()
+service = HttpxDownloadService(console=console)
+
+# All download operations will use the provided console
+# for progress bars, status messages, and error reporting
+```
+
+## Error Handling
+
+### Network Errors
+- **Connection Timeouts**: Configurable timeout with clear error messages
+- **HTTP Errors**: Status code validation with error propagation
+- **Redirect Handling**: Automatic redirect following with loop detection
+
+### File System Errors
+- **Permission Errors**: Clear messages for write permission issues
+- **Disk Space**: Implicit handling through OS error reporting
+- **Path Validation**: Directory creation and path normalization
+
+### Archive Errors
+- **Corrupt Archives**: ZIP/TAR corruption detection and reporting
+- **Extraction Failures**: Cleanup of partial extractions
+- **Format Detection**: Unsupported format identification
+
+### Error Reporting
+```python
+# Errors are reported through Rich console with color coding
+# [red]Error downloading template:[/red] Connection timeout
+# [red]Error extracting archive:[/red] Corrupt ZIP file
+# [yellow]Available assets:[/yellow] [list of alternatives]
+```
+
+## Usage Examples
+
+### Basic Template Download
+```python
+from specify_cli.services.download_service import create_download_service
+from pathlib import Path
+
+service = create_download_service()
+
+# Download and extract SpecifyX templates
+success, metadata = service.download_github_release_template(
+    ai_assistant="claude",
+    destination_path=Path("./templates")
+)
+
+if success:
+    # Extract the downloaded archive
+    zip_path = Path("./templates") / metadata["filename"]
+    success = service.extract_archive(zip_path, Path("./extracted"))
+    
+    if success:
+        # Validate the template structure
+        is_valid, error = service.validate_template_package(Path("./extracted"))
+        if not is_valid:
+            print(f"Template validation failed: {error}")
+```
+
+### Custom Repository Download
+```python
+# Download from custom GitHub repository
+custom_service = HttpxDownloadService(
+    default_repo_owner="my-org",
+    default_repo_name="my-templates"
+)
+
+success = custom_service.download_github_repo(
+    "my-org/custom-templates",
+    Path("./custom-templates"),
+    branch="development"
+)
+```
+
+### Template Discovery Workflow
+```python
+# Discover and download specific template
+repo_url = "organization/template-repository"
+
+# List available templates
+available = service.get_available_templates(repo_url)
+print(f"Available templates: {available}")
+
+# Download specific template
+if "claude" in available:
+    success = service.download_specific_template(
+        repo_url,
+        "claude",
+        Path("./claude-template")
+    )
+```
+
+## Integration Points
+
+The Download Service integrates with:
+- **Project Manager**: For template acquisition during project initialization
+- **Template Service**: For providing template packages for rendering
+- **Config Service**: For repository and download configuration settings
+
+## Performance Considerations
+
+- **Streaming Downloads**: Large files are streamed to avoid memory issues
+- **Concurrent Safety**: Service instances are thread-safe for read operations
+- **Cleanup Operations**: Temporary files are cleaned up automatically
+- **Progress Feedback**: Progress bars provide user feedback for long operations
+
+## File System Integration
+
+### Download Locations
+- **Temporary Files**: Created in system temp directory with automatic cleanup
+- **Destination Handling**: Automatic directory creation for download destinations
+- **Archive Extraction**: In-place extraction with atomic operations
+
+### Path Handling
+- **Cross-Platform**: Proper path separator handling for Windows/Unix
+- **Directory Creation**: Recursive directory creation as needed
+- **Permission Setting**: Maintains file permissions during extraction
+
+## Factory Function
+
+```python
+def create_download_service(console: Optional[Console] = None) -> DownloadService:
+    """Factory function to create an HttpxDownloadService instance"""
+    return HttpxDownloadService(console=console)
+```
+
+Use this factory function to get a properly configured download service instance with sensible defaults for SpecifyX template management.

@@ -1,0 +1,200 @@
+---
+title: run Command
+description: Execute generated Python scripts with argument passthrough
+category: command
+tags: [run, scripts, execution, discovery, automation]
+---
+
+# run Command
+
+The `specifyx run` command executes generated Python scripts from the `.specify/scripts/` directory with full argument passthrough support.
+
+## Usage
+
+```bash
+specifyx run [SCRIPT_NAME] [SCRIPT_ARGS...] [OPTIONS]
+specifyx run --list
+specifyx run --which SCRIPT_NAME
+```
+
+## Description
+
+This command provides a unified interface for executing Python scripts generated during project initialization. It uses a discovery service to locate scripts and an execution service to run them with all arguments passed through transparently.
+
+Key features:
+- **Script Discovery**: Automatically finds scripts in `.specify/scripts/`
+- **Argument Passthrough**: All arguments after script name are passed directly to the script
+- **Cross-Platform**: Works consistently across different operating systems
+- **Error Handling**: Provides clear error messages and exit codes
+
+## Arguments
+
+- `SCRIPT_NAME` - Name of the script to execute (without .py extension)
+- `SCRIPT_ARGS...` - All arguments to pass through to the script
+
+## Options
+
+### Utility Options
+- `--list`, `-l` - List all available scripts with descriptions
+- `--which SCRIPT_NAME` - Show the full path to a specific script
+- `--project PATH`, `-p PATH` - Project path (defaults to current directory)
+
+## Examples
+
+### Basic Script Execution
+```bash
+# Run a script with no arguments
+specifyx run setup-plan
+
+# Run a script with arguments passed through
+specifyx run setup-plan --json --verbose
+
+# Run task management script
+specifyx run tasks create "Implement authentication"
+```
+
+### Script Discovery
+```bash
+# List all available scripts
+specifyx run --list
+
+# Find the path to a specific script
+specifyx run --which setup-plan
+
+# List scripts in a different project
+specifyx run --list --project /path/to/project
+```
+
+### Real-World Usage Examples
+```bash
+# Generate feature specification
+specifyx run spec --feature "user-authentication" --output specs/
+
+# Create project plan with specific format
+specifyx run plan --format json --save plans/architecture.json
+
+# Execute task management operations
+specifyx run tasks list --status pending
+specifyx run tasks complete "Setup database schema"
+```
+
+## Generated Scripts
+
+The run command works with scripts generated during `specifyx init`, typically including:
+
+### Standard Scripts
+- **plan.py** - Feature planning and architecture scripts
+- **spec.py** - Specification creation and management
+- **tasks.py** - Task and milestone management
+
+### Script Descriptions
+When using `--list`, the command attempts to extract descriptions from:
+1. Triple-quoted docstrings at the beginning of files
+2. Comments starting with `# description:`
+
+Example script with description:
+```python
+"""Generate feature specifications with templates."""
+# This description will be shown in --list output
+```
+
+## Service Integration
+
+The run command orchestrates two specialized services:
+
+### Script Discovery Service
+- **FileSystemScriptDiscoveryService**: Locates scripts in `.specify/scripts/`
+- Handles script name resolution (with or without .py extension)
+- Provides listing and path resolution functionality
+
+### Script Execution Service  
+- **SubprocessScriptExecutionService**: Executes scripts using subprocess
+- Preserves all output formatting and exit codes
+- Handles both stdout and stderr streams
+
+## Error Handling
+
+### Script Not Found
+```bash
+$ specifyx run nonexistent
+Error: Script 'nonexistent' not found.
+Available scripts:
+  - setup-plan
+  - tasks
+  - spec
+```
+
+### No Scripts Directory
+```bash
+$ specifyx run --list
+No scripts found in .specify/scripts/ directory.
+```
+
+### Script Execution Errors
+- Exit codes from scripts are preserved and returned
+- Both stdout and stderr are displayed without modification
+- Execution errors are caught and reported clearly
+
+## Exit Codes
+
+- `0` - Script executed successfully
+- `1` - Script not found, execution failed, or other error
+- `N` - Exit code returned by the executed script (if not 0)
+
+## Project Structure Requirements
+
+The run command expects the following structure:
+```
+project-root/
+└── .specify/
+    └── scripts/
+        ├── plan.py
+        ├── spec.py
+        ├── tasks.py
+        └── ... (other generated scripts)
+```
+
+## Argument Passthrough Behavior
+
+All arguments after the script name are passed directly to the script:
+
+```bash
+# These arguments: --help --verbose --output=file.json
+specifyx run setup-plan --help --verbose --output=file.json
+
+# Are passed to the script as: [--help, --verbose, --output=file.json]
+```
+
+This allows scripts to implement their own argument parsing and help systems.
+
+## Use Cases
+
+### Development Workflow Integration
+- Execute generated automation scripts as part of development workflow
+- Run planning and specification scripts during feature development
+- Integrate with CI/CD pipelines for automated task management
+
+### Script Development and Testing
+- Test generated scripts with various argument combinations
+- Verify script discovery and execution in different project structures
+- Debug script issues with clear error reporting
+
+### Project Management
+- Execute task management scripts for project tracking
+- Generate reports and documentation using generated tools
+- Automate repetitive development tasks
+
+## Integration with Other Commands
+
+### After `specifyx init`
+The run command works with scripts generated by the init command, providing immediate access to project automation tools.
+
+### Cross-Platform Compatibility
+Scripts generated by SpecifyX are designed to work across platforms, and the run command ensures consistent execution behavior.
+
+## See Also
+
+- [init Command](/docs/reference/cli/init) - Generates the scripts that run executes
+- [Script Discovery Service](/docs/reference/api/script_discovery_service) - Technical details on script location
+- [Script Execution Service](/docs/reference/api/script_execution_service) - Technical details on script execution
+- [Getting Started Guide](/docs/guides/quickstart) - Overall workflow including script usage

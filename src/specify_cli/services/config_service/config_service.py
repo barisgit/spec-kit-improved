@@ -399,7 +399,7 @@ class TomlConfigService(ConfigService):
 
             # Unknown rule - warn but don't fail
             elif rule and rule not in ["", "none"]:
-                # In production, you might want to log this instead
+                logging.warning(f"Unknown validation rule: {rule}")
                 pass
 
         return True, None

@@ -18,7 +18,9 @@ export class FileDiscovery {
           absolute: true
         });
         
-        allFiles.push(...files);
+        // Filter out README files
+        const filteredFiles = files.filter(file => !basename(file).toLowerCase().startsWith('readme'));
+        allFiles.push(...filteredFiles);
       } catch (error) {
         console.warn(`Failed to process pattern ${pattern.pattern}:`, error);
       }

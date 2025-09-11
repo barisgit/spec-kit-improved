@@ -1,0 +1,278 @@
+---
+title: Update Service
+description: Main orchestrator for SpecifyX update management and version checking
+category: service
+tags: [updates, versioning, orchestration, pypi]
+---
+
+# Update Service
+
+The Update Service is the main orchestrator for SpecifyX update management. It coordinates version checking, update notifications, and installation processes by integrating the Version Checker and Update Installer services.
+
+## Overview
+
+The service provides a unified interface for:
+- Checking for available updates from PyPI
+- Displaying update notifications with installation instructions
+- Performing automatic updates when supported
+- Managing update workflows and user communication
+
+## Key Features
+
+### Update Orchestration
+- Coordinates version checking and installation processes
+- Provides unified API for all update-related operations
+- Manages workflow between different installation methods
+- Handles both automatic and manual update scenarios
+
+### Smart Notifications
+- Context-aware update notifications
+- Installation method detection and guidance
+- Support for both quiet and verbose notification modes
+- Rich console output with proper formatting
+
+### Installation Method Support
+- Automatic detection of installation methods (pipx, uv-tool, pip, conda, homebrew)
+- Method-specific update instructions and commands
+- Auto-update capability detection
+- Fallback to manual instructions when needed
+
+## Core Class
+
+### UpdateService
+```python
+class UpdateService:
+    def __init__(self):
+        self.console = Console()
+        self.version_checker = PyPIVersionChecker()
+        self.installer = UpdateInstaller()
+        self.detector = InstallationMethodDetector()
+```
+
+## Primary Methods
+
+### Update Checking
+```python
+# Check for available updates
+update_info = service.check_for_updates(use_cache=True)
+# Returns: {
+#     "has_update": bool,
+#     "current_version": str,
+#     "latest_version": str,
+#     "method": str,
+#     "supports_auto_update": bool
+# }
+
+# Force fresh check bypassing cache
+update_info = service.force_check()
+```
+
+### Update Notifications
+```python
+# Show update notification if available
+has_update = service.show_update_notification(quiet=False, force_check=False)
+
+# Quiet mode - only show if update exists
+has_update = service.show_update_notification(quiet=True)
+```
+
+### Update Installation
+```python
+# Perform update to latest version
+success = service.perform_update()
+
+# Update to specific version
+success = service.perform_update(target_version="1.2.3")
+
+# Force update even if already current
+success = service.perform_update(force=True)
+
+# Dry run - show what would happen
+success = service.perform_update(dry_run=True)
+```
+
+## Information and Diagnostics
+
+### Installation Information
+```python
+# Get comprehensive installation details
+info = service.get_installation_info()
+# Returns combined data from version checker, installer, and detector
+
+# Display formatted installation information
+service.show_installation_info()
+```
+
+### Cache Management
+```python
+# Clear version check cache
+service.clear_cache()
+
+# Get cache information for debugging
+cache_info = service.version_checker.get_cache_info()
+```
+
+## Update Workflow
+
+### Standard Update Flow
+1. **Check for Updates**: Version checker queries PyPI with caching
+2. **Detect Installation**: Determine how SpecifyX was installed
+3. **Show Notification**: Display appropriate update message
+4. **Perform Update**: Execute installation method-specific update
+5. **Verify Success**: Confirm update completion
+
+### Installation Method Handling
+- **pipx**: Uses `pipx upgrade` or `pipx install --force`
+- **uv-tool**: Uses `uv tool upgrade` or `uv tool install --force`
+- **pip/pip-venv**: Uses `pip install --upgrade`
+- **conda**: Manual instructions for conda update
+- **homebrew**: Manual instructions for brew upgrade
+
+## Response Formats
+
+### Update Check Response
+```python
+{
+    "has_update": bool,           # Whether update is available
+    "current_version": str,       # Current installed version
+    "latest_version": str,        # Latest version on PyPI
+    "method": str,                # Installation method detected
+    "supports_auto_update": bool  # Whether auto-update is supported
+}
+```
+
+### Installation Info Response
+```python
+{
+    # Update status
+    "has_update": bool,
+    "current_version": str,
+    "latest_version": str,
+    
+    # Installation details
+    "method": str,
+    "python_executable": str,
+    "supports_auto_update": bool,
+    "update_command": str,        # Manual update command
+    "manual_note": str,           # Additional instructions
+    
+    # Cache information
+    "cache_info": {
+        "last_check": str,        # ISO timestamp
+        "cache_age_hours": float,
+        "cache_file": str
+    }
+}
+```
+
+## User Experience Features
+
+### Rich Console Output
+- Color-coded status messages
+- Formatted panels for notifications
+- Progress indicators during updates
+- Clear error messages and instructions
+
+### Update Notifications
+```
+┌─ SpecifyX Update Available ─┐
+│ Update available!           │
+│ Current: 1.0.0 → Latest: 1.1.0 │
+│                             │
+│ Run specifyx update perform │
+│ Installation method: pipx   │
+└─────────────────────────────┘
+```
+
+### Installation Information Display
+```
+┌─ SpecifyX Installation Info ─┐
+│ Version Information          │
+│ Current version: 1.0.0       │
+│                              │
+│ Installation Details         │
+│ Method: pipx                 │
+│ Auto-update: true            │
+│ Python: /usr/bin/python3    │
+│ Update command: pipx upgrade │
+│                              │
+│ Cache Information            │
+│ Last check: 2025-01-15      │
+│ Cache age: 2.5 hours        │
+└──────────────────────────────┘
+```
+
+## Error Handling
+
+### Graceful Degradation
+- Network failures fall back to cached versions
+- Installation method detection has sensible defaults
+- Manual instructions provided when auto-update fails
+- Clear error messages for troubleshooting
+
+### Security Considerations
+- Version comparison uses secure packaging.version
+- HTTP requests use proper timeouts and user agents
+- No execution of arbitrary commands from remote sources
+- ETag support prevents unnecessary downloads
+
+## Integration Points
+
+The Update Service integrates with:
+- **Version Checker**: For PyPI version checking and caching
+- **Update Installer**: For installation method detection and execution
+- **Rich Console**: For formatted output and user interaction
+- **CLI Commands**: Provides backend for `specifyx update` commands
+
+## Usage Examples
+
+### Basic Update Check
+```python
+from specify_cli.services.update_service import UpdateService
+
+service = UpdateService()
+
+# Check and show notification
+if service.show_update_notification():
+    print("Update is available!")
+
+# Get detailed information
+info = service.get_installation_info()
+print(f"Current: {info['current_version']}")
+print(f"Method: {info['method']}")
+```
+
+### Automated Update Workflow
+```python
+# Check for updates
+update_info = service.check_for_updates()
+
+if update_info["has_update"]:
+    if update_info["supports_auto_update"]:
+        # Perform automatic update
+        success = service.perform_update()
+        if success:
+            print("Update completed successfully!")
+    else:
+        # Show manual instructions
+        service.show_update_notification()
+```
+
+### Dry Run and Verification
+```python
+# Show what would happen
+service.perform_update(dry_run=True)
+
+# Clear cache and force fresh check
+service.clear_cache()
+fresh_info = service.force_check()
+```
+
+## Performance Characteristics
+
+- **Version Checks**: Cached for 15 minutes with ETag support
+- **Installation Detection**: Fast file system checks
+- **Update Installation**: Depends on package manager (30s-5min)
+- **Memory Usage**: Minimal overhead, services created on-demand
+
+The Update Service provides a comprehensive and user-friendly interface for managing SpecifyX updates across different installation methods and environments.

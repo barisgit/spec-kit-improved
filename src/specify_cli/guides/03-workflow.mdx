@@ -140,9 +140,9 @@ my-project/
 
 SpecifyX supports various branch naming conventions:
 
-- `feature/{feature-name}` - Standard feature branches
+- `feature/{feature-name}`, `{hotfix}/{bug-id}` - Standard feature branches
 - `001-feature-name` - Numbered features
-- `hotfix/{bug-id}` - Emergency fixes
+- `feature/{spec-id}-{feature-name}` - Numbered features with spec id
 - Custom patterns - Configure in `.specify/config.toml`
 
 ## Template System
@@ -192,7 +192,7 @@ Templates can be customized for:
 ### Common Issues
 
 - **Vague Specifications** - Add more detail and examples
-- **Over-Engineering** - Focus on MVP and iterate
+- **Over-Engineering** - Focus on MVP and iterate, try to keep specs focused to get better results
 - **Missing Dependencies** - Review task dependencies carefully
 - **Unclear Acceptance Criteria** - Define measurable outcomes
 

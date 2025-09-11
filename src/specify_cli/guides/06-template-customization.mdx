@@ -1,0 +1,418 @@
+---
+title: Template Customization
+description: Learn to customize and create templates in SpecifyX
+category: guide
+sidebar_label: Template Customization
+tags: [templates, jinja2, customization, ai-assistant]
+---
+
+# Template Customization
+
+SpecifyX uses Jinja2 templates to generate consistent project artifacts. This guide covers how to customize existing templates and create your own templates for specifications, plans, tasks, and scripts.
+
+## Template System Overview
+
+SpecifyX uses a structured template system with multiple categories:
+
+### Template Categories
+
+1. **Runtime Templates** - Core specification and planning templates
+2. **Command Templates** - AI assistant-specific commands
+3. **Script Templates** - Python utility scripts
+4. **Memory Templates** - Project constitution and context
+
+### Template Structure
+
+```
+.specify/
+├── templates/              # Project runtime templates
+│   ├── spec-template.md.j2
+│   ├── plan-template.md.j2
+│   └── task-template.md.j2
+├── commands/               # AI assistant commands
+│   ├── claude/
+│   ├── gemini/
+│   └── copilot/
+└── scripts/                # Utility scripts
+    ├── deploy-feature.py.j2
+    └── review-code.py.j2
+```
+
+## Template Variables
+
+Templates have access to built-in and custom variables:
+
+### Built-in Variables
+
+- `project_name` - Current project name
+- `feature_name` - Current feature name
+- `branch_name` - Current branch name
+- `date` - Current date
+- `ai_assistant` - Selected AI assistant
+- `is_windows` - Platform detection
+- `branch_patterns` - Available branch naming patterns
+- `validation_rules` - Branch validation rules
+- `template_variables` - Custom template variables from config
+
+### Context Variables
+
+- `feature_description` - User-provided feature description
+- `spec_id` - Specification ID
+- `author_name` - Author name from config
+- `company_name` - Company name from config
+
+## Customizing Runtime Templates
+
+Runtime templates define the structure of specifications, plans, and tasks.
+
+### Specification Template
+
+Edit `.specify/templates/spec-template.md.j2` to customize your specification format:
+
+```jinja2
+# Feature Specification: {{ feature_name | default('[FEATURE NAME]') }}
+
+**Feature Branch**: `{{ branch_name | default('[###-feature-name]') }}`  
+**Created**: {{ date | default('[DATE]') }}  
+**Author**: {{ template_variables.author_name | default('[AUTHOR]') }}
+
+## Overview
+{{ feature_description | default('[Describe what this feature does and why it\'s needed]') }}
+
+## User Stories
+{% if ai_assistant == 'claude' %}
+*Use Claude to help refine these user stories*
+{% endif %}
+
+### Primary User Story
+As a [user type], I want [goal] so that [benefit].
+
+## Requirements
+- **FR-001**: System MUST [capability]
+- **FR-002**: Users MUST be able to [action]
+
+{% if template_variables.include_security_section %}
+## Security Considerations
+- Authentication requirements
+- Authorization rules
+- Data protection needs
+{% endif %}
+
+## Success Criteria
+- [ ] [Measurable outcome]
+- [ ] [User feedback metric]
+
+## Implementation Plan
+### Phase 1: Foundation
+- [ ] Setup development environment
+- [ ] Create project structure
+
+### Phase 2: Core Development  
+- [ ] Implement core functionality
+- [ ] Add unit tests
+
+### Phase 3: Integration
+- [ ] API endpoints
+- [ ] Frontend integration
+- [ ] End-to-end testing
+
+{% if template_variables.database != 'none' %}
+## Database Design
+### Entities
+- **{{ feature_name | title }}**: [Primary entity description]
+### Relationships
+- [Entity] → [Related Entity]: [Relationship type]
+{% endif %}
+
+## API Design
+```http
+POST /api/{{ feature_name | lower }}
+GET /api/{{ feature_name | lower }}/:id
+PUT /api/{{ feature_name | lower }}/:id
+DELETE /api/{{ feature_name | lower }}/:id
+```
+
+## Testing Strategy
+- **Unit Tests**: [Coverage targets]
+- **Integration Tests**: [Key scenarios]
+- **Performance Tests**: [Benchmarks]
+
+```jinja2
+{% if ai_assistant == 'claude' %}
+## Claude Code Integration
+- Use subagents for complex implementations
+- Leverage code review workflow
+- Use `/tasks` to break down implementation
+{% endif %}
+```
+
+### Plan Template
+
+Edit `.specify/templates/plan-template.md.j2` for implementation planning:
+
+```jinja2
+# Implementation Plan: {{ feature_name | default('[FEATURE NAME]') }}
+
+**Specification**: [Link to spec file]  
+**Branch**: `{{ branch_name }}`  
+**Created**: {{ date }}  
+**Tech Stack**: {{ template_variables.tech_stack | default('[SPECIFY TECH STACK]') }}
+
+## Architecture Overview
+- **Framework**: {{ template_variables.framework | default('[FRAMEWORK]') }}
+- **Database**: {{ template_variables.database | default('[DATABASE]') }}
+- **API Style**: {{ template_variables.api_style | default('[REST/GraphQL/etc]') }}
+
+## Development Tasks
+
+### Backend Tasks
+{% if template_variables.has_backend %}
+- [ ] **BE-001**: Implement data models
+- [ ] **BE-002**: Create API endpoints
+{% endif %}
+
+### Frontend Tasks
+{% if template_variables.has_frontend %}
+- [ ] **FE-001**: Create UI components
+- [ ] **FE-002**: Implement user interactions
+{% endif %}
+
+### Testing Tasks
+- [ ] **TEST-001**: Write unit tests
+- [ ] **TEST-002**: Integration testing
+
+## Definition of Done
+- [ ] Code reviewed and approved
+- [ ] Unit tests pass (90%+ coverage)
+- [ ] Integration tests pass
+- [ ] Documentation updated
+- [ ] Performance benchmarks met
+- [ ] Security review completed
+
+{% if ai_assistant == 'claude' %}
+## Claude Code Workflow
+1. Create feature branch: `{{ branch_name }}`
+2. Use `/tasks` command to track progress
+3. Request code review when ready
+4. Use subagents for complex implementations
+{% endif %}
+```
+
+## Jinja2 Template Features
+
+### Conditionals
+
+Create AI-specific content:
+
+```jinja2
+{% if ai_assistant == 'claude' %}
+Use the `/specify` command to create specifications.
+{% elif ai_assistant == 'gemini' %}
+Use Gemini Code to create specifications.
+{% elif ai_assistant == 'copilot' %}
+Use GitHub Copilot to create specifications.
+{% endif %}
+```
+
+### Loops
+
+Iterate over collections:
+
+```jinja2
+{% for pattern in branch_patterns %}
+- {{ pattern }}
+{% endfor %}
+```
+
+### Filters
+
+Transform data:
+
+```jinja2
+# {{ feature_name | title }}
+# {{ feature_name | lower }}
+# {{ feature_name | upper }}
+# {{ date | default('[DATE]') }}
+```
+
+### Macros for Reusable Content
+
+Define reusable template snippets:
+
+```jinja2
+{% macro requirement(id, description, priority='medium') %}
+- **{{ id }}**: {{ description }} *(Priority: {{ priority }})*
+{% endmacro %}
+
+## Requirements
+
+{{ requirement('FR-001', 'User authentication', 'high') }}
+{{ requirement('FR-002', 'Data validation', 'medium') }}
+{{ requirement('FR-003', 'Error handling', 'low') }}
+```
+
+### Template Inheritance
+
+Create base templates and extend them:
+
+```jinja2
+{# base-spec.j2 #}
+# {{ feature_name | default('[FEATURE NAME]') }}
+
+**Branch**: {{ branch_name }}  
+**Created**: {{ date }}
+
+{% block overview %}
+## Overview
+[Feature overview]
+{% endblock %}
+
+{% block requirements %}
+## Requirements
+[Feature requirements]
+{% endblock %}
+
+{% block acceptance %}
+## Acceptance Criteria
+[Acceptance criteria]
+{% endblock %}
+```
+
+Extend base templates:
+
+```jinja2
+{# api-spec.j2 #}
+{% extends "base-spec.j2" %}
+
+{% block overview %}
+## API Feature Overview
+This feature adds new API endpoints to {{ project_name }}.
+{% endblock %}
+
+{% block requirements %}
+{{ super() }}
+
+### API Requirements
+- RESTful endpoints
+- OpenAPI documentation
+- Rate limiting
+{% endblock %}
+```
+
+## Custom Script Templates
+
+Create custom utility scripts:
+
+```jinja2
+#!/usr/bin/env python3
+"""
+Deploy feature script for {{ project_name }}
+
+This script handles the deployment of the current feature branch.
+Generated by SpecifyX for {{ ai_assistant }} workflow.
+"""
+
+import sys
+from pathlib import Path
+
+def deploy_feature():
+    """Deploy the current feature branch"""
+    print(f"Deploying feature branch: {get_current_branch()}")
+    
+    # Run deployment steps
+    steps = [
+        {% if template_variables.has_tests %}
+        ("Running tests", "{{ template_variables.test_command | default('npm test') }}"),
+        {% endif %}
+        {% if template_variables.has_build %}
+        ("Building project", "{{ template_variables.build_command | default('npm run build') }}"),
+        {% endif %}
+        ("Deploying to {{ template_variables.deployment_platform | default('production') }}", 
+         "{{ template_variables.deploy_command | default('npm run deploy') }}")
+    ]
+    
+    for step_name, command in steps:
+        print(f"Step: {step_name}")
+        # Execute command logic here
+    
+    print(f"Deployment URL: {{ template_variables.deployment_url | default('[URL]') }}")
+    return True
+
+if __name__ == "__main__":
+    deploy_feature()
+```
+
+## Template Testing
+
+### Validation
+
+Test your templates with the `specifyx check` command:
+
+```bash
+specifyx check templates
+```
+
+### Common Issues
+
+1. **Missing endif tags**
+   ```jinja2
+   {# ❌ Wrong: Missing endif #}
+   {% if condition %}
+   Content here
+   
+   {# ✅ Correct: Matched tags #}
+   {% if condition %}
+   Content here
+   {% endif %}
+   ```
+
+2. **Undefined variables**
+   ```jinja2
+   {# ❌ Wrong: Undefined variable #}
+   {{ missing_variable }}
+   
+   {# ✅ Correct: Use default filter #}
+   {{ missing_variable | default('[DEFAULT VALUE]') }}
+   ```
+
+3. **Performance issues**
+   ```jinja2
+   {# ❌ Slow: Complex loops #}
+   {% for i in range(1000) %}
+   {{ complex_operation(i) }}
+   {% endfor %}
+   
+   {# ✅ Better: Precompute values #}
+   {% set computed_values = precompute_values() %}
+   {% for value in computed_values %}
+   {{ value }}
+   {% endfor %}
+   ```
+
+## Best Practices
+
+### Template Design
+
+1. **Keep templates focused** - One template per purpose
+2. **Use meaningful defaults** - Provide helpful placeholder text
+3. **Include validation** - Add checks for required variables
+4. **Document variables** - Comment template variables and their purpose
+
+### Variable Naming
+
+1. **Use descriptive names** - `feature_description` not `desc`
+2. **Follow conventions** - `snake_case` for variables
+3. **Group related variables** - Use `template_variables` namespace
+4. **Provide defaults** - Always use `| default()` for optional variables
+
+### Conditional Logic
+
+1. **Keep conditions simple** - Avoid deeply nested conditionals
+2. **Use meaningful conditions** - `has_backend` not `flag1`
+3. **Provide fallbacks** - Always have an `else` clause when appropriate
+4. **Test edge cases** - Verify templates work with all variable combinations
+
+## Next Steps
+
+- [Configuration Management](/docs/guides/configuration) - Configure template variables
+- [Best Practices Guide](/docs/guides/best-practices) - Template design best practices

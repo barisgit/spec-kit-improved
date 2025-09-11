@@ -66,13 +66,12 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Project Management',
+    title: 'Script running commands',
     image: '/img/screenshots/specifyx-run-list.webp', 
-    imageAlt: 'SpecifyX project list',
+    imageAlt: 'SpecifyX script list',
     description: (
       <>
-        Manage multiple projects and workflows with ease. List, run, and organize
-        your specification-driven development tasks.
+        Run generated Python scripts with argument passthrough support and more.
       </>
     ),
   },

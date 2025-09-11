@@ -132,10 +132,13 @@ export class SyncService extends EventEmitter {
     // Perform initial sync
     await this.sync();
     
-    // Set up file watcher
-    const patterns = this.config.sourcePatterns.map(p => 
-      resolve(__dirname, '../..', p.pattern)
-    );
+    // Set up file watcher - expand glob patterns first
+    const patterns: string[] = [];
+    for (const pattern of this.config.sourcePatterns) {
+      const fullPattern = resolve(__dirname, '../../..', pattern.pattern);
+      const expandedFiles = await glob(fullPattern);
+      patterns.push(...expandedFiles);
+    }
     
     this.watcher = chokidarWatch(patterns, {
       persistent: true,

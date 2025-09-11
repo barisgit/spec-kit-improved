@@ -1,0 +1,329 @@
+---
+title: Version Checker
+description: PyPI version checking service with intelligent caching and ETag support
+category: service
+tags: [pypi, versioning, caching, etag, http]
+---
+
+# Version Checker
+
+The Version Checker service provides intelligent PyPI version checking with advanced caching strategies and HTTP optimization. It efficiently determines when SpecifyX updates are available while minimizing network requests and respecting PyPI's resources.
+
+## Overview
+
+The service implements smart caching with ETag support to reduce unnecessary network requests while ensuring users receive timely update notifications. It handles network failures gracefully and provides offline fallback capabilities.
+
+## Key Features
+
+### Intelligent Caching
+- 15-minute cache duration for version checks
+- ETag-based conditional requests to PyPI
+- Stale cache fallback for offline scenarios
+- Automatic cache invalidation and refresh
+
+### Network Optimization
+- HTTP ETag support for efficient requests
+- Proper User-Agent identification
+- Timeout handling for reliable operations
+- Graceful degradation on network failures
+
+### Version Comparison
+- Semantic version parsing using packaging.version
+- Accurate update detection across version schemes
+- Handles pre-release and development versions
+- Robust error handling for malformed versions
+
+## Core Class
+
+### PyPIVersionChecker
+```python
+class PyPIVersionChecker:
+    def __init__(self, package_name: str = "specifyx"):
+        self.package_name = package_name
+        self.cache_dir = Path(user_cache_dir("specifyx", "SpecifyX"))
+        self.cache_file = self.cache_dir / "version_cache.json"
+        self.cache_duration = timedelta(minutes=15)
+        self.api_url = f"https://pypi.org/pypi/{package_name}/json"
+```
+
+## Primary Methods
+
+### Version Checking
+```python
+# Check for updates with caching
+has_update, current, latest = checker.check_for_updates(use_cache=True)
+
+# Force fresh check bypassing cache
+has_update, current, latest = checker.check_for_updates(use_cache=False)
+
+# Get just the latest version
+latest_version = checker.get_latest_version(use_cache=True)
+```
+
+### Cache Management
+```python
+# Clear cached version data
+checker.clear_cache()
+
+# Get cache debugging information
+cache_info = checker.get_cache_info()
+# Returns: {
+#     "last_check": "2025-01-15T10:30:00Z",
+#     "cache_age_hours": 2.5,
+#     "cache_file": "/path/to/cache/version_cache.json",
+#     "latest_version": "1.2.3",
+#     "current_version": "1.2.0",
+#     "etag": "\"abc123\""
+# }
+```
+
+## Caching Strategy
+
+### Multi-Level Cache System
+The service implements a sophisticated caching strategy:
+
+1. **Fresh Cache**: Valid within 15-minute window, used directly
+2. **Stale Cache**: Expired cache used for ETag requests and offline fallback
+3. **ETag Optimization**: Conditional requests to avoid unnecessary downloads
+
+### Cache Lifecycle
+```python
+# Fresh cache check (within 15 minutes)
+fresh_cache = self._load_cache() if use_cache else None
+
+# Stale cache for ETag/fallback
+stale_cache = self._read_cache_stale() if use_cache else None
+
+# Use fresh cache if current version matches
+if fresh_cache and fresh_cache.get("current_version") == current_version:
+    latest_version = fresh_cache.get("latest_version")
+else:
+    # Fetch with ETag support using stale cache
+    latest_version = self._fetch_latest_version(stale_cache)
+```
+
+## HTTP Optimization
+
+### ETag Support
+```python
+def _fetch_latest_version(self, cached_data: Optional[Dict[str, Any]]) -> Optional[str]:
+    headers = {"User-Agent": self.user_agent, "Accept": "application/json"}
+    
+    # Add ETag for conditional request
+    if cached_data and "etag" in cached_data:
+        headers["If-None-Match"] = cached_data["etag"]
+    
+    response = client.get(self.api_url, headers=headers)
+    
+    # Handle 304 Not Modified
+    if response.status_code == 304 and cached_data:
+        return cached_data.get("latest_version")
+```
+
+### Request Handling
+- **User-Agent**: Proper identification as `specifyx/1.0.0 (pypi-update-checker)`
+- **Timeouts**: 10-second timeout for all requests
+- **Status Codes**: Explicit handling of 200, 304, and error conditions
+- **Error Recovery**: Network failures fall back to cached data
+
+## Version Comparison Logic
+
+### Semantic Version Parsing
+```python
+def check_for_updates(self, use_cache: bool = True) -> tuple[bool, str, Optional[str]]:
+    current_version = self._get_current_version()
+    latest_version = self._fetch_latest_version(stale_cache)
+    
+    if latest_version is None:
+        return False, current_version, None
+    
+    # Use packaging.version for accurate comparison
+    try:
+        has_update = parse(latest_version) > parse(current_version)
+        return has_update, current_version, latest_version
+    except Exception:
+        # Version parsing error - assume no update
+        return False, current_version, latest_version
+```
+
+### Current Version Detection
+```python
+def _get_current_version(self) -> str:
+    """Get current version from package metadata"""
+    try:
+        from importlib.metadata import version
+        return version(self.package_name)
+    except Exception:
+        return "0.0.0"  # Fallback for development/unknown versions
+```
+
+## Cache File Format
+
+### Cache Structure
+```json
+{
+    "latest_version": "1.2.3",
+    "current_version": "1.2.0",
+    "last_check": "2025-01-15T10:30:00.123456+00:00",
+    "etag": "\"W/\\\"abc123def456\\\"\""
+}
+```
+
+### Cache Validation
+- **Time-based**: Cache expires after 15 minutes
+- **Version-based**: Cache invalidated if current version changes
+- **ETag-based**: Server determines if content changed
+
+## Error Handling and Resilience
+
+### Network Error Recovery
+```python
+try:
+    response = client.get(self.api_url, headers=headers)
+    # Handle response...
+except (httpx.RequestError, httpx.HTTPStatusError, KeyError, json.JSONDecodeError):
+    logging.warning("PyPI version check failed; using cached version if available")
+    if cached_data:
+        return cached_data.get("latest_version")
+```
+
+### Graceful Degradation
+- **Network Failures**: Fall back to cached versions
+- **Malformed Responses**: Log warnings and use cache
+- **Version Parsing Errors**: Assume no update available
+- **Cache Corruption**: Silently rebuild cache on next request
+
+## Cache Information and Debugging
+
+### Get Cache Details
+```python
+cache_info = checker.get_cache_info()
+
+if cache_info:
+    print(f"Last check: {cache_info['last_check']}")
+    print(f"Cache age: {cache_info['cache_age_hours']:.1f} hours")
+    print(f"Cache file: {cache_info['cache_file']}")
+    print(f"Latest version: {cache_info['latest_version']}")
+    print(f"ETag: {cache_info.get('etag', 'none')}")
+else:
+    print("No cache data available")
+```
+
+### Cache Age Calculation
+```python
+cache_age_hours = (
+    datetime.now(timezone.utc) - 
+    datetime.fromisoformat(cache_data["last_check"])
+).total_seconds() / 3600
+```
+
+## Configuration and Customization
+
+### Customizable Parameters
+```python
+# Custom package name
+checker = PyPIVersionChecker(package_name="my-package")
+
+# Cache configuration (hardcoded but customizable)
+self.cache_duration = timedelta(minutes=15)
+self.api_url = f"https://pypi.org/pypi/{package_name}/json"
+```
+
+### User Agent Formatting
+```python
+self.user_agent = f"specifyx/{self._get_current_version()} (pypi-update-checker)"
+# Results in: "specifyx/1.2.0 (pypi-update-checker)"
+```
+
+## Integration Points
+
+The Version Checker integrates with:
+- **Update Service**: Provides version checking backend
+- **httpx**: Modern HTTP client for PyPI requests
+- **packaging**: Semantic version parsing and comparison
+- **platformdirs**: Cross-platform cache directory management
+
+## Usage Examples
+
+### Basic Version Checking
+```python
+from specify_cli.services.version_checker import PyPIVersionChecker
+
+checker = PyPIVersionChecker()
+
+# Check for updates
+has_update, current, latest = checker.check_for_updates()
+
+if has_update:
+    print(f"Update available: {current} → {latest}")
+else:
+    print(f"Current version {current} is up to date")
+```
+
+### Cache Management
+```python
+# Force fresh check
+has_update, current, latest = checker.check_for_updates(use_cache=False)
+
+# Clear cache and check again
+checker.clear_cache()
+has_update, current, latest = checker.check_for_updates()
+
+# Get cache information
+cache_info = checker.get_cache_info()
+if cache_info:
+    print(f"Cache last updated: {cache_info['last_check']}")
+    print(f"Cache age: {cache_info['cache_age_hours']:.1f} hours")
+```
+
+### Custom Package Checking
+```python
+# Check different package
+other_checker = PyPIVersionChecker(package_name="some-other-package")
+latest = other_checker.get_latest_version()
+print(f"Latest version of some-other-package: {latest}")
+```
+
+### Offline-Aware Usage
+```python
+# Check with graceful offline handling
+try:
+    has_update, current, latest = checker.check_for_updates()
+    if latest is None:
+        print("Unable to check for updates (offline?)")
+    elif has_update:
+        print(f"Update available: {current} → {latest}")
+    else:
+        print("Up to date")
+except Exception as e:
+    print(f"Version check failed: {e}")
+```
+
+## Performance Characteristics
+
+### Network Efficiency
+- **ETag Requests**: Save bandwidth with 304 Not Modified responses
+- **Cache Duration**: 15-minute cache reduces API load
+- **Request Timeout**: 10-second timeout prevents hanging
+- **User Agent**: Proper identification for PyPI analytics
+
+### Response Times
+- **Cache Hit**: Instant response from cached data
+- **ETag 304**: ~100-200ms for conditional request
+- **Full Fetch**: ~500-1000ms for complete PyPI response
+- **Network Failure**: ~10s timeout + instant cache fallback
+
+### Storage Usage
+- **Cache File**: ~200 bytes per package
+- **Cache Directory**: Shared with other SpecifyX cache data
+- **Cleanup**: Old cache files automatically replaced
+
+## Security Considerations
+
+- **HTTPS Only**: All PyPI requests use HTTPS
+- **No Code Execution**: Only parses JSON responses
+- **Input Validation**: Package names validated through PyPI API
+- **Timeout Protection**: Prevents hanging on slow networks
+- **Error Boundaries**: Exceptions contained and logged
+
+The Version Checker provides efficient, reliable, and user-friendly version checking that respects both PyPI's resources and user bandwidth while ensuring timely update notifications.
