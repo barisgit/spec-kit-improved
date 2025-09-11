@@ -1,0 +1,122 @@
+---
+title: check Command
+description: Validate system requirements and dependencies for SpecifyX
+category: command
+tags: [check, validation, requirements, dependencies, connectivity]
+---
+
+# check Command
+
+The `specifyx check` command validates system requirements and project configuration to ensure your environment is ready for SpecifyX development.
+
+## Usage
+
+```bash
+specifyx check [OPTIONS]
+```
+
+## Description
+
+This command performs comprehensive system validation including:
+- Internet connectivity checks for template downloads
+- Git installation and accessibility verification  
+- Optional AI tool availability (Claude, Gemini)
+- General system readiness assessment
+
+The check command does not require any configuration files and can be run from any directory.
+
+## Options
+
+Currently, the check command runs with no additional options, providing a comprehensive system overview.
+
+## Checks Performed
+
+### Internet Connectivity
+- Tests connection to GitHub API (https://api.github.com)
+- Required for downloading remote templates during `init`
+- Uses 5-second timeout with redirect following
+
+### Optional Tools
+The command checks for optional tools that enhance the SpecifyX experience:
+
+#### Git
+- Checks if `git` command is available in PATH
+- Required for repository management and version control
+- Provides installation link if not found
+
+#### AI Assistant Tools
+- **Claude**: Checks for `claude` CLI tool
+- **Gemini**: Checks for `gemini` CLI tool  
+- Provides installation links if not found
+
+## Output Format
+
+The command provides colored, user-friendly output:
+
+```
+✓ Internet connection available
+✓ git found
+⚠️ claude not found
+   Install with: https://docs.anthropic.com/en/docs/claude-code/setup
+✓ SpecifyX CLI is ready to use!
+```
+
+### Status Indicators
+- `✓` (Green): Check passed
+- `⚠️` (Yellow): Optional tool missing (non-critical)
+- `✗` (Red): Critical issue found
+
+## Examples
+
+```bash
+# Run comprehensive system check
+specifyx check
+```
+
+## Exit Behavior
+
+The check command always exits with code 0, as missing optional tools are treated as warnings rather than failures. The command focuses on confirming that SpecifyX can run rather than enforcing a complete development environment.
+
+## Use Cases
+
+### Pre-Installation Verification
+Run before setting up your first SpecifyX project to ensure all dependencies are available.
+
+### Troubleshooting Setup Issues
+Use when experiencing problems with template downloads or repository operations.
+
+### Development Environment Validation
+Verify that your development environment has the recommended tools for optimal SpecifyX experience.
+
+## What This Command Does NOT Check
+
+- Python version compatibility (assumed if SpecifyX is installed)
+- SpecifyX package dependencies (would prevent the command from running)
+- Project-specific configuration (`.specify/config.toml`)
+- Git repository status in current directory
+
+## Recommendations Based on Results
+
+The command provides contextual recommendations:
+
+### If Git is Missing
+- Suggests installing Git for repository management features
+- Links to official Git downloads
+
+### If AI Tools are Missing  
+- Recommends installing at least one AI assistant
+- Provides specific installation instructions for each tool
+- Explains benefits of AI integration
+
+## Integration with Other Commands
+
+The check command is independent and can be run:
+- Before using `specifyx init` to ensure prerequisites
+- When troubleshooting issues with other commands
+- As part of development environment setup scripts
+
+## See Also
+
+- [Getting Started Guide](/docs/guides/quickstart)
+- [Installation Guide](/docs/guides/installation)
+- [init Command](/docs/reference/cli/init)

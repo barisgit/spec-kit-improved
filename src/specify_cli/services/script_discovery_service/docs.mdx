@@ -1,0 +1,287 @@
+---
+title: "Script Discovery Service"
+description: "Find and analyze Python scripts in SpecifyX projects"
+category: service
+tags: ["scripts", "discovery", "filesystem", "ast", "metadata"]
+---
+
+# Script Discovery Service
+
+The Script Discovery Service provides functionality to find, list, and analyze Python scripts within SpecifyX projects. It scans the `.specify/scripts/` directory and extracts metadata including descriptions, imports, functions, and execution information.
+
+## Overview
+
+The service offers a clean abstraction for script discovery with comprehensive metadata extraction using Python's AST (Abstract Syntax Tree) parser. It handles file system operations safely and provides detailed information about each discovered script.
+
+## Architecture
+
+```
+ScriptDiscoveryService (Abstract)
+├── find_script()
+├── list_available_scripts()
+└── get_script_info()
+
+FileSystemScriptDiscoveryService (Implementation)
+├── Script location and validation
+├── AST-based metadata extraction
+└── Comprehensive error handling
+```
+
+## Key Classes
+
+### ScriptDiscoveryService (Abstract)
+
+The base interface defining script discovery operations:
+
+```python
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Dict, List, Optional
+
+class ScriptDiscoveryService(ABC):
+    @abstractmethod
+    def find_script(self, script_name: str) -> Optional[Path]:
+        """Find a script by name, returning its full path if found."""
+        pass
+    
+    @abstractmethod
+    def list_available_scripts(self) -> List[str]:
+        """List all available script names (without .py extension)."""
+        pass
+    
+    @abstractmethod
+    def get_script_info(self, script_name: str) -> Optional[Dict]:
+        """Get metadata about a script including description and imports."""
+        pass
+```
+
+### FileSystemScriptDiscoveryService
+
+The primary implementation that operates on the file system:
+
+```python
+from specify_cli.services.script_discovery_service import FileSystemScriptDiscoveryService
+
+# Initialize with project path
+service = FileSystemScriptDiscoveryService(project_path=Path("/path/to/project"))
+
+# Find a specific script
+script_path = service.find_script("my_script")
+if script_path:
+    print(f"Found script at: {script_path}")
+
+# List all available scripts
+scripts = service.list_available_scripts()
+print(f"Available scripts: {scripts}")
+
+# Get detailed script information
+info = service.get_script_info("my_script")
+if info:
+    print(f"Description: {info['description']}")
+    print(f"Functions: {info['functions']}")
+    print(f"Imports: {info['imports']}")
+```
+
+## Core Methods
+
+### find_script(script_name: str)
+
+Locates a script by name with flexible matching:
+
+- Tries with `.py` extension if not provided
+- Handles cases where extension is already included
+- Returns full `Path` object or `None` if not found
+
+```python
+# All of these work
+script_path = service.find_script("deploy")
+script_path = service.find_script("deploy.py")
+script_path = service.find_script("deploy")  # Auto-adds .py
+```
+
+### list_available_scripts()
+
+Returns all Python scripts in the `.specify/scripts/` directory:
+
+- Returns script names without `.py` extension
+- Handles permission errors gracefully
+- Returns sorted list for consistent ordering
+
+```python
+scripts = service.list_available_scripts()
+# Returns: ["backup", "deploy", "setup", "test"]
+```
+
+### get_script_info(script_name: str)
+
+Extracts comprehensive metadata from a script:
+
+```python
+info = service.get_script_info("deploy")
+# Returns dictionary with:
+{
+    "name": "deploy",
+    "path": "/project/.specify/scripts/deploy.py",
+    "description": "Deploy application to production server",
+    "imports": ["os", "subprocess", "pathlib.Path"],
+    "functions": ["deploy_app", "check_requirements", "backup_current"],
+    "has_main": True,
+    "executable": True
+}
+```
+
+## Metadata Extraction
+
+### Description Extraction
+
+The service intelligently extracts descriptions from:
+
+1. **Module docstrings** - Triple-quoted strings at the module level
+2. **Comment headers** - `# Description:` or similar patterns
+3. **Descriptive comments** - Well-formed comments at the start of files
+
+```python
+# Example script with description comment
+# Purpose: Deploy application to production server
+import os
+import subprocess
+
+def deploy_app():
+    """Deploy the application"""
+    pass
+```
+
+### AST Analysis
+
+Using Python's AST parser, the service extracts:
+
+- **Import statements** - Both `import` and `from...import` styles
+- **Function definitions** - Top-level functions only
+- **Main block detection** - Presence of `if __name__ == "__main__"`
+
+### Security Considerations
+
+- **File validation** - Ensures files exist and are readable
+- **Permission checking** - Detects executable permissions
+- **Safe parsing** - Handles syntax errors gracefully
+- **Path resolution** - Works with absolute paths for security
+
+## Usage Examples
+
+### Basic Script Discovery
+
+```python
+from pathlib import Path
+from specify_cli.services.script_discovery_service import FileSystemScriptDiscoveryService
+
+# Initialize service
+project_root = Path.cwd()
+discovery = FileSystemScriptDiscoveryService(project_root)
+
+# List all scripts
+available_scripts = discovery.list_available_scripts()
+print(f"Found {len(available_scripts)} scripts")
+
+for script_name in available_scripts:
+    info = discovery.get_script_info(script_name)
+    print(f"{script_name}: {info['description']}")
+```
+
+### Script Analysis Dashboard
+
+```python
+def analyze_project_scripts(project_path: Path):
+    discovery = FileSystemScriptDiscoveryService(project_path)
+    
+    scripts = discovery.list_available_scripts()
+    if not scripts:
+        print("No scripts found in .specify/scripts/")
+        return
+    
+    print(f"Found {len(scripts)} scripts:\n")
+    
+    for script_name in scripts:
+        info = discovery.get_script_info(script_name)
+        if info:
+            print(f"📄 {script_name}")
+            print(f"   Description: {info['description']}")
+            print(f"   Functions: {len(info['functions'])}")
+            print(f"   Imports: {len(info['imports'])}")
+            print(f"   Executable: {'✓' if info['executable'] else '✗'}")
+            print(f"   Has main: {'✓' if info['has_main'] else '✗'}")
+            print()
+```
+
+### Integration with CLI Commands
+
+```python
+def script_info_command(script_name: str, project_path: Path):
+    """CLI command to show script information"""
+    discovery = FileSystemScriptDiscoveryService(project_path)
+    
+    info = discovery.get_script_info(script_name)
+    if not info:
+        print(f"Script '{script_name}' not found")
+        return
+    
+    print(f"Script: {info['name']}")
+    print(f"Path: {info['path']}")
+    print(f"Description: {info['description']}")
+    
+    if info['functions']:
+        print(f"Functions: {', '.join(info['functions'])}")
+    
+    if info['imports']:
+        print(f"Dependencies: {', '.join(info['imports'])}")
+```
+
+## Error Handling
+
+The service handles various error conditions gracefully:
+
+- **Missing directories** - Returns empty lists/None values
+- **Permission errors** - Catches OSError and returns safe defaults
+- **Syntax errors** - AST parsing failures don't break basic functionality
+- **Encoding issues** - Handles UTF-8 decode errors
+- **File system issues** - Robust error handling for all file operations
+
+## Integration Points
+
+### With Script Execution Service
+
+```python
+# Discover and execute pattern
+discovery = FileSystemScriptDiscoveryService(project_path)
+execution = SubprocessScriptExecutionService()
+
+script_path = discovery.find_script("deploy")
+if script_path:
+    result = execution.execute_script(script_path, ["--env", "production"])
+    print(f"Execution result: {result.success}")
+```
+
+### With CLI Help System
+
+The service can be used to build dynamic help systems that show available scripts and their descriptions:
+
+```python
+def show_available_scripts(project_path: Path):
+    discovery = FileSystemScriptDiscoveryService(project_path)
+    scripts = discovery.list_available_scripts()
+    
+    print("Available scripts:")
+    for script in scripts:
+        info = discovery.get_script_info(script)
+        desc = info['description'] if info else "No description"
+        print(f"  {script} - {desc}")
+```
+
+## Best Practices
+
+1. **Check existence** - Always verify scripts exist before attempting operations
+2. **Handle errors** - Expect and handle file system errors gracefully
+3. **Cache results** - Consider caching script info for performance in repetitive operations
+4. **Validate input** - Sanitize script names to prevent path traversal
+5. **Use absolute paths** - Always work with resolved absolute paths for security
+
+The Script Discovery Service provides a robust foundation for script management in SpecifyX projects, with comprehensive metadata extraction and safe file system operations.

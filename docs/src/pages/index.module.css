@@ -1,0 +1,93 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+    text-align: center;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media screen and (max-width: 768px) {
+  .buttons {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.heroImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.screenshot {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: var(--ifm-global-shadow-md);
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  padding: 3rem 0;
+  background: var(--ifm-color-emphasis-100);
+}
+
+.featureImage {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: var(--ifm-global-shadow-lw);
+  transition: transform 0.2s ease-in-out;
+}
+
+.featureImage:hover {
+  transform: scale(1.02);
+}
+
+.demo {
+  padding: 3rem 0;
+  background: var(--ifm-background-color);
+}
+
+.demoGif {
+  max-width: 90%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: var(--ifm-global-shadow-md);
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.quickStart {
+  padding: 3rem 0;
+  background: var(--ifm-color-emphasis-100);
+}
+
+@media screen and (max-width: 768px) {
+  .heroImage {
+    margin-top: 2rem;
+  }
+  
+  .demoGif {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,177 @@
+---
+title: Template Service
+description: Jinja2-based template rendering service for SpecifyX project initialization
+category: service
+tags: [templates, jinja2, rendering, project-initialization]
+---
+
+# Template Service
+
+The Template Service provides powerful Jinja2-based template rendering capabilities for SpecifyX project initialization. It handles template discovery, loading, rendering, and file generation with support for multiple AI assistants and cross-platform compatibility.
+
+## Overview
+
+The service is built around two main components:
+- **TemplateService** (abstract interface) - Defines the contract for template operations
+- **JinjaTemplateService** (concrete implementation) - Implements Jinja2-based template processing
+
+## Key Features
+
+### Template Discovery & Loading
+- Automatic template discovery from package resources
+- Category-based template organization (commands, scripts, memory, runtime_templates)
+- AI-aware template selection and rendering
+- Support for both packaged and custom template directories
+
+### Rendering Capabilities
+- Jinja2 template engine with custom filters
+- Platform-specific context variables (Windows, macOS, Linux)
+- Template validation and syntax checking
+- Support for executable file generation with proper permissions
+
+### Template Categories
+- **Commands**: AI-specific command templates for different assistants
+- **Scripts**: Cross-platform Python scripts for project automation
+- **Memory**: AI context and memory templates
+- **Runtime Templates**: Templates copied as-is for runtime use
+
+## Core Classes
+
+### TemplateService (Abstract)
+```python
+class TemplateService(ABC):
+    def render_template(self, template_name: str, context: TemplateContext) -> str
+    def discover_templates(self) -> List[GranularTemplate]
+    def validate_template_syntax(self, template_path: Path) -> Tuple[bool, Optional[str]]
+    def load_template_package(self, ai_assistant: str, template_dir: Path) -> bool
+```
+
+### JinjaTemplateService (Implementation)
+```python
+service = JinjaTemplateService()
+service.load_templates_from_package_resources()
+templates = service.discover_templates_by_category("commands")
+content = service.render_template("feature-template", context)
+```
+
+## Template Context
+
+Templates receive rich context including:
+- Project information (name, path, AI assistant)
+- Platform details (OS, paths, executable extensions)
+- Branch naming configuration
+- Creation metadata (date, author)
+- Custom variables from project configuration
+
+## Template Syntax
+
+Templates use Jinja2 syntax with custom filters:
+
+```jinja2
+# Basic variable substitution
+Project: {{ project_name }}
+AI Assistant: {{ ai_assistant }}
+
+# Conditional rendering based on AI assistant
+{% if ai_assistant == "claude" %}
+# Claude-specific content
+{% elif ai_assistant == "gemini" %}
+# Gemini-specific content
+{% endif %}
+
+# Platform-specific paths
+{% if is_windows %}
+Scripts directory: {{ project_name }}\scripts
+{% else %}
+Scripts directory: {{ project_name }}/scripts
+{% endif %}
+
+# Custom regex filter
+{{ feature_name | regex_replace("-", "_") }}
+```
+
+## File Organization
+
+Templates follow a structured organization:
+```
+templates/
+├── commands/          # AI-specific command templates
+├── scripts/           # Cross-platform Python scripts
+├── memory/           # AI context templates
+└── runtime_templates/ # Runtime template files
+```
+
+## Error Handling
+
+The service provides comprehensive error handling:
+- Template syntax validation before rendering
+- Missing template detection
+- Context validation
+- File permission handling
+- Graceful fallbacks for missing variables
+
+## Usage Examples
+
+### Basic Template Rendering
+```python
+from specify_cli.services.template_service import get_template_service
+
+service = get_template_service()
+context = TemplateContext(
+    project_name="my-project",
+    ai_assistant="claude",
+    project_path=Path("/path/to/project")
+)
+
+# Render a specific template
+content = service.render_template("feature-template.py.j2", context)
+
+# Discover available templates
+templates = service.discover_templates()
+command_templates = service.discover_templates_by_category("commands")
+```
+
+### Template Package Rendering
+```python
+# Render all templates for a project
+result = service.render_all_templates_from_mappings(
+    folder_mappings, context, verbose=True
+)
+
+if result.success:
+    print(f"Rendered {result.total_files} files")
+else:
+    print(f"Errors: {result.errors}")
+```
+
+### Custom Template Directory
+```python
+# Use custom templates
+custom_path = Path("/path/to/custom/templates")
+service.set_custom_template_dir(custom_path)
+service.load_template_package("claude", custom_path)
+```
+
+## Integration Points
+
+The Template Service integrates with:
+- **Project Manager**: For project initialization workflows
+- **Config Service**: For branch naming and project settings
+- **Git Service**: For branch creation and repository setup
+
+## Performance Considerations
+
+- Templates are cached after first load
+- Package resources use efficient importlib.resources
+- File operations are optimized for batch processing
+- Platform detection is cached per service instance
+
+## Factory Function
+
+```python
+def get_template_service() -> JinjaTemplateService:
+    """Factory function to create a JinjaTemplateService instance"""
+    return JinjaTemplateService()
+```
+
+Use this factory function to get a properly configured template service instance.

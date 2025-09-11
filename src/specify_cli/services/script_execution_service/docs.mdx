@@ -1,0 +1,432 @@
+---
+title: "Script Execution Service"
+description: "Safely execute Python scripts with timeout and security controls"
+category: service
+tags: ["scripts", "execution", "subprocess", "security", "timeout"]
+---
+
+# Script Execution Service
+
+The Script Execution Service provides secure, controlled execution of Python scripts using subprocess management. It includes comprehensive security validation, timeout handling, JSON output support, and cross-platform compatibility.
+
+## Overview
+
+The service offers a robust abstraction for script execution with emphasis on security and reliability. It prevents common security vulnerabilities while providing flexible execution options including timeout controls and JSON mode for structured output.
+
+## Architecture
+
+```
+ScriptExecutionService (Abstract)
+├── execute_script()
+├── execute_script_with_timeout()
+├── execute_script_json_mode()
+└── validate_script_path()
+
+SubprocessScriptExecutionService (Implementation)
+├── Subprocess management
+├── Security validation
+├── Timeout handling
+├── Project root detection
+└── Cross-platform support
+```
+
+## Key Classes
+
+### ScriptResult
+
+A data class representing the result of script execution:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class ScriptResult:
+    success: bool        # True if script executed successfully (return code 0)
+    output: str         # Standard output from the script
+    error: str          # Standard error from the script  
+    return_code: int    # Process exit code
+```
+
+### ScriptExecutionService (Abstract)
+
+The base interface defining script execution operations:
+
+```python
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import List, Optional
+
+class ScriptExecutionService(ABC):
+    @abstractmethod
+    def execute_script(self, script_path: Path, args: List[str]) -> ScriptResult:
+        """Execute Python script with given arguments"""
+        pass
+    
+    @abstractmethod
+    def execute_script_with_timeout(
+        self, script_path: Path, args: List[str], timeout_seconds: int
+    ) -> ScriptResult:
+        """Execute Python script with timeout"""
+        pass
+    
+    @abstractmethod
+    def execute_script_json_mode(
+        self, script_path: Path, args: List[str]
+    ) -> ScriptResult:
+        """Execute script expecting JSON output"""
+        pass
+    
+    @abstractmethod
+    def validate_script_path(
+        self, script_path: Path, project_path: Optional[Path] = None
+    ) -> bool:
+        """Validate script path for security"""
+        pass
+```
+
+### SubprocessScriptExecutionService
+
+The primary implementation using Python's subprocess module:
+
+```python
+from specify_cli.services.script_execution_service import SubprocessScriptExecutionService
+
+# Initialize service
+service = SubprocessScriptExecutionService()
+
+# Execute a script
+result = service.execute_script(
+    script_path=Path("/project/.specify/scripts/deploy.py"),
+    args=["--env", "production", "--verbose"]
+)
+
+if result.success:
+    print(f"Output: {result.output}")
+else:
+    print(f"Error: {result.error}")
+    print(f"Exit code: {result.return_code}")
+```
+
+## Core Methods
+
+### execute_script(script_path, args)
+
+Basic script execution with default timeout:
+
+```python
+# Execute deployment script
+result = service.execute_script(
+    script_path=Path(".specify/scripts/deploy.py"),
+    args=["--target", "production"]
+)
+
+print(f"Success: {result.success}")
+print(f"Output: {result.output}")
+if not result.success:
+    print(f"Error: {result.error}")
+```
+
+### execute_script_with_timeout(script_path, args, timeout_seconds)
+
+Execute script with custom timeout control:
+
+```python
+# Execute with 60-second timeout
+result = service.execute_script_with_timeout(
+    script_path=Path(".specify/scripts/long_running_task.py"),
+    args=["--iterations", "1000"],
+    timeout_seconds=60
+)
+
+if not result.success and "timed out" in result.error:
+    print("Script execution timed out")
+```
+
+### execute_script_json_mode(script_path, args)
+
+Execute script expecting JSON output with automatic validation:
+
+```python
+# Execute script that returns JSON
+result = service.execute_script_json_mode(
+    script_path=Path(".specify/scripts/status_check.py"),
+    args=["--format", "json"]
+)
+
+if result.success:
+    import json
+    data = json.loads(result.output)
+    print(f"Status: {data['status']}")
+    print(f"Health: {data['health_check']}")
+```
+
+### validate_script_path(script_path, project_path)
+
+Comprehensive security validation:
+
+```python
+# Validate script before execution
+is_safe = service.validate_script_path(
+    script_path=Path("/project/.specify/scripts/deploy.py"),
+    project_path=Path("/project")
+)
+
+if is_safe:
+    result = service.execute_script(script_path, args)
+else:
+    print("Script path failed security validation")
+```
+
+## Security Features
+
+### Path Validation
+
+The service implements comprehensive path validation to prevent security vulnerabilities:
+
+1. **File existence and type validation**
+2. **Python file extension requirement** (`.py`)
+3. **Symlink resolution and validation**
+4. **Project containment checks**
+5. **System directory prevention**
+
+```python
+# Blocked system directories
+system_dirs = [
+    "/usr", "/bin", "/sbin", "/etc", "/var", "/tmp",  # Unix/Linux
+    "/System", "/Library",                           # macOS
+    "C:\\Windows", "C:\\Program Files"               # Windows
+]
+```
+
+### Shell Injection Prevention
+
+- Uses `shell=False` in subprocess calls
+- Constructs command arrays instead of shell strings
+- Validates all path components
+
+### Resource Controls
+
+- Configurable timeout limits
+- Memory and CPU controls via subprocess
+- Proper cleanup of child processes
+
+## Advanced Features
+
+### Project Root Detection
+
+The service automatically detects the project root using multiple strategies:
+
+```python
+def _find_project_root(self, script_path: Path) -> Path:
+    # 1. Try git repository root
+    result = subprocess.run(["git", "rev-parse", "--show-toplevel"])
+    
+    # 2. Search upward for .specify directory
+    current_dir = script_path.parent
+    while current_dir != current_dir.parent:
+        if (current_dir / ".specify").exists():
+            return current_dir
+        current_dir = current_dir.parent
+    
+    # 3. Fallback to script's parent directory
+    return script_path.parent
+```
+
+### Timeout Configuration
+
+```python
+# Set custom default timeout
+service.set_default_timeout(45)  # 45 seconds
+
+# Get current timeout
+current_timeout = service.get_default_timeout()
+print(f"Default timeout: {current_timeout} seconds")
+```
+
+### Error Handling
+
+Comprehensive error handling for various failure modes:
+
+```python
+# Example error scenarios handled:
+- FileNotFoundError: Python interpreter not found
+- subprocess.TimeoutExpired: Script execution timeout
+- OSError: File system or permission errors
+- JSON validation errors in JSON mode
+- Path security validation failures
+```
+
+## Usage Examples
+
+### Basic Script Execution
+
+```python
+from pathlib import Path
+from specify_cli.services.script_execution_service import SubprocessScriptExecutionService
+
+def run_deployment_script():
+    service = SubprocessScriptExecutionService()
+    
+    script_path = Path(".specify/scripts/deploy.py")
+    args = ["--env", "production", "--verify"]
+    
+    print("Starting deployment...")
+    result = service.execute_script(script_path, args)
+    
+    if result.success:
+        print("✓ Deployment completed successfully")
+        print(f"Output: {result.output}")
+    else:
+        print("✗ Deployment failed")
+        print(f"Error: {result.error}")
+        print(f"Exit code: {result.return_code}")
+```
+
+### Script with Timeout and Progress
+
+```python
+def run_backup_with_progress():
+    service = SubprocessScriptExecutionService()
+    
+    script_path = Path(".specify/scripts/backup.py")
+    args = ["--full-backup", "--compress"]
+    
+    print("Starting backup (max 300 seconds)...")
+    result = service.execute_script_with_timeout(
+        script_path, args, timeout_seconds=300
+    )
+    
+    if result.success:
+        print("✓ Backup completed")
+    elif "timed out" in result.error:
+        print("⚠ Backup timed out - may need manual intervention")
+    else:
+        print(f"✗ Backup failed: {result.error}")
+```
+
+### JSON Mode for Structured Results
+
+```python
+def check_system_status():
+    service = SubprocessScriptExecutionService()
+    
+    script_path = Path(".specify/scripts/health_check.py")
+    result = service.execute_script_json_mode(script_path, [])
+    
+    if result.success:
+        import json
+        status = json.loads(result.output)
+        
+        print(f"System Health: {status['overall_health']}")
+        print(f"Database: {status['database_status']}")
+        print(f"API: {status['api_status']}")
+        print(f"Disk Space: {status['disk_usage']}%")
+    else:
+        print(f"Health check failed: {result.error}")
+```
+
+### Safe Script Execution with Validation
+
+```python
+def execute_user_script(script_name: str, project_path: Path):
+    service = SubprocessScriptExecutionService()
+    
+    # Build script path
+    script_path = project_path / ".specify" / "scripts" / f"{script_name}.py"
+    
+    # Validate before execution
+    if not service.validate_script_path(script_path, project_path):
+        print(f"❌ Script '{script_name}' failed security validation")
+        return False
+    
+    if not script_path.exists():
+        print(f"❌ Script '{script_name}' not found")
+        return False
+    
+    # Execute with timeout
+    print(f"🔧 Executing script: {script_name}")
+    result = service.execute_script_with_timeout(script_path, [], 30)
+    
+    if result.success:
+        print(f"✅ Script completed successfully")
+        if result.output:
+            print(f"Output: {result.output}")
+        return True
+    else:
+        print(f"❌ Script failed: {result.error}")
+        return False
+```
+
+## Integration Patterns
+
+### With Script Discovery Service
+
+```python
+from specify_cli.services.script_discovery_service import FileSystemScriptDiscoveryService
+from specify_cli.services.script_execution_service import SubprocessScriptExecutionService
+
+def run_available_script(script_name: str, project_path: Path, args: List[str]):
+    # Discover script
+    discovery = FileSystemScriptDiscoveryService(project_path)
+    script_path = discovery.find_script(script_name)
+    
+    if not script_path:
+        print(f"Script '{script_name}' not found")
+        return False
+    
+    # Get script info
+    info = discovery.get_script_info(script_name)
+    if info:
+        print(f"Executing: {info['description']}")
+    
+    # Execute script
+    execution = SubprocessScriptExecutionService()
+    result = execution.execute_script(script_path, args)
+    
+    return result.success
+```
+
+### CLI Command Integration
+
+```python
+def script_command(script_name: str, args: List[str], timeout: int = 30):
+    """CLI command to execute project scripts"""
+    project_path = Path.cwd()
+    service = SubprocessScriptExecutionService()
+    
+    script_path = project_path / ".specify" / "scripts" / f"{script_name}.py"
+    
+    # Validate and execute
+    if not service.validate_script_path(script_path, project_path):
+        raise click.ClickException(f"Script '{script_name}' failed security validation")
+    
+    result = service.execute_script_with_timeout(script_path, args, timeout)
+    
+    # Display results
+    if result.output:
+        click.echo(result.output)
+    
+    if not result.success:
+        if result.error:
+            click.echo(click.style(f"Error: {result.error}", fg="red"), err=True)
+        raise click.ClickException(f"Script failed with exit code {result.return_code}")
+```
+
+## Best Practices
+
+1. **Always validate paths** - Use `validate_script_path()` before execution
+2. **Set appropriate timeouts** - Prevent runaway scripts from consuming resources
+3. **Handle errors gracefully** - Check `ScriptResult.success` and handle failures
+4. **Use absolute paths** - Always resolve paths for security and reliability
+5. **Log execution details** - Track script executions for debugging and auditing
+6. **Consider JSON mode** - For scripts that need to return structured data
+7. **Test timeout scenarios** - Ensure your application handles timeout gracefully
+
+## Performance Considerations
+
+- **Subprocess overhead** - Each execution creates a new Python process
+- **Timeout precision** - Timeouts are approximate, not exact
+- **Memory usage** - Output capture holds script output in memory
+- **Cross-platform compatibility** - Different behavior on Windows vs Unix systems
+
+The Script Execution Service provides a secure, reliable foundation for running Python scripts within SpecifyX projects, with comprehensive safety controls and flexible execution options.

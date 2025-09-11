@@ -1,0 +1,493 @@
+---
+title: "Code Contribution Guidelines"
+description: "Comprehensive guidelines for contributing high-quality code to SpecifyX, including standards, patterns, and best practices"
+category: "contributing"
+tags: ["coding-standards", "guidelines", "python", "quality", "patterns"]
+---
+
+# Code Contribution Guidelines
+
+This guide establishes coding standards, patterns, and best practices for SpecifyX development. Following these guidelines ensures code quality, maintainability, and consistency across the project.
+
+## Code Quality Standards
+
+### Type Safety First
+
+SpecifyX uses Python 3.11+ with strict typing requirements:
+
+```python
+# ✅ Good - Explicit type hints
+def process_template(template: GranularTemplate, context: TemplateContext) -> str:
+    """Process template with given context."""
+    if not template.loaded_template:
+        raise ValueError("Template must be loaded before processing")
+    return template.loaded_template.render(**context.to_dict())
+
+# ❌ Bad - Missing type hints
+def process_template(template, context):
+    return template.loaded_template.render(**context.to_dict())
+```
+
+**Type Safety Rules:**
+- All function parameters and return types must have explicit type hints
+- Use `Optional[T]` for nullable values, never `T | None` (Python 3.11+ union syntax)
+- Prefer `List[T]`, `Dict[K, V]` over `list[T]`, `dict[K, V]` for consistency
+- Use `Any` sparingly and document why it's necessary
+- Leverage dataclasses for structured data with automatic type validation
+
+### No Hardcoding Policy
+
+Avoid hardcoded values throughout the codebase:
+
+```python
+# ✅ Good - Using configuration constants
+from specify_cli.models.defaults import PATH_DEFAULTS
+
+def should_skip_file(file_path: Path) -> bool:
+    """Check if file should be skipped using configurable patterns."""
+    return PATH_DEFAULTS.should_skip_file(file_path)
+
+# ❌ Bad - Hardcoded patterns
+def should_skip_file(file_path: Path) -> bool:
+    skip_patterns = [".git", "__pycache__", "*.pyc"]  # Hardcoded!
+    return any(pattern in str(file_path) for pattern in skip_patterns)
+```
+
+**Hardcoding Guidelines:**
+- Use constants defined in `models/defaults/` modules
+- Store configuration in TOML files with dataclass models
+- Use environment variables for deployment-specific values
+- When hardcoding is unavoidable, add `# TODO:`, `# FIXME:`, or `# HACK:` comments
+
+### Professional Code Style
+
+Maintain professional, clean code without informal elements:
+
+```python
+# ✅ Good - Professional and clear
+def validate_branch_pattern(pattern: str) -> bool:
+    """Validate branch naming pattern format."""
+    if not pattern:
+        return False
+    return bool(re.match(r'^[a-zA-Z0-9\-_/{}]+$', pattern))
+
+# ❌ Bad - Emojis and informal language
+def validate_branch_pattern(pattern: str) -> bool:
+    """Check if branch pattern is cool! 🚀"""
+    if not pattern:
+        return False  # Oops, empty pattern!
+    return bool(re.match(r'^[a-zA-Z0-9\-_/{}]+$', pattern))
+```
+
+**Professional Standards:**
+- No emojis in code, comments, or docstrings (unless explicitly requested)
+- Use clear, descriptive variable and function names
+- Write concise but complete docstrings
+- Maintain consistent formatting with ruff
+
+## Architectural Patterns
+
+### Service-Oriented Architecture
+
+SpecifyX uses abstract base classes to define service contracts:
+
+```python
+# Abstract service definition
+class TemplateService(ABC):
+    """Abstract base class for template processing services"""
+    
+    @abstractmethod
+    def render_template(self, template_name: str, context: TemplateContext) -> str:
+        """Render template with given context"""
+        pass
+    
+    @abstractmethod
+    def validate_template_syntax(self, template_path: Path) -> Tuple[bool, Optional[str]]:
+        """Validate template syntax"""
+        pass
+
+# Concrete implementation
+class JinjaTemplateService(TemplateService):
+    """Jinja2-based template service implementation"""
+    
+    def render_template(self, template_name: str, context: TemplateContext) -> str:
+        # Implementation details...
+        pass
+```
+
+**Service Design Principles:**
+- Define clear contracts using abstract base classes
+- Implement business logic in concrete service classes
+- Use dependency injection for testing and modularity
+- Keep services focused on single responsibilities
+
+### Dataclass Models with Serialization
+
+Use dataclasses for structured data with TOML serialization:
+
+```python
+@dataclass
+class BranchNamingConfig:
+    """Configuration for branch naming patterns"""
+    
+    description: str = field(default_factory=lambda: BRANCH_DEFAULTS.get_default_pattern().description)
+    patterns: List[str] = field(default_factory=lambda: BRANCH_DEFAULTS.DEFAULT_PATTERNS.copy())
+    validation_rules: List[str] = field(default_factory=lambda: BRANCH_DEFAULTS.DEFAULT_VALIDATION_RULES.copy())
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for TOML serialization"""
+        return {
+            "description": self.description,
+            "patterns": self.patterns.copy(),
+            "validation_rules": self.validation_rules.copy(),
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "BranchNamingConfig":
+        """Create instance from dictionary (TOML deserialization)"""
+        return cls(
+            description=data.get("description", BRANCH_DEFAULTS.get_default_pattern().description),
+            patterns=data.get("patterns", BRANCH_DEFAULTS.DEFAULT_PATTERNS.copy()),
+            validation_rules=data.get("validation_rules", BRANCH_DEFAULTS.DEFAULT_VALIDATION_RULES.copy()),
+        )
+```
+
+**Dataclass Guidelines:**
+- Use `@dataclass` for all data models
+- Implement `to_dict()` and `from_dict()` for serialization
+- Use `field(default_factory=...)` for mutable defaults
+- Provide type hints for all fields
+- Use frozen dataclasses for immutable data
+
+### Error Handling Strategy
+
+Implement comprehensive error handling with clear error messages:
+
+```python
+def render_template(self, template_name: str, context: TemplateContext) -> str:
+    """Render template with comprehensive error handling"""
+    # Input validation
+    if not template_name:
+        raise ValueError("Template name cannot be empty")
+    
+    if context is None:
+        raise ValueError("Template context cannot be None")
+    
+    try:
+        # Load and render template
+        template = self.load_template(template_name)
+        return self.render_with_platform_context(template, context)
+        
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Template not found: {template_name}") from e
+    except TemplateSyntaxError as e:
+        raise RuntimeError(f"Template syntax error in '{template_name}': {str(e)}") from e
+    except Exception as e:
+        raise RuntimeError(f"Unexpected error rendering template '{template_name}': {str(e)}") from e
+```
+
+**Error Handling Rules:**
+- Validate inputs early and explicitly
+- Use specific exception types (ValueError, FileNotFoundError, etc.)
+- Chain exceptions with `raise ... from e` for debugging
+- Provide actionable error messages with context
+- Log errors appropriately but don't expose internal details to users
+
+## Testing Requirements
+
+### Test-Driven Development
+
+Write tests before or alongside implementation:
+
+```python
+# Contract test for abstract service
+class TestTemplateService:
+    """Contract tests for TemplateService implementations"""
+    
+    def test_render_template_with_valid_inputs(self, service: TemplateService):
+        """Test template rendering with valid inputs"""
+        context = TemplateContext(project_name="test-project", ai_assistant="claude")
+        result = service.render_template("basic-template", context)
+        
+        assert isinstance(result, str)
+        assert len(result) > 0
+        assert "test-project" in result
+    
+    def test_render_template_with_invalid_name(self, service: TemplateService):
+        """Test template rendering with invalid template name"""
+        context = TemplateContext(project_name="test-project", ai_assistant="claude")
+        
+        with pytest.raises(FileNotFoundError, match="Template not found"):
+            service.render_template("nonexistent-template", context)
+```
+
+**Testing Standards:**
+- Write contract tests for abstract base classes
+- Test both success and failure scenarios
+- Use descriptive test method names
+- Include integration tests for complete workflows
+- Add performance benchmarks for critical operations
+
+### Mock and Fixture Usage
+
+Use pytest fixtures and mocking appropriately:
+
+```python
+@pytest.fixture
+def template_service() -> JinjaTemplateService:
+    """Provide template service instance for testing"""
+    return JinjaTemplateService()
+
+@pytest.fixture
+def sample_context() -> TemplateContext:
+    """Provide sample template context for testing"""
+    return TemplateContext(
+        project_name="test-project",
+        ai_assistant="claude",
+        branch_naming_config=BranchNamingConfig(),
+    )
+
+def test_template_rendering_with_mocked_file_system(monkeypatch, tmp_path):
+    """Test template rendering with mocked file operations"""
+    # Mock file system operations
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+    monkeypatch.setattr("pathlib.Path.read_text", lambda self, **kwargs: "{{ project_name }}")
+    
+    # Test implementation
+    service = JinjaTemplateService()
+    # ... test logic
+```
+
+## Contribution Workflow
+
+### Git Commit Standards
+
+Follow conventional commit format:
+
+```bash
+# Feature commits
+git commit -m "feat: add branch naming pattern validation"
+git commit -m "feat(templates): implement AI-aware template selection"
+
+# Bug fixes
+git commit -m "fix: resolve template rendering error with special characters"
+git commit -m "fix(config): handle missing TOML file gracefully"
+
+# Documentation
+git commit -m "docs: add service development patterns guide"
+
+# Refactoring
+git commit -m "refactor: extract template validation logic into separate method"
+
+# Tests
+git commit -m "test: add contract tests for template service"
+```
+
+### Pull Request Guidelines
+
+**Before Submitting:**
+1. Run full test suite: `pytest`
+2. Check code quality: `ruff check src/ && ruff format src/`
+3. Update documentation for new features
+4. Add tests for new functionality
+5. Update CHANGELOG.md if applicable
+
+**PR Description Template:**
+```markdown
+## Summary
+Brief description of changes made.
+
+## Changes Made
+- [ ] Added new feature X
+- [ ] Fixed bug Y
+- [ ] Updated documentation Z
+
+## Testing
+- [ ] All existing tests pass
+- [ ] New tests added for new functionality
+- [ ] Manual testing completed
+
+## Breaking Changes
+- None / List any breaking changes
+
+## Additional Notes
+Any additional context or considerations.
+```
+
+### Code Review Process
+
+**As a Contributor:**
+- Respond to feedback promptly and professionally
+- Make requested changes in separate commits (don't squash during review)
+- Ask for clarification on unclear feedback
+- Test thoroughly after making changes
+
+**As a Reviewer:**
+- Focus on code quality, architecture, and maintainability
+- Provide specific, actionable feedback
+- Suggest improvements rather than just pointing out problems
+- Test complex changes locally when possible
+
+## Specific Coding Patterns
+
+### Configuration Management
+
+```python
+# Use centralized defaults
+from specify_cli.models.defaults import PATH_DEFAULTS, AI_DEFAULTS
+
+# Leverage dataclass serialization
+config = ProjectConfig.from_dict(toml_data)
+toml_data = config.to_dict()
+
+# Handle environment variables
+config_path = os.getenv("SPECIFYX_CONFIG", PATH_DEFAULTS.DEFAULT_CONFIG_PATH)
+```
+
+### Template Processing
+
+```python
+# Use abstract service interfaces
+service: TemplateService = get_template_service()
+
+# Handle platform differences
+context = service.enhance_context_with_platform_info(context, platform.system())
+
+# Validate before processing
+is_valid, error_msg = service.validate_template_syntax(template_path)
+if not is_valid:
+    raise ValueError(f"Invalid template: {error_msg}")
+```
+
+### CLI Command Structure
+
+```python
+@app.command()
+def init(
+    project_name: Optional[str] = typer.Argument(None, help="Name of the project"),
+    here: bool = typer.Option(False, "--here", help="Initialize in current directory"),
+    ai_assistant: Optional[str] = typer.Option(None, "--ai", help="AI assistant preference"),
+) -> None:
+    """Initialize a new project with spec-driven development setup."""
+    try:
+        # Input validation
+        if not project_name and not here:
+            project_name = typer.prompt("Project name")
+        
+        # Delegate to service layer
+        manager = ProjectManager()
+        result = manager.initialize_project(project_name, here, ai_assistant)
+        
+        # Handle results
+        if result.success:
+            console.print(f"[green]✓[/green] Project initialized: {result.project_path}")
+        else:
+            console.print(f"[red]✗[/red] Initialization failed: {result.error_message}")
+            raise typer.Exit(1)
+            
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+        raise typer.Exit(1)
+```
+
+## Performance Considerations
+
+### Template Rendering Optimization
+
+- Cache compiled Jinja2 templates when possible
+- Use lazy loading for template discovery
+- Implement efficient file system operations
+- Minimize network requests for template downloads
+
+### Memory Management
+
+- Use generators for large data processing
+- Implement proper cleanup in context managers
+- Avoid loading entire file contents unnecessarily
+- Use streaming for large template operations
+
+## Security Guidelines
+
+### Input Validation
+
+```python
+def validate_project_name(name: str) -> bool:
+    """Validate project name to prevent security issues"""
+    if not name or len(name) > 100:
+        return False
+    
+    # Allow only safe characters
+    if not re.match(r'^[a-zA-Z0-9\-_\.]+$', name):
+        return False
+    
+    # Prevent path traversal
+    if '..' in name or name.startswith('.'):
+        return False
+    
+    return True
+```
+
+### Template Security
+
+- Sanitize template inputs to prevent injection
+- Use Jinja2's sandboxed environment for user templates
+- Validate template syntax before rendering
+- Limit template complexity and execution time
+
+## Documentation Standards
+
+### Docstring Format
+
+```python
+def render_template(self, template_name: str, context: TemplateContext) -> str:
+    """
+    Render a specific template with given context.
+    
+    Args:
+        template_name: Name of template file to render
+        context: Template context with variables
+    
+    Returns:
+        Rendered template content as string
+    
+    Raises:
+        FileNotFoundError: If template not found
+        RuntimeError: If template rendering fails
+        ValueError: If inputs are invalid
+    """
+```
+
+### Code Comments
+
+```python
+# Use PATH_DEFAULTS for configurable file patterns
+if PATH_DEFAULTS.should_skip_file(file_path):
+    continue
+
+# TODO: Add support for custom template directories
+# FIXME: Handle edge case with Windows path separators
+# HACK: Temporary workaround for Jinja2 environment sharing
+```
+
+## Documentation Strategy
+
+SpecifyX uses a **docs-by-code** approach where documentation lives alongside source code and automatically syncs to the website:
+
+### File Organization
+- **Service docs**: `src/specify_cli/services/*/docs.mdx`
+- **Command docs**: `src/specify_cli/commands/*/docs.mdx` 
+- **Guides**: `src/specify_cli/guides/*.mdx`
+- **Contributing**: `src/specify_cli/contributing/*.mdx`
+- **API reference**: Auto-generated from docstrings
+
+### Documentation Guidelines
+- Update MDX files in source tree, not `docs/` directory
+- Keep documentation focused and current with code changes
+- Use docstrings for detailed API documentation
+- Let the sync process handle website publishing
+- Service documentation should focus on architecture and patterns
+- Guides should be user-focused and actionable
+
+The build/development process automatically includes content from the source tree, ensuring documentation stays synchronized with code and reducing duplication.
+
+By following these guidelines, you'll contribute high-quality, maintainable code that fits seamlessly into the SpecifyX architecture. Remember that consistency and clarity are more important than cleverness!

@@ -1,0 +1,169 @@
+---
+title: "Service Development Patterns"
+description: "Architectural patterns and design principles for developing services in SpecifyX"
+category: "contributing"
+tags: ["architecture", "services", "patterns", "design"]
+---
+
+# Service Development Patterns
+
+SpecifyX uses service-oriented architecture with well-defined patterns for maintainable, testable services.
+
+## Architecture Overview
+
+### Design Principles
+1. **Contract-First** - Define interfaces before implementations
+2. **Single Responsibility** - Each service has one clear purpose
+3. **Dependency Inversion** - Depend on abstractions, not concretions
+4. **Testability** - Services designed for easy testing and mocking
+
+### Service Layers
+```
+CLI Commands → Service Manager → Business Services → Utilities
+```
+
+## Abstract Base Class Pattern
+
+Define service contracts with abstract base classes:
+
+```python
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar, Union
+
+T = TypeVar('T')
+
+class ServiceResult(Generic[T]):
+    def __init__(self, success: bool, data: T = None, error: str = None):
+        self.success = success
+        self.data = data
+        self.error = error
+
+class TemplateService(ABC):
+    @abstractmethod
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
+        """Render template with given context."""
+        pass
+```
+
+## Implementation Pattern
+
+Implement concrete services:
+
+```python
+from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
+
+class JinjaTemplateService(TemplateService):
+    def __init__(self, template_dir: Path):
+        self.env = Environment(loader=FileSystemLoader(template_dir))
+    
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
+        try:
+            template = self.env.get_template(name)
+            result = template.render(**context)
+            return ServiceResult(success=True, data=result)
+        except Exception as e:
+            return ServiceResult(success=False, error=str(e))
+```
+
+## Dependency Injection
+
+Use constructor injection with factory functions:
+
+```python
+def create_project_manager() -> ProjectManager:
+    """Factory function to create ProjectManager with dependencies."""
+    template_service = JinjaTemplateService(Path("templates"))
+    config_service = TomlConfigService()
+    git_service = CommandLineGitService()
+    
+    return ProjectManager(
+        template_service=template_service,
+        config_service=config_service,
+        git_service=git_service
+    )
+```
+
+## Service Testing
+
+### Contract Testing
+```python
+import pytest
+from abc import ABC
+
+def test_template_service_contract(template_service: TemplateService):
+    """Test that service implements contract correctly."""
+    result = template_service.render_template("test.txt", {"name": "test"})
+    assert isinstance(result, ServiceResult)
+    assert hasattr(result, 'success')
+    assert hasattr(result, 'data')
+    assert hasattr(result, 'error')
+```
+
+### Mock Services
+```python
+class MockTemplateService(TemplateService):
+    def __init__(self, mock_result: str = "mock content"):
+        self.mock_result = mock_result
+    
+    def render_template(self, name: str, context: dict) -> ServiceResult[str]:
+        return ServiceResult(success=True, data=self.mock_result)
+```
+
+## Key Guidelines
+
+### Service Structure
+- Place services in `src/specify_cli/services/service_name/`
+- Use `__init__.py` to expose public interface
+- Include `docs.mdx` for service documentation
+
+### Error Handling
+- Use `ServiceResult` objects for consistent error handling
+- Log errors appropriately but don't raise exceptions in service methods
+- Provide meaningful error messages
+
+### Configuration
+- Accept configuration through constructor parameters
+- Use dependency injection for external dependencies
+- Make services stateless when possible
+
+### Documentation
+- Document service contracts with docstrings
+- Include usage examples in service docstrings
+- Keep MDX docs focused on architecture patterns
+
+## Common Patterns
+
+### File Operations
+```python
+from specify_cli.utils.file_operations import ensure_directory, safe_write_file
+
+class FileService:
+    def save_content(self, path: Path, content: str) -> ServiceResult[None]:
+        try:
+            ensure_directory(path.parent)
+            safe_write_file(path, content)
+            return ServiceResult(success=True)
+        except Exception as e:
+            return ServiceResult(success=False, error=str(e))
+```
+
+### Async Operations
+```python
+import asyncio
+from typing import Awaitable
+
+class AsyncService:
+    async def process_async(self, data: str) -> ServiceResult[str]:
+        try:
+            result = await self._async_operation(data)
+            return ServiceResult(success=True, data=result)
+        except Exception as e:
+            return ServiceResult(success=False, error=str(e))
+    
+    async def _async_operation(self, data: str) -> str:
+        await asyncio.sleep(0.1)  # Simulate async work
+        return f"processed: {data}"
+```
+
+This pattern ensures consistency, testability, and maintainability across all SpecifyX services.

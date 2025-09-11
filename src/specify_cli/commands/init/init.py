@@ -6,7 +6,7 @@ from typing import Optional
 import typer
 from rich.panel import Panel
 
-from specify_cli.models.defaults import AI_DEFAULTS
+from specify_cli.models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
 from specify_cli.models.project import ProjectInitOptions
 from specify_cli.services import (
     CommandLineGitService,
@@ -69,6 +69,12 @@ def init_command(
         "--force",
         "-f",
         help="Force initialization even if directory is already initialized",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Use defaults for all options not provided and skip interactive prompts",
     ),
 ):
     """
@@ -139,11 +145,15 @@ def init_command(
 
     # Interactive AI assistant selection if not specified
     if ai_assistant is None:
-        try:
-            ai_assistant = select_ai_assistant()
-        except KeyboardInterrupt:
-            console.print("[yellow]Setup cancelled[/yellow]")
-            raise typer.Exit(0) from None
+        if yes:
+            # Use default AI assistant when --yes flag is used
+            ai_assistant = AI_DEFAULTS.ASSISTANTS[0].name  # First assistant as default
+        else:
+            try:
+                ai_assistant = select_ai_assistant()
+            except KeyboardInterrupt:
+                console.print("[yellow]Setup cancelled[/yellow]")
+                raise typer.Exit(0) from None
 
     # Validate AI assistant choice using AI_DEFAULTS
     valid_assistants = [assistant.name for assistant in AI_DEFAULTS.ASSISTANTS]
@@ -155,51 +165,51 @@ def init_command(
 
     # Interactive template source selection if not specified via flags
     if not use_remote and remote_repo is None:
-        try:
-            from specify_cli.utils.ui_helpers import select_template_source
+        if yes:
+            # Use default template source when --yes flag is used (local templates)
+            use_remote = False
+            remote_repo = None
+        else:
+            try:
+                from specify_cli.utils.ui_helpers import select_template_source
 
-            interactive_use_remote, interactive_remote_repo = select_template_source()
-            use_remote = interactive_use_remote
-            remote_repo = interactive_remote_repo
-        except KeyboardInterrupt:
-            console.print("[yellow]Setup cancelled[/yellow]")
-            raise typer.Exit(0) from None
+                interactive_use_remote, interactive_remote_repo = (
+                    select_template_source()
+                )
+                use_remote = interactive_use_remote
+                remote_repo = interactive_remote_repo
+            except KeyboardInterrupt:
+                console.print("[yellow]Setup cancelled[/yellow]")
+                raise typer.Exit(0) from None
 
     # Interactive branch pattern selection if not specified
     branch_naming_config = None
     if branch_pattern is None:
-        try:
-            branch_naming_config = select_branch_naming_pattern()
-            # Get the pattern key from the primary pattern (first in list)
-            primary_pattern = (
-                branch_naming_config.patterns[0]
-                if branch_naming_config.patterns
-                else "001-{feature-name}"
-            )
-            # Map primary pattern to the simple key format expected by existing code
-            if primary_pattern.startswith("001-") or primary_pattern.startswith(
-                "{number"
-            ):
-                branch_pattern = "001-feature-name"
-            elif primary_pattern.startswith("feature/"):
-                branch_pattern = "feature/{name}"
-            elif primary_pattern.startswith("feature/{number"):
-                branch_pattern = "feature/{number-3}-{name}"
-            elif "{team}/" in primary_pattern:
-                branch_pattern = "{team}/{name}"
-            else:
-                branch_pattern = "001-feature-name"  # Default fallback
-        except KeyboardInterrupt:
-            console.print("[yellow]Setup cancelled[/yellow]")
-            raise typer.Exit(0) from None
+        if yes:
+            # Use default branch pattern when --yes flag is used
+            branch_pattern = BRANCH_DEFAULTS.DEFAULT_PATTERN_NAME
+        else:
+            try:
+                branch_naming_config = select_branch_naming_pattern()
+                # Get the selected pattern name from the config
+                # The select_branch_naming_pattern returns a config object,
+                # we need to map it back to the pattern name for legacy compatibility
+                for pattern in BRANCH_DEFAULTS.PATTERNS:
+                    if (
+                        branch_naming_config.patterns == pattern.patterns
+                        and branch_naming_config.description == pattern.description
+                    ):
+                        branch_pattern = pattern.name
+                        break
+                else:
+                    # Fallback if no match found
+                    branch_pattern = BRANCH_DEFAULTS.DEFAULT_PATTERN_NAME
+            except KeyboardInterrupt:
+                console.print("[yellow]Setup cancelled[/yellow]")
+                raise typer.Exit(0) from None
 
-    # Validate branch pattern (expanded list from ui_helpers)
-    valid_patterns = [
-        "001-feature-name",
-        "feature/{name}",
-        "feature/{number-3}-{name}",
-        "{team}/{name}",
-    ]
+    # Validate branch pattern using centralized system
+    valid_patterns = BRANCH_DEFAULTS.get_all_pattern_names()
     if branch_pattern not in valid_patterns:
         console.print(
             f"[red]Error:[/red] Invalid branch pattern '{branch_pattern}'. Choose from: {', '.join(valid_patterns)}"

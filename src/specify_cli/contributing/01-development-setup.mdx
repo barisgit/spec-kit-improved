@@ -1,0 +1,291 @@
+---
+title: "Development Setup & Environment"
+description: "Complete guide to setting up SpecifyX development environment with Python 3.11+, dependencies, and developer tools"
+category: "contributing"
+tags: ["setup", "development", "environment", "python", "dependencies"]
+---
+
+# Development Setup & Environment
+
+Welcome to SpecifyX development! This guide will help you set up a complete development environment for contributing to the SpecifyX CLI tool.
+
+## Prerequisites
+
+### System Requirements
+
+- **Python 3.11+** (Required for modern typing features and performance)
+- **Git** for version control
+- **GitHub CLI** (`gh`) for pull request management
+- **Editor** with Python support (VS Code, PyCharm, neovim or similar)
+
+### Recommended Tools
+
+- **uv** - Ultra-fast Python package installer and resolver
+- **pre-commit** - Git hook framework for code quality
+- **ruff** - Lightning-fast Python linter and formatter
+- **pyrefly** - Type checking
+
+## Quick Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/specify/specifyx.git
+cd specifyx
+```
+
+### 2. Python Environment Setup
+
+#### Option A: Using uv (Recommended)
+
+```bash
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv sync --extra dev
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+```
+
+#### Option B: Using pip
+
+```bash
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -e ".[dev]"
+```
+
+### 3. Install Pre-commit Hooks
+
+```bash
+pre-commit install
+```
+
+### 4. Verify Installation
+
+```bash
+# Test the CLI
+specifyx --help
+
+# Run tests to ensure everything works
+pytest
+
+# Check code quality
+ruff check src/
+ruff format --check src/
+
+# Check types
+pyrefly check src/
+```
+
+## Development Dependencies
+
+SpecifyX uses a comprehensive set of development tools defined in `pyproject.toml`:
+
+### Core Dependencies
+- **typer** - Modern CLI framework with rich help
+- **rich** - Beautiful terminal output and progress bars
+- **httpx** - Async-capable HTTP client for GitHub API
+- **jinja2** - Template engine for project generation
+- **dynaconf** - Configuration management with TOML support
+
+### Development Tools
+- **pytest** - Testing framework with async support
+- **pytest-cov** - Coverage reporting
+- **pytest-benchmark** - Performance testing
+- **ruff** - Linting and formatting
+- **pyrefly** - Type checking
+- **pre-commit** - Git hooks for code quality
+
+## Project Structure Overview
+
+```
+src/specify_cli/
+├── __init__.py              # CLI entry point
+├── core/
+│   ├── app.py              # Main Typer application
+│   └── __init__.py
+├── commands/                # CLI command implementations
+│   ├── init/               # Project initialization
+│   ├── check/              # System verification
+│   ├── run/                # Script execution
+│   └── update/             # Self-update functionality
+├── services/               # Business logic services
+│   ├── template_service/   # Jinja2 template processing
+│   ├── config_service/     # TOML configuration management
+│   ├── project_manager/    # Project orchestration
+│   ├── git_service/        # Git operations
+│   └── download_service/   # GitHub API interactions
+├── models/                 # Data classes and type definitions
+│   ├── config.py          # Configuration models
+│   ├── project.py         # Project representation
+│   ├── template.py        # Template models
+│   └── defaults/          # Default configurations
+├── utils/                  # Utility functions
+│   ├── file_operations.py # File system operations
+│   ├── ui_helpers.py      # Terminal UI utilities
+│   └── validators.py      # Input validation
+└── templates/             # Built-in Jinja2 templates
+    ├── commands/          # AI-specific command templates
+    ├── scripts/           # Cross-platform Python scripts
+    ├── memory/            # AI memory/context templates
+    └── runtime_templates/ # Runtime template collection
+```
+
+## Architecture Principles
+
+### Service-Oriented Design
+- **Abstract Base Classes** define service contracts
+- **Concrete implementations** provide business logic
+- **Dependency injection** enables testing and modularity
+
+### Type Safety First
+- **Python 3.11+ typing** with strict type hints
+- **Dataclasses** for structured data
+- **Protocol classes** for interface definition
+- **pyrefly-compatible** code patterns
+
+### Configuration-Driven
+- **TOML files** for all configuration
+- **Dataclass models** with serialization support
+- **Default values** defined in centralized modules
+- **Environment variable** override support
+
+## Development Workflow
+
+### 1. Feature Development
+
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Or use specifyx directly
+claude
+---
+/specify i want to develop...
+---
+
+# Make changes following coding standards
+# Add tests for new functionality
+# Update documentation as needed
+
+# Run quality checks
+pre-commit run --all-files
+
+# Commit with descriptive message
+git commit -m "feat: add your feature description"
+```
+
+### 2. Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test categories
+pytest tests/unit/          # Unit tests
+pytest tests/integration/   # Integration tests
+pytest tests/contract/      # Contract tests
+pytest tests/performance/   # Performance benchmarks
+
+# Run with coverage
+pytest --cov=specify_cli --cov-report=html
+```
+
+### 3. Code Quality
+
+```bash
+# Lint and format
+ruff check src/ --fix      # Auto-fix linting issues
+ruff format src/           # Format code
+
+# Check types
+pyrefly check src/
+
+# Run pre-commit manually
+pre-commit run --all-files
+```
+
+## IDE Setup
+
+### VS Code Configuration
+
+Create `.vscode/settings.json`:
+
+```json
+{
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        ".pytest_cache": true,
+        ".coverage": true,
+        "htmlcov": true
+    },
+}
+```
+
+### PyCharm Configuration
+
+1. **Interpreter**: Set to `.venv/bin/python`
+2. **Code Style**: Configure to use ruff formatting
+3. **Test Runner**: Set to pytest
+4. **Type Checking**: Enable pyrefly plugin if available
+
+## Troubleshooting
+
+### Common Issues
+
+#### Import Errors
+```bash
+# Ensure package is installed in development mode
+pip install -e .[dev]
+
+# Or with uv
+uv sync --extra dev
+```
+
+#### Test Failures
+```bash
+# Clear pytest cache
+pytest --cache-clear
+
+# Run tests with verbose output
+pytest -v tests/
+```
+
+#### Pre-commit Issues
+```bash
+# Update pre-commit hooks
+pre-commit autoupdate
+
+# Skip pre-commit for emergency commits
+git commit --no-verify -m "emergency fix"
+```
+
+### Performance Tips
+
+- **Use uv** for faster dependency resolution
+- **Enable pytest-xdist** for parallel test execution
+- **Use ruff** instead of multiple linting tools
+
+## Next Steps
+
+Once your development environment is ready:
+
+1. Read the [Code Contribution Guidelines](./code-contribution-guidelines)
+2. Review [Testing Strategies](./testing-strategies)
+3. Study [Service Development Patterns](./service-development-patterns)
+4. Explore the codebase and run the test suite
+5. Pick an issue from the GitHub repository to work on
+
+## Getting Help
+
+- **GitHub Issues**: Report bugs or request features
+- **GitHub Discussions**: Ask questions and share ideas
+- **Code Review**: Submit PRs for feedback and collaboration
+
+Happy coding! 🚀

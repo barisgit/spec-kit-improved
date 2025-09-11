@@ -711,7 +711,7 @@ class TestUtilityFunctions:
         """Test echo_error function."""
         echo_error("Error message")
         captured = capsys.readouterr()
-        assert "Error: Error message" in captured.out
+        assert "Error: Error message" in captured.err
 
     def test_echo_success(self, capsys):
         """Test echo_success function."""

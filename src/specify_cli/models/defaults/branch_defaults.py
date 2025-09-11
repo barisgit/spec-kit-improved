@@ -45,6 +45,7 @@ class BranchNamingDefaults:
                     "lowercase_only",
                     "no_spaces",
                     "alphanumeric_dash_slash_only",
+                    "valid_git_branch",
                 ],
             ),
             BranchNamingPattern(
@@ -62,6 +63,7 @@ class BranchNamingDefaults:
                     "lowercase_only",
                     "no_spaces",
                     "alphanumeric_dash_slash_only",
+                    "valid_git_branch",
                 ],
             ),
             BranchNamingPattern(
@@ -79,6 +81,7 @@ class BranchNamingDefaults:
                     "lowercase_only",
                     "no_spaces",
                     "alphanumeric_dash_slash_only",
+                    "valid_git_branch",
                 ],
             ),
             BranchNamingPattern(
@@ -96,6 +99,7 @@ class BranchNamingDefaults:
                     "lowercase_only",
                     "no_spaces",
                     "alphanumeric_dash_slash_only",
+                    "valid_git_branch",
                 ],
             ),
         ]

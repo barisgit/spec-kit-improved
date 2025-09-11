@@ -88,10 +88,10 @@ def setup_plan_structure(helpers: ScriptHelpers, force: bool = False, quiet: boo
                     output_path=impl_plan
                 )
                 if not success:
-                    echo_error(f"Failed to render plan template: {error}", quiet, json_mode=False)
+                    echo_error(f"Failed to render plan template: {error}", json_mode=json_mode, quiet=quiet)
                     return False, {"error": f"Template rendering failed: {error}"}
             else:
-                echo_error(f"Plan template not found at {template_path}", quiet, json_mode=False)
+                echo_error(f"Plan template not found at {template_path}", json_mode=json_mode, quiet=quiet)
                 return False, {"error": f"Plan template not found: {template_path}"}
         
         # Ensure spec.md exists
@@ -111,10 +111,10 @@ def setup_plan_structure(helpers: ScriptHelpers, force: bool = False, quiet: boo
                     output_path=feature_spec
                 )
                 if not success:
-                    echo_error(f"Failed to render spec template: {error}", quiet, json_mode=False)
+                    echo_error(f"Failed to render spec template: {error}", json_mode=json_mode, quiet=quiet)
                     return False, {"error": f"Template rendering failed: {error}"}
             else:
-                echo_error(f"Spec template not found at {template_path}", quiet, json_mode=False)
+                echo_error(f"Spec template not found at {template_path}", json_mode=json_mode, quiet=quiet)
                 return False, {"error": f"Spec template not found: {template_path}"}
         
         return True, result

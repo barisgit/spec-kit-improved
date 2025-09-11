@@ -1,0 +1,303 @@
+---
+title: Architecture & Design
+description: Comprehensive guide to SpecifyX's architecture, design patterns, and engineering decisions
+category: about
+tags: [architecture, design, services, patterns]
+---
+
+# Architecture & Design
+
+SpecifyX is built with a **service-oriented architecture** that prioritizes modularity, testability, and extensibility. This document explains the architectural decisions, design patterns, and engineering philosophy behind the project.
+
+## Core Architectural Principles
+
+### 1. Service-Oriented Architecture (SOA)
+
+SpecifyX adopts a service-oriented approach where each major functionality is encapsulated in dedicated services:
+
+```
+services/
+├── config_service/          # Configuration management
+├── template_service/        # Jinja2 template rendering
+├── project_manager/         # Project orchestration
+├── git_service/            # Git operations
+├── download_service/       # GitHub/external downloads
+├── script_discovery_service/ # Script finding and execution
+├── script_execution_service/ # Cross-platform script running
+├── update_service/         # Version checking and updates
+├── update_installer/       # Installation management
+└── version_checker/        # Version comparison utilities
+```
+
+**Benefits:**
+- **Separation of Concerns**: Each service has a single, well-defined responsibility
+- **Testability**: Services can be independently tested with mocked dependencies
+- **Extensibility**: New services can be added without modifying existing code
+- **Maintainability**: Clear boundaries make code easier to understand and modify
+
+### 2. Abstract Base Classes (ABC) Pattern
+
+All services implement abstract base classes to ensure consistent interfaces:
+
+```python
+class TemplateService(ABC):
+    @abstractmethod
+    def render_template(self, template_name: str, context: TemplateContext) -> str:
+        pass
+    
+    @abstractmethod
+    def load_template_package(self, ai_assistant: str, template_dir: Path) -> bool:
+        pass
+```
+
+**Benefits:**
+- **Interface Consistency**: All implementations must follow the same contract
+- **Type Safety**: Full type annotations ensure compile-time guarantees
+- **Polymorphism**: Services can be swapped based on runtime conditions
+- **Testing**: Easy to create mock implementations for testing
+
+### 3. Dependency Injection
+
+Services accept dependencies through constructor injection:
+
+```python
+class ProjectManager:
+    def __init__(
+        self,
+        config_service: Optional[ConfigService] = None,
+        git_service: Optional[GitService] = None,
+        template_service: Optional[TemplateService] = None,
+    ):
+        # Use provided services or create defaults
+        self._config_service = config_service or TomlConfigService()
+        self._git_service = git_service or CommandLineGitService()
+        self._template_service = template_service or JinjaTemplateService()
+```
+
+**Benefits:**
+- **Testability**: Easy to inject mock services for testing
+- **Flexibility**: Different implementations can be used in different contexts
+- **Loose Coupling**: Services don't depend on concrete implementations
+
+## Data Models & Configuration
+
+### Configuration Hierarchy
+
+SpecifyX uses a three-tier configuration system:
+
+```
+Configuration Hierarchy:
+├── 1. Built-in Defaults    (models/defaults/)
+├── 2. Global User Config   (~/.config/specifyx/config.toml)
+└── 3. Project Config       (project/.specify/config.toml)
+```
+
+**Resolution Order**: Project → Global → Defaults
+
+### Dataclass-Based Models
+
+All configuration uses type-safe dataclasses with TOML serialization:
+
+```python
+@dataclass
+class ProjectConfig:
+    name: str
+    branch_naming: BranchNamingConfig = field(default_factory=BranchNamingConfig)
+    template_settings: TemplateConfig = field(default_factory=TemplateConfig)
+    created_at: Optional[datetime] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for TOML serialization"""
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ProjectConfig":
+        """Create instance from dictionary (TOML deserialization)"""
+```
+
+**Benefits:**
+- **Type Safety**: All configuration is strongly typed
+- **Validation**: Invalid configurations are caught at runtime
+- **Serialization**: Clean conversion to/from TOML format
+- **IDE Support**: Full autocomplete and type checking
+
+## Template System Architecture
+
+### Jinja2-Based Template Engine
+
+SpecifyX uses a sophisticated template system built on Jinja2:
+
+```
+Template Flow:
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Template Source │ -> │ Jinja2 Processing│ -> │ Rendered Output │
+│ (.j2 files)     │    │ (with context)   │    │ (final files)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Configurable Folder Mappings
+
+Templates are organized using configurable folder mappings:
+
+```python
+@dataclass(frozen=True)
+class TemplateFolderMapping:
+    source: str              # Source folder in templates/
+    target_pattern: str      # Target pattern with variables
+    render: bool            # Whether to render .j2 files
+    executable_extensions: List[str]  # Files to make executable
+```
+
+**Example Mapping:**
+```python
+TemplateFolderMapping(
+    source="scripts",
+    target_pattern=".specify/scripts",
+    render=True,
+    executable_extensions=[".py", ".sh", ".bat"]
+)
+```
+
+### AI-Aware Templates
+
+Templates contain conditional logic for different AI assistants:
+
+```jinja2
+{% if ai_assistant == "claude" %}
+# Claude-specific content
+{% elif ai_assistant == "gemini" %}
+# Gemini-specific content
+{% else %}
+# Generic fallback content
+{% endif %}
+```
+
+**Benefits:**
+- **AI Agnostic**: Same templates work with different AI assistants
+- **Customization**: AI-specific optimizations where needed
+- **Fallbacks**: Graceful degradation for unknown AI assistants
+
+## Cross-Platform Considerations
+
+### Path Handling
+
+All path operations use `pathlib.Path` for cross-platform compatibility:
+
+```python
+# Good: Cross-platform path handling
+project_path = Path.cwd() / project_name
+config_file = project_path / ".specify" / "config.toml"
+
+# Bad: Platform-specific separators
+config_file = f"{project_name}/.specify/config.toml"  # Unix-only
+```
+
+### File Permissions
+
+Executable permissions are set appropriately per platform:
+
+```python
+if platform.system() != "Windows":
+    # Set executable permissions on Unix-like systems
+    script_path.chmod(EXECUTABLE_PERMISSIONS)
+```
+
+## Error Handling Strategy
+
+### Validation-First Approach
+
+All user inputs are validated before processing:
+
+```python
+def validate_project_name(self, name: str) -> tuple[bool, Optional[str]]:
+    """Validate project name using Validators infrastructure"""
+    try:
+        Validators.project_name(name)
+        return True, None
+    except ValidationError as e:
+        return False, str(e)
+```
+
+### Graceful Degradation
+
+Operations fail gracefully with meaningful error messages:
+
+```python
+try:
+    result = self._template_service.render_template(template, context)
+    return RenderResult(success=True, content=result)
+except TemplateNotFound:
+    return RenderResult(
+        success=False, 
+        error_message=f"Template not found: {template}"
+    )
+```
+
+## Performance Considerations
+
+### Lazy Loading
+
+Services are instantiated only when needed:
+
+```python
+@property
+def git_service(self) -> GitService:
+    """Lazy initialization of git service"""
+    if self._git_service is None:
+        self._git_service = CommandLineGitService()
+    return self._git_service
+```
+
+### Minimal Dependencies
+
+Core functionality has minimal external dependencies:
+- **typer**: CLI framework
+- **rich**: Terminal output formatting
+- **jinja2**: Template engine
+- **httpx**: HTTP client for updates
+
+## Testing Architecture
+
+### Contract Testing
+
+Each service has contract tests that verify the ABC interface:
+
+```python
+class TestTemplateServiceContract:
+    """Test that all TemplateService implementations follow the contract"""
+    
+    def test_render_template_contract(self, template_service: TemplateService):
+        # Test the contract requirements
+```
+
+### Integration Testing
+
+Full workflow tests verify service integration:
+
+```python
+def test_project_initialization_workflow():
+    """Test complete project initialization workflow"""
+    project_manager = ProjectManager()
+    result = project_manager.initialize_project(options)
+    assert result.success
+```
+
+### Mock Testing
+
+Services are tested in isolation using mocks:
+
+```python
+def test_project_manager_with_mocked_services():
+    mock_config = Mock(spec=ConfigService)
+    mock_git = Mock(spec=GitService)
+    
+    manager = ProjectManager(
+        config_service=mock_config,
+        git_service=mock_git
+    )
+```
+
+## Conclusion
+
+SpecifyX's architecture balances **simplicity with extensibility**, providing a solid foundation for spec-driven development workflows. The service-oriented design ensures maintainability while the abstract base classes guarantee consistency and testability.
+
+The architecture supports the core philosophy of making spec-driven development **accessible and powerful** through clean abstractions, type safety, and cross-platform compatibility.

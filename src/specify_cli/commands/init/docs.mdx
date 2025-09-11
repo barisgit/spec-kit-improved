@@ -1,0 +1,204 @@
+---
+title: init Command
+description: Initialize a new SpecifyX project with templates and configuration
+category: command
+tags: [init, project, templates, ai-assistant, branch-patterns]
+---
+
+# init Command
+
+The `specifyx init` command initializes a new project with specification-driven development templates and structure.
+
+## Usage
+
+```bash
+specifyx init [PROJECT_NAME] [OPTIONS]
+```
+
+## Description
+
+This command sets up a new project using the modular service architecture to orchestrate:
+- Project structure creation with AI-aware templates
+- Template rendering with Jinja2 engine
+- Git repository initialization
+- Configuration management with TOML
+- Cross-platform Python script generation
+
+## Options
+
+### Basic Options
+- `PROJECT_NAME` - Name for your new project directory (optional if using `--here`)
+- `--here` - Initialize project in the current directory instead of creating a new one
+- `--force`, `-f` - Force initialization even if directory is already initialized
+- `--yes`, `-y` - Use defaults for all options not provided and skip interactive prompts
+
+### AI Assistant Configuration
+- `--ai TEXT` - AI assistant to use: claude, gemini, copilot (interactive if not specified)
+
+### Branch Naming Configuration
+- `--branch-pattern TEXT` - Branch naming pattern: '001-feature-name' or 'feature/&#123;name&#125;' (interactive if not specified)
+
+### Template Source Options
+- `--use-remote` - Force download templates from remote repository instead of using local ones
+- `--remote-repo TEXT` - GitHub repository for templates in format 'owner/repo' (default: barisgit/spec-kit-improved)
+
+### Advanced Options
+- `--verbose`, `-v` - Show detailed output during template rendering
+
+## Interactive Mode
+
+When run without options, the command enters interactive mode:
+1. Prompts for project name (if not provided)
+2. Asks for AI assistant preference (claude, gemini, copilot)
+3. Offers template source selection (local vs remote)
+4. Offers branch naming pattern selection
+5. Creates project structure with progress tracking
+
+The interactive mode can be bypassed using the `--yes` flag, which uses defaults for all unspecified options.
+
+## Examples
+
+### Basic Usage
+```bash
+# Create new project with interactive prompts
+specifyx init my-project
+
+# Initialize in current directory
+specifyx init --here
+
+# Skip all prompts with defaults
+specifyx init my-project --yes
+```
+
+### AI Assistant Configuration
+```bash
+# Specify AI assistant directly
+specifyx init my-project --ai claude
+specifyx init my-project --ai gemini
+specifyx init my-project --ai copilot
+```
+
+### Branch Naming Patterns
+```bash
+# Use specific branch pattern
+specifyx init my-project --branch-pattern "feature/&#123;name&#125;"
+specifyx init my-project --branch-pattern "001-feature-name"
+```
+
+### Template Sources
+```bash
+# Force remote template download
+specifyx init my-project --use-remote
+
+# Use custom template repository
+specifyx init my-project --use-remote --remote-repo "myorg/my-templates"
+
+# Verbose output for debugging
+specifyx init my-project --verbose
+```
+
+### Advanced Usage
+```bash
+# Force initialization in existing directory
+specifyx init --here --force
+
+# Complete non-interactive setup
+specifyx init my-project --ai claude --branch-pattern "feature/&#123;name&#125;" --yes
+```
+
+## Generated Structure
+
+The init command creates a comprehensive project structure:
+
+```
+my-project/
+├── .specify/
+│   ├── config.toml         # Project configuration (TOML)
+│   ├── scripts/            # Python utility scripts
+│   │   ├── plan.py         # Feature planning script
+│   │   ├── spec.py         # Specification creation script
+│   │   └── tasks.py        # Task management script
+│   ├── templates/          # Runtime Jinja2 templates
+│   │   ├── feature/        # Feature specification templates
+│   │   ├── spec/           # General specification templates
+│   │   └── tasks/          # Task templates
+│   └── memory/             # Project constitution and guidelines
+│       └── CONSTITUTION.md # Project principles and standards
+├── .claude/                # AI assistant commands (Claude-specific)
+│   └── commands/           # Slash commands for Claude Code
+├── .gemini/                # Gemini assistant files (if selected)
+├── specs/                  # Feature specifications directory
+│   └── README.md           # Specification guidelines
+├── README.md               # Project documentation
+└── .gitignore              # Git ignore patterns
+```
+
+## Configuration
+
+The command creates a `.specify/config.toml` file with:
+
+```toml
+[project]
+name = "my-project"
+ai_assistant = "claude"
+
+[branch_naming]
+patterns = ["feature/&#123;feature-name&#125;", "hotfix/&#123;bug-id&#125;"]
+default_pattern = "feature/&#123;feature-name&#125;"
+
+[templates]
+source = "local"  # or "remote"
+```
+
+## Error Handling
+
+The command handles various error scenarios gracefully:
+
+### Already Initialized Directory
+- Detects existing SpecifyX projects
+- Requires `--force` flag to reinitialize
+- Preserves existing configuration when forced
+
+### Template Processing Failures
+- Falls back to remote templates if local ones fail
+- Offers embedded templates as final fallback
+- Provides clear error messages for network issues
+
+### Validation Errors
+- Validates AI assistant choices against supported options
+- Validates branch patterns against configured patterns
+- Prevents conflicting options (project name + --here)
+
+## Next Steps
+
+After successful initialization, the command displays AI-specific guidance:
+
+### For Claude Users
+- Open project in VS Code with Claude Code
+- Use `/specify` command for specifications
+- Type `/` in any file to see available commands
+
+### For Gemini Users
+- Use Gemini CLI for development
+- Run `gemini /specify` for specifications
+
+### For Copilot Users
+- Use GitHub Copilot in your IDE
+- Access `/specify`, `/plan`, `/tasks` commands
+
+## Service Integration
+
+The init command orchestrates multiple services:
+
+- **ProjectManager**: Coordinates the initialization process
+- **TemplateService**: Renders Jinja2 templates with context
+- **ConfigService**: Manages TOML configuration files
+- **GitService**: Initializes and manages Git repositories
+- **DownloadService**: Handles remote template downloads
+
+## See Also
+
+- [Getting Started Guide](/docs/guides/quickstart)
+- [Template Service API](/docs/reference/api/template_service)
+- [Project Manager API](/docs/reference/api/project_manager)
+- [Configuration Service](/docs/reference/api/config_service)

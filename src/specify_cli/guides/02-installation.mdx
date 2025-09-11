@@ -1,0 +1,188 @@
+---
+title: Installation Guide
+description: Complete installation guide for SpecifyX
+sidebar_label: Installation
+---
+
+# Installation Guide
+
+SpecifyX is a Python CLI tool that can be installed using multiple methods. Choose the one that best fits your workflow.
+
+## Prerequisites
+
+- **Operating System**: Linux, macOS, or Windows (with WSL2 recommended)
+- **Python**: 3.11 or higher
+- **Package Manager**: [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- **Version Control**: [Git](https://git-scm.com/downloads)
+- **AI Assistant**: Claude, GitHub Copilot, or Gemini (optional but recommended)
+
+## Installation Methods
+
+### Method 1: Using uv (Recommended)
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package installer and resolver. It's the recommended way to install SpecifyX.
+
+#### Global Installation
+
+```bash
+# Install SpecifyX globally
+uv tool install specifyx
+
+# Verify installation
+specifyx --version
+```
+
+#### Project-Specific Installation
+
+```bash
+# Add to your project
+uv add specifyx
+
+# Or install in development mode
+uv add --dev specifyx
+```
+
+### Method 2: Using pipx
+
+[pipx](https://pypa.github.io/pipx/) installs Python applications in isolated environments.
+
+```bash
+# Install pipx if you don't have it
+pip install pipx
+
+# Install SpecifyX
+pipx install specifyx
+
+# Verify installation
+specifyx --version
+```
+
+### Method 3: Using pip
+
+For traditional pip installation:
+
+```bash
+# Install SpecifyX
+pip install specifyx
+
+# Or install from source
+pip install git+https://github.com/barisgit/spec-kit-improved.git
+```
+
+### Method 4: From Source
+
+For development or latest features:
+
+```bash
+# Clone the repository
+git clone https://github.com/barisgit/spec-kit-improved.git
+cd spec-kit-improved
+
+# Install in development mode
+uv sync
+uv run pip install -e .
+```
+
+## Quick Setup
+
+After installation, initialize your first project:
+
+```bash
+# Create a new project
+specifyx init my-awesome-project
+
+# Or initialize in current directory
+specifyx init --here
+```
+
+## AI Assistant Integration
+
+SpecifyX works best with AI assistants. During initialization, you can specify your preferred assistant:
+
+```bash
+# For Claude
+specifyx init my-project --ai claude
+
+# For Gemini
+specifyx init my-project --ai gemini
+
+# For Copilot
+specifyx init my-project --ai copilot
+```
+
+## Verification
+
+After installation and initialization, verify everything is working:
+
+```bash
+# Check system requirements
+specifyx check
+
+# View available commands
+specifyx --help
+```
+
+You should see commands like:
+- `specifyx init` - Initialize new projects
+- `specifyx check` - Validate system setup
+- `specifyx run` - Execute project scripts
+
+## Troubleshooting
+
+### Common Issues
+
+#### Python Version Issues
+
+Ensure you have Python 3.11 or higher:
+
+```bash
+python --version
+# Should show Python 3.11.x or higher
+```
+
+#### Permission Issues on Linux/macOS
+
+If you encounter permission errors:
+
+```bash
+# Use user installation
+pip install --user specifyx
+
+# Or use uv with proper permissions
+uv tool install specifyx
+```
+
+#### Git Authentication Issues
+
+For Git credential management on Linux:
+
+```bash
+# Install Git Credential Manager
+wget https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.6.1/gcm-linux_amd64.2.6.1.deb
+sudo dpkg -i gcm-linux_amd64.2.6.1.deb
+git config --global credential.helper manager
+```
+
+#### Windows WSL2 Setup
+
+For Windows users, WSL2 is recommended:
+
+```bash
+# In WSL2, install Python and uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
+uv tool install specifyx
+```
+
+### Getting Help
+
+If you encounter issues:
+
+1. Run `specifyx check` to diagnose problems
+2. Open an issue on [GitHub](https://github.com/barisgit/spec-kit-improved/issues)
+
+## Next Steps
+
+- [Quick Start Guide](/docs/guides/quickstart) - Get up and running quickly
+- [Development Workflow](/docs/guides/workflow) - Comprehensive workflow guide
+- [CLI Reference](/docs/reference/cli/init) - Command documentation

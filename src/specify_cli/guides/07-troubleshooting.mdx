@@ -1,0 +1,145 @@
+---
+title: Troubleshooting Guide
+description: Common issues and solutions for SpecifyX
+category: guide
+sidebar_label: Troubleshooting
+tags: [troubleshooting, debugging, issues, solutions]
+---
+
+# Troubleshooting Guide
+
+## Quick Diagnostics
+
+```bash
+specifyx check              # Verify installation and requirements
+specifyx config validate    # Check configuration
+specifyx --version          # Show version info
+specifyx run --list         # Check project structure
+```
+
+## Installation Issues
+
+### Command Not Found
+```bash
+# Check installation
+uv tool list | grep specifyx
+pipx list | grep specifyx
+
+# Reinstall
+uv tool install specifyx    # Recommended
+pipx install specifyx       # Alternative
+uvx specifyx                # Run without install
+```
+
+### Python Version Issues
+SpecifyX requires Python 3.11+. Check with `python --version` and install newer version if needed:
+```bash
+uv python install 3.11     # Using uv
+pyenv install 3.11.5       # Using pyenv
+```
+
+### Permission Issues
+```bash
+# Fix PATH issues
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Use user install
+pip install --user specifyx
+```
+
+## Configuration Issues
+
+### Invalid Configuration
+**Error**: `Invalid branch pattern` or `Configuration validation failed`
+
+**Fix**: Check `.specify/config.toml` syntax:
+```toml
+[project]
+name = "my-project"
+
+[branching] 
+patterns = ["feature/{feature-name}", "main"]
+validation_rules = ["lowercase_only"]
+```
+
+### Template Errors
+**Error**: `Template not found` or `Jinja2 syntax error`
+
+**Fix**:
+1. Check template exists in `.specify/templates/`
+2. Validate Jinja2 syntax
+3. Reset templates: `rm -rf .specify/templates && specifyx init --here`
+
+## Project Issues
+
+### Git Repository Required
+**Error**: `Not a git repository`
+
+**Fix**: Initialize git repo: `git init && git add . && git commit -m "Initial commit"`
+
+### Branch Creation Failures
+**Error**: `Branch already exists` or `Invalid branch name`
+
+**Fix**:
+1. Use unique branch names
+2. Check branch naming patterns in config
+3. Delete existing branch: `git branch -D branch-name`
+
+## Command Execution
+
+### Script Not Found
+**Error**: `Script 'xyz' not found`
+
+**Fix**:
+1. List available scripts: `specifyx run --list`
+2. Check `.specify/scripts/` directory
+3. Regenerate scripts: `specifyx init --here`
+
+### Execution Failures
+**Error**: Scripts fail to run
+
+**Fix**:
+1. Check Python dependencies: `pip install -r requirements.txt`
+2. Verify script permissions: `chmod +x .specify/scripts/*`
+3. Check script syntax manually
+
+## Performance Issues
+
+### Slow Operations
+- **Template rendering**: Reduce template complexity
+- **Large projects**: Use `.specifyignore` to exclude files
+- **Network issues**: Check internet connection for updates
+
+## Platform-Specific
+
+### Windows
+- Use WSL2 for best compatibility
+- Install Python via Microsoft Store or python.org
+- Check PATH includes Python and Scripts directories
+
+### macOS  
+- Install via Homebrew: `brew install python@3.11`
+- May need to install Xcode Command Line Tools
+
+### Linux
+- Install Python dev packages: `apt install python3.11-dev`
+- Check `$HOME/.local/bin` is in PATH
+
+## Getting Help
+
+### Collect Diagnostics
+```bash
+specifyx check --verbose     # Detailed system info
+specifyx --version          # Version info
+python --version            # Python version
+uv --version               # UV version (if used)
+```
+
+### Log Files
+Check `~/.cache/specifyx/logs/` for detailed error logs.
+
+### Support
+- [GitHub Issues](https://github.com/barisgit/spec-kit-improved/issues) for bugs
+- Check [Documentation](https://specifyx.dev) for guides
+- Include diagnostic output when reporting issues

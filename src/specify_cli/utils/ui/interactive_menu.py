@@ -40,6 +40,7 @@ class InteractiveMenu:
         selected_style: str = "bright_cyan",
         unselected_style: str = "white",
         default_key: Optional[str] = None,
+        header: Optional[str] = None,
     ) -> Optional[str]:
         """Interactive selection with arrow keys.
 
@@ -83,6 +84,11 @@ class InteractiveMenu:
             table.add_column(style="bright_cyan", justify="left", width=3)
             table.add_column(justify="left")
 
+            # Add header text if provided
+            if header:
+                table.add_row("", header)
+                table.add_row("", "")  # Add spacing
+
             for i, key in enumerate(option_keys):
                 if isinstance(options, list):
                     # For list options, show the actual value
@@ -111,8 +117,6 @@ class InteractiveMenu:
                 border_style="cyan",
                 padding=(1, 2),
             )
-
-        self._console.print()
 
         try:
             with Live(
@@ -233,8 +237,6 @@ class InteractiveMenu:
                 border_style="cyan",
                 padding=(1, 2),
             )
-
-        self._console.print()
 
         try:
             with Live(

@@ -55,7 +55,7 @@ def create_feature(description: str, branch_name: Optional[str] = None, spec_id:
     description = description.strip()
     is_valid, error = helpers.validate_feature_description(description)
     if not is_valid:
-        return False, {"error": error}
+        return False, {"error": error or "Invalid feature description"}
     
     # Check git repository status before proceeding
     if not helpers.check_git_repository():
@@ -77,7 +77,7 @@ def create_feature(description: str, branch_name: Optional[str] = None, spec_id:
         # Validate custom spec ID format
         is_valid, error = helpers.validate_spec_id_format(spec_id)
         if not is_valid:
-            return False, {"error": error}
+            return False, {"error": error or "Invalid spec ID format"}
         
         # Check if spec ID already exists
         exists, existing_path = helpers.check_spec_id_exists(spec_id, specs_dir)
@@ -107,7 +107,7 @@ def create_feature(description: str, branch_name: Optional[str] = None, spec_id:
             if helpers.check_branch_exists(final_branch_name):
                 return False, {"error": f"Branch '{final_branch_name}' already exists"}
         else:
-            return False, {"error": completion_error}
+            return False, {"error": completion_error or "Failed to complete branch name"}
     else:
         # No custom branch name - derive from description and first pattern
         

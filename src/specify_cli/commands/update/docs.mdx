@@ -1,0 +1,298 @@
+---
+title: update Command
+description: Update SpecifyX to the latest version with automatic installation detection
+category: command
+tags: [update, version, upgrade, installation, maintenance]
+---
+
+# update Command
+
+The `specifyx update` command manages SpecifyX version updates with intelligent installation method detection and automatic updating capabilities.
+
+## Usage
+
+```bash
+specifyx update perform [OPTIONS]
+specifyx update check [OPTIONS]
+specifyx update info [OPTIONS]
+```
+
+## Description
+
+The update command provides a comprehensive update management system that:
+- Detects your SpecifyX installation method (pip, pipx, conda, etc.)
+- Checks for available updates with caching for performance
+- Performs automatic updates when supported by the installation method
+- Provides manual update instructions when automatic updates aren't available
+
+## Subcommands
+
+### `update perform`
+Performs the actual update process.
+
+### `update check`
+Checks for available updates without performing the update.
+
+### `update info`
+Shows installation and cache information.
+
+## Main Update Options
+
+- `--target-version TEXT`, `-t TEXT` - Specific version to install (default: latest)
+- `--force`, `-f` - Force update even if already up to date
+- `--dry-run` - Show what would be updated without doing it
+- `--no-cache` - Skip cache and force fresh version check
+
+## Check Subcommand Options
+
+- `--force` - Force fresh check, bypass cache
+- `--quiet`, `-q` - Only show output if update is available
+
+## Info Subcommand Options
+
+- `--cache` - Show detailed cache information
+- `--clear-cache` - Clear the version check cache
+
+## Examples
+
+### Basic Update Operations
+```bash
+# Check for updates
+specifyx update check
+
+# Update to latest version
+specifyx update perform
+
+# Force update even if current
+specifyx update perform --force
+
+# Update to specific version
+specifyx update perform --target-version 1.2.3
+```
+
+### Advanced Update Operations
+```bash
+# See what would be updated without doing it
+specifyx update perform --dry-run
+
+# Force fresh version check and update
+specifyx update perform --no-cache
+
+# Quiet check (only output if update available)
+specifyx update check --quiet
+```
+
+### Information and Maintenance
+```bash
+# Show installation details
+specifyx update info
+
+# Show detailed cache information
+specifyx update info --cache
+
+# Clear version check cache
+specifyx update info --clear-cache
+```
+
+## Installation Method Detection
+
+The update system automatically detects how SpecifyX was installed:
+
+### Supported Installation Methods
+- **pip**: Standard Python package installer
+- **pipx**: Isolated application installer
+- **conda/mamba**: Conda package manager
+- **homebrew**: macOS package manager
+- **system packages**: Distribution-specific packages
+
+### Automatic Update Support
+Installation methods that support automatic updates:
+- pip (when installed in user or virtual environment)
+- pipx 
+- Some conda environments
+
+### Manual Update Required
+Installation methods requiring manual updates:
+- System-wide pip installations
+- Distribution packages (apt, yum, etc.)
+- Homebrew installations
+- Some conda environments
+
+## Update Process Flow
+
+### 1. Installation Detection
+```
+Detecting installation method...
+Installation method: pipx
+Automatic updates: supported
+```
+
+### 2. Version Check
+```
+Checking for updates...
+Current version: 1.0.0
+Latest version: 1.1.0
+Update available!
+```
+
+### 3. Update Execution
+```
+Updating from 1.0.0 to 1.1.0
+Running: pipx upgrade specifyx
+✓ Update completed successfully!
+```
+
+## Exit Codes
+
+### Main Update Command
+- `0` - Update completed successfully or no update needed
+- `1` - Update failed or automatic update not supported
+
+### Check Subcommand  
+- `0` - No update available (up to date)
+- `1` - Update is available
+
+### Info Subcommand
+- `0` - Information displayed successfully
+
+## Cache Management
+
+The update system uses intelligent caching to avoid excessive API calls:
+
+### Cache Behavior
+- Version checks are cached for a reasonable duration
+- Cache respects rate limits and network conditions
+- Manual cache clearing available for troubleshooting
+
+### Cache Information
+```bash
+$ specifyx update info --cache
+Cache file: ~/.cache/specifyx/version_cache.json
+Last check: 2024-01-15 10:30:00
+Cached version: 1.1.0
+Cache expires: 2024-01-15 16:30:00
+```
+
+## Error Handling
+
+### Network Issues
+- Graceful handling of network connectivity problems
+- Clear error messages for timeout and connection issues
+- Fallback behavior when update servers are unavailable
+
+### Permission Issues
+- Detection of permission problems with automatic updates
+- Suggestions for resolving permission conflicts
+- Alternative update methods when automatic updates fail
+
+### Version Conflicts
+- Validation of target version availability
+- Handling of pre-release and development versions
+- Clear messaging for invalid version specifications
+
+## Dry Run Mode
+
+The `--dry-run` option shows what would happen without making changes:
+
+```bash
+$ specifyx update perform --dry-run
+Dry run mode - showing what would be done
+
+Installation method: pipx
+Current version: 1.0.0
+Target version: 1.1.0 (latest)
+Update command: pipx upgrade specifyx
+
+✓ Dry run completed - automatic update is supported
+```
+
+## Manual Update Instructions
+
+When automatic updates aren't supported, the command provides specific instructions:
+
+```bash
+$ specifyx update perform
+⚠ Automatic update not supported for your installation method.
+
+Installation method: homebrew
+Current version: 1.0.0
+Latest version: 1.1.0
+
+Manual update required: brew upgrade specifyx
+
+Please update manually using the command shown above.
+```
+
+## Integration with Development Workflow
+
+### CI/CD Integration
+```bash
+# Check for updates in CI pipeline (non-interactive)
+specifyx update check --quiet
+if [ $? -eq 1 ]; then
+    echo "SpecifyX update available"
+fi
+```
+
+### Development Environment Maintenance
+```bash
+# Regular maintenance script
+specifyx update info --clear-cache
+specifyx update check
+specifyx update perform --dry-run
+```
+
+## Service Architecture
+
+The update command leverages several specialized services:
+
+### UpdateService
+- Coordinates the entire update process
+- Manages version checking and cache operations
+- Orchestrates installation method detection and update execution
+
+### VersionChecker
+- Handles version comparison and availability checking
+- Manages caching with appropriate expiration policies
+- Interfaces with package repositories and APIs
+
+### UpdateInstaller
+- Detects installation methods through environment analysis
+- Provides installation-specific update commands
+- Handles automatic update execution when supported
+
+## Troubleshooting
+
+### Common Issues
+
+#### Update Check Fails
+```bash
+# Clear cache and retry
+specifyx update info --clear-cache
+specifyx update check --force
+```
+
+#### Automatic Update Not Working
+```bash
+# Check installation method and requirements
+specifyx update info
+
+# Try dry run to see what would happen
+specifyx update perform --dry-run
+```
+
+#### Network Connectivity Issues
+```bash
+# Test basic connectivity
+specifyx update check
+
+# Force fresh check bypassing cache
+specifyx update check --force
+```
+
+## Security Considerations
+
+- Version checks use secure HTTPS connections
+- Package signatures are verified when supported by installation method
+- No sensitive information is cached or transmitted
+- Update commands follow security best practices for each installation method

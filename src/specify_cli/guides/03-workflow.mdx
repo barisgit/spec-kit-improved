@@ -1,0 +1,211 @@
+---
+title: Development Workflow
+description: Comprehensive guide to the SpecifyX development workflow
+sidebar_label: Workflow
+---
+
+# SpecifyX Development Workflow
+
+This guide covers the complete specification-driven development workflow using SpecifyX. If you haven't installed SpecifyX yet, start with the [Installation Guide](/docs/guides/installation).
+
+## Overview
+
+SpecifyX follows a structured three-phase development process:
+
+1. **Specify** - Define what to build
+2. **Plan** - Design how to build it  
+3. **Tasks** - Break down into executable tasks
+
+## Phase 1: Specification
+
+The specification phase focuses on defining **what** you want to build, not **how** to build it.
+
+### Creating Specifications
+
+Use the `/specify` command with your AI assistant to describe what you want to build:
+
+```bash
+/specify Build a user authentication system that allows users to register, login, and manage their profiles. The system should support email/password authentication, password reset functionality, and basic profile management.
+```
+
+Focus on the **what** and **why**, not the technical implementation details.
+
+### Specification Structure
+
+Each specification includes:
+
+- **User Stories** - Who, what, and why
+- **Functional Requirements** - What the system should do
+- **Acceptance Criteria** - How to know when it's done
+- **Success Metrics** - Measurable outcomes
+
+### Best Practices
+
+- **Focus on outcomes**, not implementation details
+- **Be specific** about user needs and business value
+- **Include edge cases** and error scenarios
+- **Define success criteria** clearly
+
+## Phase 2: Planning
+
+The planning phase translates specifications into technical implementation plans.
+
+### Generating Implementation Plans
+
+Use the `/plan` command to provide your tech stack and architecture choices:
+
+```bash
+/plan The application will use Python with FastAPI for the backend API, SQLite for the database, and React for the frontend. Implement JWT tokens for authentication, bcrypt for password hashing, and include email verification for new accounts.
+```
+
+This generates:
+- Technical architecture decisions
+- Technology stack choices
+- Implementation roadmap
+- Risk assessment
+
+### Plan Components
+
+- **Architecture Overview** - High-level system design
+- **Technology Stack** - Tools, frameworks, and libraries
+- **Data Models** - Database schemas and data flow
+- **API Design** - Endpoints and interfaces
+- **Security Considerations** - Authentication, authorization, data protection
+
+## Phase 3: Task Generation
+
+The task phase breaks down the implementation plan into actionable development tasks.
+
+### Creating Tasks
+
+Use the `/tasks` command to break down the implementation plan:
+
+```bash
+/tasks Break down the implementation into actionable development tasks with clear deliverables, dependencies, and testing requirements.
+```
+
+This creates:
+- Detailed task breakdown
+- Dependencies and priorities
+- Implementation steps
+- Testing requirements
+
+### Task Organization
+
+Tasks are organized by:
+- **Priority** - Critical path items first
+- **Dependencies** - Prerequisites and blockers
+- **Complexity** - Effort estimation
+- **Testing** - Validation requirements
+
+## AI Assistant Integration
+
+SpecifyX generates AI-specific commands for your preferred assistant:
+
+### Claude Commands
+
+- `/specify` - Create detailed specifications
+- `/plan` - Generate technical implementation plans
+- `/tasks` - Break down into actionable tasks
+
+### Workflow Integration
+
+1. **Specification Review** - Use AI to refine and validate specs
+2. **Plan Validation** - Have AI audit technical decisions
+3. **Task Refinement** - Use AI to break down complex tasks
+4. **Implementation** - Leverage AI for code generation
+
+## Project Structure
+
+A typical SpecifyX project structure:
+
+```
+my-project/
+├── .specify/               # SpecifyX configuration
+│   ├── config.toml        # Project settings
+│   ├── scripts/           # Python utility scripts
+│   ├── templates/         # Jinja2 templates
+│   └── memory/            # Project constitution
+├── .claude/               # AI assistant integration
+│   └── commands/          # Custom commands
+├── specs/                 # Feature specifications
+│   └── 001-feature-name/
+│       ├── spec.md        # Feature specification
+│       ├── plan.md        # Implementation plan
+│       └── tasks.md       # Task breakdown
+└── README.md             # Project documentation
+```
+
+## Branch Naming Patterns
+
+SpecifyX supports various branch naming conventions:
+
+- `feature/{feature-name}`, `{hotfix}/{bug-id}` - Standard feature branches
+- `001-feature-name` - Numbered features
+- `feature/{spec-id}-{feature-name}` - Numbered features with spec id
+- Custom patterns - Configure in `.specify/config.toml`
+
+## Template System
+
+SpecifyX uses Jinja2 templates for consistent project artifacts:
+
+### Template Categories
+
+- **Specification Templates** - Standard spec formats
+- **Plan Templates** - Technical design templates
+- **Task Templates** - Development task formats
+- **Script Templates** - Python utility scripts
+
+### Customization
+
+Templates can be customized for:
+- Organization-specific formats
+- Technology stack preferences
+- Documentation standards
+- Workflow requirements
+
+## Best Practices
+
+### Specification Phase
+
+- Start with user needs, not technical solutions
+- Include acceptance criteria for every requirement
+- Consider edge cases and error scenarios
+- Validate with stakeholders before proceeding
+
+### Planning Phase
+
+- Choose appropriate technology stacks
+- Consider scalability and maintainability
+- Plan for testing and deployment
+- Document architectural decisions
+
+### Task Phase
+
+- Break down into manageable chunks
+- Define clear deliverables
+- Include testing requirements
+- Estimate effort and dependencies
+
+## Troubleshooting
+
+### Common Issues
+
+- **Vague Specifications** - Add more detail and examples
+- **Over-Engineering** - Focus on MVP and iterate, try to keep specs focused to get better results
+- **Missing Dependencies** - Review task dependencies carefully
+- **Unclear Acceptance Criteria** - Define measurable outcomes
+
+### Getting Help
+
+- Run `specifyx check` to validate your setup
+- Review generated templates for guidance
+- Use AI assistants for clarification
+- Check the [CLI Reference](/docs/reference/cli/init) for commands
+
+## Next Steps
+
+- [Quick Start Guide](/docs/guides/quickstart) - Get up and running in 5 minutes
+- [Installation Guide](/docs/guides/installation) - Detailed setup instructions
+- [CLI Reference](/docs/reference/cli/init) - Command documentation
+- [Template Service](/docs/reference/api/template_service) - API documentation

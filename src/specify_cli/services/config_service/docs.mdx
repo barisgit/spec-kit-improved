@@ -1,0 +1,280 @@
+---
+title: Config Service
+description: TOML-based configuration management service for SpecifyX projects
+category: service
+tags: [configuration, toml, branch-naming, validation, project-settings]
+---
+
+# Config Service
+
+The Config Service provides comprehensive TOML-based configuration management for SpecifyX projects. It handles project-specific and global configuration files, branch naming pattern validation, and cross-platform compatibility.
+
+## Overview
+
+The service is built around two main components:
+- **ConfigService** (abstract interface) - Defines the contract for configuration operations
+- **TomlConfigService** (concrete implementation) - Implements TOML-based configuration management
+
+## Key Features
+
+### Configuration Management
+- Project-specific configuration in `.specify/config.toml`
+- Global user configuration in `~/.specify/config.toml`
+- Hierarchical configuration merging (defaults → global → project)
+- Configuration backup and restore capabilities
+
+### Branch Naming System
+- Flexible branch naming patterns with variable substitution
+- Comprehensive pattern validation with detailed error messages
+- Support for multiple patterns per project
+- Special placeholder expansion (date, number sequences, etc.)
+
+### Cross-Platform Support
+- Platform-aware path normalization
+- Windows/Unix path separator handling
+- Cross-platform configuration portability
+
+## Core Classes
+
+### ConfigService (Abstract)
+```python
+class ConfigService(ABC):
+    def load_project_config(self, project_path: Path) -> Optional[ProjectConfig]
+    def save_project_config(self, project_path: Path, config: ProjectConfig) -> bool
+    def validate_branch_pattern(self, pattern: str) -> Tuple[bool, Optional[str]]
+    def generate_branch_name(self, pattern: str, context: Dict[str, str], validation_rules: List[str]) -> Tuple[str, bool, Optional[str]]
+```
+
+### TomlConfigService (Implementation)
+```python
+service = TomlConfigService()
+config = service.load_project_config(Path("/path/to/project"))
+merged = service.get_merged_config(Path("/path/to/project"))
+is_valid, error = service.validate_branch_pattern("feature/{feature-name}")
+```
+
+## Configuration Structure
+
+### Project Configuration (`.specify/config.toml`)
+```toml
+[project]
+name = "my-project"
+version = "1.0.0"
+
+[branch_naming]
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "main",
+    "development"
+]
+validation_rules = [
+    "max_length_60",
+    "lowercase_only",
+    "alphanumeric_dash_slash_only",
+    "no_double_dashes",
+    "valid_git_branch"
+]
+
+[template_settings]
+ai_assistant = "claude"
+config_directory = ".claude"
+custom_templates_dir = "custom/templates"
+template_cache_enabled = true
+```
+
+### Global Configuration (`~/.specify/config.toml`)
+```toml
+[branch_naming]
+patterns = ["feature/{feature-name}"]
+validation_rules = ["max_length_60", "lowercase_only"]
+
+[template_settings]
+ai_assistant = "claude"
+template_cache_enabled = true
+```
+
+## Branch Naming Patterns
+
+### Pattern Syntax
+Branch patterns support variable substitution with curly braces:
+
+```
+feature/{feature-name}     # feature/user-authentication
+hotfix/{bug-id}           # hotfix/fix-login-bug
+release/{version}         # release/v1.2.0
+{team}/{feature-name}     # backend/api-refactor
+```
+
+### Special Placeholders
+```
+{number-3}     # 001, 002, 003 (3-digit sequence)
+{date}         # 2025-09-11 (current date)
+{datetime}     # 2025-09-11-143022 (current datetime)
+{timestamp}    # 1694456202 (unix timestamp)
+{spec-id}      # 001 (3-digit spec identifier)
+```
+
+### Validation Rules
+```
+max_length_X          # Maximum length limit
+lowercase_only        # Only lowercase characters
+no_spaces            # No space characters
+alphanumeric_dash_only           # Only a-z, 0-9, and -
+alphanumeric_dash_slash_only     # Only a-z, 0-9, -, and /
+no_leading_trailing_dashes       # No dashes at start/end
+no_double_dashes                 # No consecutive dashes
+no_dots                         # No dot characters
+valid_git_branch                # Valid git branch name
+```
+
+## Branch Name Generation
+
+### Basic Generation
+```python
+pattern = "feature/{feature-name}"
+context = {"feature-name": "user-auth"}
+rules = ["max_length_60", "lowercase_only"]
+
+branch_name, is_valid, error = service.generate_branch_name(pattern, context, rules)
+# Result: "feature/user-auth", True, None
+```
+
+### Pattern Validation
+```python
+is_valid, error = service.validate_branch_pattern("feature/{feature-name}")
+# Result: True, None
+
+is_valid, error = service.validate_branch_pattern("feature/{}")
+# Result: False, "Empty variable name in braces"
+```
+
+### Branch Name Validation
+```python
+is_valid, error = service.validate_branch_name_matches_pattern(
+    "feature/user-auth", 
+    "feature/{feature-name}"
+)
+# Result: True, None
+```
+
+## Configuration Operations
+
+### Loading Configuration
+```python
+# Load project configuration
+project_config = service.load_project_config(Path("/path/to/project"))
+
+# Load global configuration
+global_config = service.load_global_config()
+
+# Get merged configuration (global + project)
+merged_config = service.get_merged_config(Path("/path/to/project"))
+```
+
+### Saving Configuration
+```python
+config = ProjectConfig.create_default("my-project")
+success = service.save_project_config(Path("/path/to/project"), config)
+
+# Cross-platform save
+success = service.save_project_config_cross_platform(
+    Path("/path/to/project"), config, "windows"
+)
+```
+
+### Configuration Backup
+```python
+# Create backup
+backup_path = service.backup_config(Path("/path/to/project"))
+
+# Restore from backup
+success = service.restore_config(Path("/path/to/project"), backup_path)
+```
+
+## Error Handling
+
+The service provides detailed error messages for various scenarios:
+
+### Pattern Validation Errors
+- Empty or whitespace-only patterns
+- Mismatched braces
+- Invalid characters in patterns
+- Invalid variable names
+
+### Branch Name Generation Errors
+- Unfilled placeholders in generated names
+- Validation rule violations
+- Pattern-name mismatches
+
+### Configuration Errors
+- TOML parsing errors
+- File permission issues
+- Invalid configuration structures
+
+## Usage Examples
+
+### Project Setup
+```python
+from specify_cli.services.config_service import TomlConfigService
+from specify_cli.models.config import BranchNamingConfig
+
+service = TomlConfigService()
+
+# Ensure project has valid configuration
+branch_config = BranchNamingConfig(
+    patterns=["feature/{feature-name}", "hotfix/{bug-id}"],
+    validation_rules=["max_length_60", "lowercase_only"]
+)
+
+config = service.ensure_project_config(
+    project_path=Path("/path/to/project"),
+    ai_assistant="claude",
+    branch_naming_config=branch_config
+)
+```
+
+### Branch Name Workflow
+```python
+# Validate and generate branch name
+pattern = "feature/{feature-name}"
+context = {"feature-name": "user-authentication"}
+rules = ["max_length_60", "lowercase_only", "valid_git_branch"]
+
+branch_name, is_valid, error = service.generate_branch_name(pattern, context, rules)
+
+if is_valid:
+    print(f"Generated branch: {branch_name}")
+else:
+    print(f"Error: {error}")
+```
+
+### Configuration Management
+```python
+# Load and modify configuration
+config = service.load_project_config(Path("/path/to/project"))
+if config:
+    # Update AI assistant
+    config.template_settings.ai_assistant = "gemini"
+    service.save_project_config(Path("/path/to/project"), config)
+```
+
+## Integration Points
+
+The Config Service integrates with:
+- **Project Manager**: For project initialization and configuration setup
+- **Template Service**: For AI assistant and template settings
+- **Git Service**: For branch naming and repository operations
+
+## File Locations
+
+- **Project Config**: `{project}/.specify/config.toml`
+- **Global Config**: `~/.specify/config.toml`
+- **Config Backups**: `{project}/.specify/backups/config_backup_{timestamp}.toml`
+
+## Performance Considerations
+
+- Configuration files are loaded on-demand
+- Validation results are computed fresh (no caching for accuracy)
+- File operations use atomic writes where possible
+- Cross-platform path normalization is applied at save/load time

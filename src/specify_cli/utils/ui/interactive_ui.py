@@ -39,6 +39,7 @@ class InteractiveUI:
         message: str,
         choices: Union[Dict[str, str], List[str]],
         default: Optional[str] = None,
+        header: Optional[str] = None,
     ) -> str:
         """Rich-styled selection with arrow key navigation.
 
@@ -46,6 +47,7 @@ class InteractiveUI:
             message: Question/prompt to display
             choices: Dict {key: description} or List of strings
             default: Default selection key
+            header: Optional header text to display above choices
 
         Returns:
             Selected choice value
@@ -57,6 +59,7 @@ class InteractiveUI:
             options=choices,
             prompt=message,
             default_key=default,
+            header=header,
         )
 
         if result is None:

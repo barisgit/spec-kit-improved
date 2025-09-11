@@ -1,0 +1,183 @@
+---
+title: Best Practices Guide
+description: Best practices for using SpecifyX effectively
+category: guide
+sidebar_label: Best Practices
+tags: [best-practices, workflow, patterns, guidelines]
+---
+
+# Best Practices Guide
+
+Essential patterns for effective SpecifyX usage in development workflows.
+
+## Project Organization
+
+### Directory Structure
+```
+my-project/
+├── .specify/               # SpecifyX configuration
+│   ├── config.toml        # Project settings
+│   ├── scripts/           # Python utilities
+│   └── templates/         # Custom templates
+├── .claude/commands/      # AI assistant commands  
+├── specs/                 # Feature specifications
+│   └── 001-user-auth/     # Spec directories
+└── src/                   # Implementation code
+```
+
+### Naming Conventions
+
+**Branch Names**: Use descriptive patterns matching your team's conventions:
+```toml
+# .specify/config.toml
+[branching]
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "chore/{task-name}"
+]
+```
+
+**Specification IDs**: Use numeric prefixes for ordered development:
+```
+001-user-authentication/
+002-payment-integration/
+003-admin-dashboard/
+```
+
+## Configuration Management
+
+### Global Configuration
+Place team-wide settings in `~/.config/specifyx/config.toml`:
+```toml
+[defaults]
+ai_assistant = "claude"
+
+[branching]
+patterns = ["feature/{feature-name}", "main"]
+validation_rules = ["lowercase_only", "no_spaces"]
+```
+
+### Project Configuration
+Override globals in `.specify/config.toml`:
+```toml
+[project]
+name = "my-app"
+description = "Project description"
+
+[branching]
+patterns = ["feature/{feature-name}", "hotfix/{bug-id}", "main"]
+```
+
+## Specification Writing
+
+### Structure Template
+```markdown
+# Feature Name
+
+## Overview
+Brief description and business value.
+
+## User Stories
+- As a [user type], I want [goal] so that [benefit]
+
+## Acceptance Criteria
+- [ ] Specific testable requirements
+- [ ] Error handling scenarios
+- [ ] Performance requirements
+
+## Technical Notes
+- Architecture decisions
+- Dependencies
+- Constraints
+```
+
+### Writing Guidelines
+- **Be specific**: Avoid vague requirements
+- **Include examples**: Show expected inputs/outputs
+- **Define edge cases**: Handle error scenarios
+- **Keep updated**: Sync specs with implementation changes
+
+## Development Workflow
+
+### Branch-Based Development
+1. **Create feature branch**: `specifyx init feature-name`
+2. **Write specification**: Complete spec.md before coding
+3. **Implement feature**: Use generated scripts and templates
+4. **Update documentation**: Keep specs current with changes
+5. **Clean merge**: Ensure branch is ready for integration
+
+### Template Customization
+- **Start small**: Modify existing templates before creating new ones
+- **Test templates**: Verify Jinja2 syntax and variable substitution
+- **Document changes**: Add comments explaining custom logic
+- **Version control**: Track template changes with project
+
+## Team Collaboration
+
+### Specification Reviews
+- **Peer review specs** before implementation starts
+- **Use clear acceptance criteria** for validation
+- **Document decisions** in spec files, not just comments
+- **Update specs** when requirements change
+
+### Configuration Sharing
+- **Commit project config** (`.specify/config.toml`) to version control
+- **Document team conventions** in README or CONTRIBUTING guides
+- **Standardize patterns** across projects in organization
+- **Share global configs** for consistent team experience
+
+## AI Integration
+
+### Command Organization
+- **Separate by function**: Different commands for different tasks
+- **Use descriptive names**: Make command purpose clear
+- **Include examples**: Show expected usage patterns
+- **Keep updated**: Sync with project evolution
+
+### Template Variables
+```jinja2
+# Use consistent variable naming
+{{ project_name }}          # snake_case for technical
+{{ project_title }}         # Title Case for display
+{{ ai_assistant }}          # lowercase for tools
+```
+
+## Performance & Maintenance
+
+### Project Hygiene
+- **Clean unused templates**: Remove obsolete template files
+- **Update dependencies**: Keep project requirements current
+- **Archive old specs**: Move completed features to archive folder
+- **Review configuration**: Regularly audit settings for relevance
+
+### Troubleshooting Prevention
+- **Validate configuration**: Use `specifyx config validate`
+- **Test templates locally**: Verify before committing changes
+- **Document custom patterns**: Explain non-standard configurations
+- **Monitor script permissions**: Ensure execution rights are maintained
+
+## Common Patterns
+
+### Multi-Environment Setup
+```toml
+# Development
+[dev]
+branch_patterns = ["feature/{name}", "experiment/{name}"]
+
+# Production  
+[prod]
+branch_patterns = ["hotfix/{id}", "release/{version}"]
+```
+
+### Custom Script Integration
+```python
+# .specify/scripts/custom_task.py
+from specify_cli.utils import get_project_config
+
+def main():
+    config = get_project_config()
+    # Custom logic using SpecifyX utilities
+```
+
+Following these patterns ensures consistent, maintainable, and effective use of SpecifyX across your development workflow.

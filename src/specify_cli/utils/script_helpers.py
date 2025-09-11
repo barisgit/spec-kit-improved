@@ -1053,9 +1053,14 @@ def echo_debug(message: str, debug: bool = False) -> None:
         console.print(f"DEBUG: {message}", style="dim")
 
 
-def echo_error(message: str) -> None:
+def echo_error(message: str, json_mode: bool = False, quiet: bool = False) -> None:
     """Echo error message to stderr."""
-    console.print(f"Error: {message}", style="red")
+    if quiet or json_mode:
+        return
+
+    # Use stderr console to avoid corrupting JSON output
+    stderr_console = Console(stderr=True)
+    stderr_console.print(f"Error: {message}", style="red")
 
 
 def echo_success(message: str, quiet: bool = False, json_mode: bool = False) -> None:

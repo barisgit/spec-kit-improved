@@ -1,0 +1,328 @@
+---
+title: Project Manager
+description: Orchestrates project initialization and management for SpecifyX with dynamic template rendering
+category: service
+tags: [project-management, orchestration, initialization, templates, git, configuration]
+---
+
+# Project Manager
+
+The Project Manager service orchestrates the complete project initialization workflow for SpecifyX. It coordinates multiple services to create, configure, and set up projects with dynamic template rendering, AI assistant integration, and comprehensive validation.
+
+## Overview
+
+The service acts as the primary orchestrator for project operations, integrating:
+- **Template Service**: For dynamic Jinja2 template rendering
+- **Config Service**: For TOML-based configuration management  
+- **Git Service**: For repository initialization and branch management
+- **Validation**: For project name and directory validation
+
+## Key Features
+
+### Project Initialization Orchestration
+- Complete project setup workflow with error handling and rollback
+- Dynamic template rendering based on AI assistant selection
+- Flexible project structure creation with platform-specific paths
+- Git repository initialization with branch creation
+- Configuration management with user preferences
+
+### Service Coordination
+- Dependency injection with configurable service instances
+- Graceful fallbacks to default service implementations
+- Coordinated error handling across all services
+- Transaction-like behavior with cleanup on failure
+
+### Template and AI Integration
+- AI-aware template folder mappings (claude, gemini, copilot, etc.)
+- Dynamic template selection based on assistant choice
+- Cross-platform script generation with proper permissions
+- Template context enrichment with project metadata
+
+## Core Class
+
+### ProjectManager
+```python
+class ProjectManager:
+    def __init__(
+        self,
+        config_service: Optional[ConfigService] = None,
+        git_service: Optional[GitService] = None,
+        folder_mappings: Optional[List[TemplateFolderMapping]] = None,
+        template_service: Optional["JinjaTemplateService"] = None,
+    )
+```
+
+The ProjectManager accepts optional service dependencies, using defaults if not provided:
+- Creates `TomlConfigService` for configuration management
+- Creates `CommandLineGitService` for git operations  
+- Creates `JinjaTemplateService` for template rendering
+
+## Project Initialization
+
+### Primary Workflow
+```python
+options = ProjectInitOptions(
+    project_name="my-project",
+    ai_assistant="claude",
+    use_current_dir=False,
+    skip_git=False,
+    branch_naming_config=BranchNamingConfig()
+)
+
+result = project_manager.initialize_project(options)
+
+if result.success:
+    print(f"Project created at: {result.project_path}")
+    print(f"Completed steps: {result.completed_steps}")
+else:
+    print(f"Error: {result.error_message}")
+```
+
+### Initialization Steps
+The initialization process follows these ordered steps:
+
+1. **VALIDATION** - Validate project name and directory
+2. **DIRECTORY_CREATION** - Create project directory (if needed)
+3. **STRUCTURE_SETUP** - Create basic project structure
+4. **GIT_INIT** - Initialize git repository (unless skipped)
+5. **CONFIG_SAVE** - Save project configuration
+6. **TEMPLATE_RENDER** - Render all templates with dynamic mappings
+7. **BRANCH_CREATION** - Create initial git branch
+8. **FINALIZATION** - Complete initialization
+
+### Project Structure Creation
+```python
+# Dynamic structure based on AI assistant
+basic_dirs = PATH_DEFAULTS.get_project_structure_paths(ai_assistant)
+
+# AI-specific examples:
+# claude: [".claude", ".claude/commands", ".specify", ".specify/scripts", ".specify/templates"]
+# gemini: [".gemini", ".gemini/commands", ".specify", ".specify/scripts", ".specify/templates"]
+```
+
+## Template Folder Mappings
+
+### Dynamic Mapping Generation
+```python
+def _get_default_folder_mappings(self, ai_assistant: str = "claude") -> List[TemplateFolderMapping]:
+    """Get default folder mappings for the specified AI assistant"""
+    results = PATH_DEFAULTS.get_folder_mappings(ai_assistant)
+    
+    mappings = []
+    for result in results:
+        exec_extensions = (
+            PATH_DEFAULTS.EXECUTABLE_EXTENSIONS 
+            if result.category == "scripts" 
+            else []
+        )
+        
+        mappings.append(TemplateFolderMapping(
+            source=result.source_path,
+            target_pattern=result.target_path,
+            render=result.should_render,
+            executable_extensions=exec_extensions,
+        ))
+    
+    return mappings
+```
+
+### Folder Categories
+- **Commands**: AI-specific command templates (`.claude/commands/`, `.gemini/commands/`)
+- **Scripts**: Cross-platform Python scripts (`.specify/scripts/`)
+- **Memory**: AI context and memory templates 
+- **Runtime Templates**: Templates for runtime use (`.specify/templates/`)
+
+## Template Context Enrichment
+
+### Context Creation
+```python
+context = TemplateContext(
+    project_name=options.project_name or project_path.name,
+    ai_assistant=options.ai_assistant,
+    project_path=project_path,
+    branch_naming_config=options.branch_naming_config or BranchNamingConfig(),
+)
+
+render_result = self._render_all_templates(context)
+```
+
+The ProjectManager enriches template context with:
+- Project metadata (name, path, creation date)
+- AI assistant configuration
+- Branch naming patterns and validation rules
+- Platform-specific variables
+- Git repository information
+
+## Validation and Error Handling
+
+### Project Validation
+```python
+def validate_project_name(self, name: str) -> tuple[bool, Optional[str]]:
+    """Validate project name using Validators infrastructure"""
+    try:
+        Validators.project_name(name)
+        return True, None
+    except ValidationError as e:
+        return False, str(e)
+
+def validate_project_directory(self, project_path: Path, use_current_dir: bool) -> tuple[bool, Optional[str]]:
+    """Validate project directory with comprehensive checks"""
+    # Handles existing projects, empty directories, permission checks
+```
+
+### Cleanup on Failure
+```python
+def cleanup_failed_init(self, project_path: Path, completed_steps: List[ProjectInitStep]) -> bool:
+    """Clean up after failed initialization"""
+    # Removes created directories, files, and configurations
+    # Only removes what was created during this initialization
+```
+
+## Project Management Operations
+
+### Project Information
+```python
+def get_project_info(self, project_path: Path) -> Optional[Dict[str, Any]]:
+    """Get comprehensive project information"""
+    return {
+        "name": config.name,
+        "ai_assistant": config.template_settings.ai_assistant,
+        "branch_naming": config.branch_naming.to_dict(),
+        "template_settings": config.template_settings.to_dict(),
+        "path": str(project_path),
+        "initialized": (project_path / ".specify").exists(),
+    }
+```
+
+### Project Detection
+```python
+def is_project_initialized(self, project_path: Path) -> bool:
+    """Check if directory is already initialized as SpecifyX project"""
+    return (project_path / ".specify").exists()
+```
+
+### Configuration Management
+```python
+def configure_branch_naming(self, project_path: Path, interactive: bool = False) -> bool:
+    """Configure branch naming patterns for existing projects"""
+    # Loads existing config or creates default
+    # Supports both interactive and automated configuration
+```
+
+## Cross-Platform Support
+
+### Cross-Platform Initialization
+```python
+def initialize_cross_platform_project(self, options: ProjectInitOptions) -> bool:
+    """Initialize project with cross-platform compatibility"""
+    # Handles platform-specific path separators
+    # Generates appropriate executable permissions
+    # Creates platform-aware directory structures
+```
+
+### Platform Considerations
+- Windows executable extensions (`.bat`, `.cmd`, `.ps1`)
+- Unix executable permissions (`chmod +x`)
+- Path separator normalization
+- Cross-platform script generation
+
+## Integration Examples
+
+### Basic Project Creation
+```python
+from specify_cli.services.project_manager import ProjectManager
+from specify_cli.models.project import ProjectInitOptions
+
+manager = ProjectManager()
+
+options = ProjectInitOptions(
+    project_name="web-app",
+    ai_assistant="claude",
+    use_current_dir=False,
+    skip_git=False
+)
+
+result = manager.initialize_project(options)
+
+if result.success:
+    print(f"Project created: {result.project_path}")
+    for step in result.completed_steps:
+        print(f"✓ {step.value}")
+else:
+    print(f"Failed: {result.error_message}")
+```
+
+### Custom Service Configuration
+```python
+from specify_cli.services.config_service import TomlConfigService
+from specify_cli.services.git_service import CommandLineGitService
+from specify_cli.services.template_service import JinjaTemplateService
+
+# Custom service instances
+config_service = TomlConfigService()
+git_service = CommandLineGitService()
+template_service = JinjaTemplateService()
+
+manager = ProjectManager(
+    config_service=config_service,
+    git_service=git_service,
+    template_service=template_service
+)
+```
+
+### Existing Project Migration
+```python
+def migrate_existing_project(self, project_path: Path) -> bool:
+    """Migrate existing project to SpecifyX structure"""
+    # Checks if already migrated
+    # Creates basic structure with default AI assistant
+    # Saves default configuration
+```
+
+## Error Scenarios and Recovery
+
+### Common Error Conditions
+- **Directory not empty**: When creating new project in existing directory
+- **Already initialized**: When project already has `.specify` directory
+- **Git initialization failed**: When git is not available or repository exists
+- **Template rendering failed**: When template syntax errors or missing variables
+- **Permission denied**: When insufficient permissions for directory/file creation
+
+### Recovery Mechanisms
+- **Atomic operations**: Either complete success or full rollback
+- **Step tracking**: Precise tracking of completed steps for cleanup
+- **Warning collection**: Non-fatal issues collected as warnings
+- **Graceful fallbacks**: Continue with warnings when possible
+
+## Integration Points
+
+The Project Manager integrates with:
+- **CLI Commands**: Primary interface for `specify init` command
+- **Template Service**: For dynamic template rendering and file generation
+- **Config Service**: For project and global configuration management
+- **Git Service**: For repository initialization and branch management
+- **Validation System**: For comprehensive input validation
+
+## Factory Pattern
+
+```python
+# Use existing service instances or create defaults
+def create_project_manager() -> ProjectManager:
+    """Factory function for creating ProjectManager with defaults"""
+    return ProjectManager()
+
+# Or with custom services
+def create_custom_project_manager(services: dict) -> ProjectManager:
+    """Factory function with custom service configuration"""
+    return ProjectManager(**services)
+```
+
+## Performance Considerations
+
+- **Lazy service initialization**: Services created only when needed
+- **Template caching**: Templates loaded once and cached by service
+- **Efficient file operations**: Batch operations where possible
+- **Resource cleanup**: Proper cleanup of temporary resources
+- **Validation optimization**: Fail-fast validation before expensive operations
+
+The Project Manager provides a robust, extensible foundation for SpecifyX project initialization with comprehensive error handling, cross-platform compatibility, and seamless service integration.

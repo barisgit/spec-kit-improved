@@ -1,0 +1,350 @@
+---
+title: Update Installer
+description: Installation method detection and update execution for SpecifyX
+category: service
+tags: [installation, updates, pipx, pip, uv-tool, conda]
+---
+
+# Update Installer
+
+The Update Installer service handles installation method detection and executes updates for SpecifyX across different package managers and environments. It provides intelligent detection of how SpecifyX was installed and performs method-specific updates.
+
+## Overview
+
+The service consists of two main components:
+- **InstallationMethodDetector** - Detects how SpecifyX was installed
+- **UpdateInstaller** - Executes updates using the appropriate method
+
+## Key Features
+
+### Installation Method Detection
+- Automatic detection of pipx, uv-tool, conda, homebrew, pip, and virtual environment installations
+- Python executable path analysis for installation fingerprinting
+- Environment variable inspection for tool-specific indicators
+- Fallback strategies for ambiguous installations
+
+### Update Execution
+- Method-specific update commands and strategies
+- Progress reporting with Rich console integration
+- Timeout handling and error recovery
+- Force reinstall and version pinning support
+
+### Supported Installation Methods
+- **pipx**: Isolated Python application installations
+- **uv-tool**: Modern Python package management with uv
+- **pip**: Standard Python package installer
+- **pip-venv**: Virtual environment pip installations
+- **conda**: Conda package manager environments
+- **homebrew**: macOS and Linux package manager
+
+## Core Classes
+
+### InstallationMethodDetector
+```python
+class InstallationMethodDetector:
+    def detect_installation_method(self) -> str
+    def get_installation_info(self) -> Dict[str, str | bool]
+    def _is_pipx_installation(self) -> bool
+    def _is_uv_tool_installation(self) -> bool
+    def _is_conda_installation(self) -> bool
+    def _is_homebrew_installation(self) -> bool
+```
+
+### UpdateInstaller
+```python
+class UpdateInstaller:
+    def can_auto_update(self) -> bool
+    def perform_update(self, target_version: Optional[str], force: bool) -> bool
+    def dry_run_update(self, target_version: Optional[str]) -> Dict[str, str | bool]
+```
+
+## Installation Method Detection
+
+### Detection Logic
+The detector uses multiple strategies to identify installation methods:
+
+1. **Path Analysis**: Examines Python executable location for method-specific patterns
+2. **Environment Variables**: Checks for tool-specific environment variables
+3. **Virtual Environment Detection**: Identifies venv/virtualenv installations
+4. **Fallback Strategy**: Defaults to pip for unidentified installations
+
+### Detection Patterns
+```python
+# pipx detection
+patterns = [".local/share/pipx", "pipx/venvs", ".local/pipx"]
+
+# uv-tool detection
+patterns = [".local/share/uv", "uv/tools"]
+env_vars = ["UV_TOOL_BIN_DIR"]
+
+# conda detection
+env_vars = ["CONDA_DEFAULT_ENV", "CONDA_PREFIX"]
+patterns = ["conda", "miniconda", "mambaforge"]
+
+# homebrew detection
+patterns = ["/opt/homebrew", "/usr/local/Cellar", "/home/linuxbrew"]
+```
+
+## Installation Information
+
+### Get Installation Details
+```python
+detector = InstallationMethodDetector()
+info = detector.get_installation_info()
+
+# Returns:
+{
+    "method": "pipx",                    # Installation method
+    "python_executable": "/path/to/python",
+    "supports_auto_update": True,        # Whether auto-update works
+    "update_command": "pipx upgrade specifyx",
+    "manual_note": "Optional instructions"  # For manual methods
+}
+```
+
+### Method-Specific Information
+- **pipx**: `pipx upgrade specifyx`
+- **uv-tool**: `uv tool upgrade specifyx`
+- **pip**: `pip install --upgrade specifyx`
+- **pip-venv**: `python -m pip install --upgrade specifyx`
+- **conda**: `conda update specifyx` (with manual note)
+- **homebrew**: `brew upgrade specifyx` (with manual note)
+
+## Update Execution
+
+### Automatic Updates
+```python
+installer = UpdateInstaller()
+
+# Check if auto-update is supported
+if installer.can_auto_update():
+    # Perform update to latest version
+    success = installer.perform_update()
+    
+    # Update to specific version
+    success = installer.perform_update(target_version="1.2.3")
+    
+    # Force reinstall
+    success = installer.perform_update(force=True)
+```
+
+### Method-Specific Update Strategies
+
+#### pipx Updates
+```python
+# Regular upgrade for unpinned packages
+cmd = ["pipx", "upgrade", "specifyx"]
+
+# Force install for pinned versions or when forcing
+cmd = ["pipx", "install", "specifyx==1.2.3", "--force"]
+```
+
+#### uv-tool Updates
+```python
+# Upgrade for unpinned packages
+cmd = ["uv", "tool", "upgrade", "specifyx"]
+
+# Force install for pinned versions
+cmd = ["uv", "tool", "install", "specifyx==1.2.3", "--force"]
+```
+
+#### pip Updates
+```python
+# Standard pip upgrade
+cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "specifyx"]
+
+# With force reinstall
+cmd.append("--force-reinstall")
+```
+
+## Dry Run Functionality
+
+### Preview Update Plan
+```python
+# See what would happen without executing
+dry_run_info = installer.dry_run_update(target_version="1.2.3")
+
+# Returns:
+{
+    "method": "pipx",
+    "package_spec": "specifyx==1.2.3",
+    "supports_auto_update": True,
+    "update_command": "pipx install specifyx==1.2.3 --force",
+    "python_executable": "/path/to/python"
+}
+```
+
+### Dry Run Output Display
+```
+┌─ Update Plan (Dry Run) ─┐
+│ Installation method: pipx         │
+│ Target package: specifyx==1.2.3   │
+│ Auto-update supported: true       │
+│ Python executable: /usr/bin/python3 │
+│                                   │
+│ Command that would be executed:   │
+│ pipx install specifyx==1.2.3 --force │
+└───────────────────────────────────┘
+```
+
+## Update Process Flow
+
+### Automatic Update Workflow
+1. **Method Detection**: Identify installation method
+2. **Capability Check**: Verify auto-update support
+3. **Command Selection**: Choose appropriate update strategy
+4. **Progress Display**: Show update progress with Rich
+5. **Execution**: Run update command with timeout
+6. **Result Handling**: Process success/failure and display results
+
+### Manual Update Workflow
+1. **Method Detection**: Identify installation method
+2. **Instruction Generation**: Create method-specific commands
+3. **User Notification**: Display manual update instructions
+4. **Additional Notes**: Show any method-specific considerations
+
+## Error Handling
+
+### Timeout Management
+- 5-minute timeout for all update operations
+- Graceful timeout handling with user notification
+- Process cleanup on timeout or failure
+
+### Error Recovery
+```python
+try:
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    if result.returncode == 0:
+        console.print("[green]✓[/green] Update completed successfully!")
+        return True
+    else:
+        console.print(f"[red]✗[/red] Update failed: {result.stderr}")
+        return False
+except subprocess.TimeoutExpired:
+    console.print("[red]✗[/red] Update timed out after 5 minutes")
+    return False
+except Exception as e:
+    console.print(f"[red]✗[/red] Update failed: {e}")
+    return False
+```
+
+## Version Specification Handling
+
+### Package Specification Logic
+```python
+def _is_pinned_or_url(spec: str) -> bool:
+    """Check if package spec is pinned or URL-based"""
+    indicators = ["==", "@", ".whl", "http://", "https://", "git+", "file:"]
+    return any(token in spec for token in indicators)
+
+# Usage
+if _is_pinned_or_url("specifyx==1.2.3"):
+    # Use install --force strategy
+    cmd = ["pipx", "install", "specifyx==1.2.3", "--force"]
+else:
+    # Use upgrade strategy
+    cmd = ["pipx", "upgrade", "specifyx"]
+```
+
+## Manual Update Instructions
+
+### For Unsupported Methods
+```python
+def _show_manual_update_instructions(self, method: str) -> None:
+    """Display manual update instructions"""
+    info = self.detector.get_installation_info()
+    
+    console.print("[yellow]⚠[/yellow] Automatic update not supported")
+    console.print(f"Installation method: [bold]{method}[/bold]")
+    
+    if "update_command" in info:
+        console.print(f"Run: [bold cyan]{info['update_command']}[/bold cyan]")
+    
+    if "manual_note" in info:
+        console.print(f"Note: {info['manual_note']}")
+```
+
+## Integration Points
+
+The Update Installer integrates with:
+- **Update Service**: Provides installation detection and execution
+- **Rich Console**: For progress display and user feedback
+- **subprocess**: For executing package manager commands
+- **Platform Detection**: For OS-specific behavior
+
+## Usage Examples
+
+### Basic Installation Detection
+```python
+from specify_cli.services.update_installer import InstallationMethodDetector
+
+detector = InstallationMethodDetector()
+
+# Detect installation method
+method = detector.detect_installation_method()
+print(f"Installed via: {method}")
+
+# Get detailed information
+info = detector.get_installation_info()
+print(f"Update command: {info['update_command']}")
+print(f"Auto-update supported: {info['supports_auto_update']}")
+```
+
+### Update Execution
+```python
+from specify_cli.services.update_installer import UpdateInstaller
+
+installer = UpdateInstaller()
+
+# Check capabilities
+if installer.can_auto_update():
+    # Perform update
+    success = installer.perform_update(target_version="1.2.3", force=False)
+    
+    if success:
+        print("Update completed successfully!")
+    else:
+        print("Update failed - check error messages")
+else:
+    print("Manual update required")
+```
+
+### Complete Update Workflow
+```python
+# Combined detection and installation
+detector = InstallationMethodDetector()
+installer = UpdateInstaller()
+
+method = detector.detect_installation_method()
+info = detector.get_installation_info()
+
+print(f"Installation method: {method}")
+print(f"Auto-update supported: {info['supports_auto_update']}")
+
+if info['supports_auto_update']:
+    # Show dry run first
+    dry_run = installer.dry_run_update("1.2.3")
+    print(f"Would execute: {dry_run['update_command']}")
+    
+    # Perform actual update
+    success = installer.perform_update("1.2.3")
+else:
+    print(f"Manual update required: {info['update_command']}")
+```
+
+## Security Considerations
+
+- **Command Validation**: Only executes known package manager commands
+- **Input Sanitization**: Version specifications are validated
+- **Timeout Protection**: All operations have reasonable timeouts
+- **No Remote Code Execution**: Does not execute arbitrary remote commands
+- **Process Isolation**: Uses subprocess with proper error handling
+
+## Performance Characteristics
+
+- **Detection Speed**: Fast filesystem and environment checks
+- **Update Duration**: Varies by package manager (30s-5min typical)
+- **Memory Usage**: Minimal overhead during detection
+- **Network Usage**: Depends on package manager caching
+
+The Update Installer provides robust, secure, and user-friendly update capabilities across diverse Python installation environments.

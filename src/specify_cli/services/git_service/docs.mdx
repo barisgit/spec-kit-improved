@@ -1,0 +1,267 @@
+---
+title: Git Service
+description: Git repository management service for SpecifyX project operations
+category: service
+tags: [git, repository, version-control, branching, commits]
+---
+
+# Git Service
+
+The Git Service provides comprehensive git repository management functionality for SpecifyX projects. It handles repository initialization, branch management, file staging, commits, and repository information retrieval through a clean abstraction layer.
+
+## Overview
+
+The service is built around two main components:
+- **GitService** (abstract interface) - Defines the contract for git operations
+- **CommandLineGitService** (concrete implementation) - Implements git operations via command-line interface
+
+## Key Features
+
+### Repository Management
+- Git repository initialization with automatic initial commit
+- Repository detection and validation
+- Platform-specific line ending configuration
+- Cross-platform compatibility (Windows, macOS, Linux)
+
+### Branch Operations
+- Branch creation with automatic checkout
+- Branch switching and navigation
+- Current branch detection
+- Smart branch handling (avoids duplicate operations)
+
+### File and Commit Operations
+- Flexible file staging (all files or specific patterns)
+- Commit creation with custom messages
+- Robust error handling for git operations
+- Automatic handling of empty repositories
+
+### Repository Information
+- Current branch name retrieval
+- Remote origin URL detection
+- Repository status validation
+- Git configuration management
+
+## Core Classes
+
+### GitService (Abstract)
+```python
+class GitService(ABC):
+    def init_repository(self, project_path: Path) -> bool
+    def create_branch(self, branch_name: str, project_path: Path) -> bool
+    def checkout_branch(self, branch_name: str, project_path: Path) -> bool
+    def add_files(self, project_path: Path, file_patterns: Optional[List[str]] = None) -> bool
+    def commit_changes(self, message: str, project_path: Path) -> bool
+    def is_git_repository(self, project_path: Path) -> bool
+    def get_current_branch(self, project_path: Path) -> Optional[str]
+    def get_remote_url(self, project_path: Path) -> Optional[str]
+    def configure_platform_line_endings(self, project_path: Path) -> bool
+```
+
+### CommandLineGitService (Implementation)
+```python
+service = CommandLineGitService()
+service.init_repository(Path("/path/to/project"))
+service.create_branch("feature/new-feature", Path("/path/to/project"))
+service.add_files(Path("/path/to/project"))
+service.commit_changes("Initial commit", Path("/path/to/project"))
+```
+
+## Repository Operations
+
+### Repository Initialization
+The service provides intelligent repository initialization:
+- Creates git repository in specified directory
+- Automatically stages existing files (excluding hidden files)
+- Creates initial commit with standardized message
+- Gracefully handles empty directories
+- Robust error handling for various edge cases
+
+### Branch Management
+Comprehensive branch operations with smart handling:
+- **Branch Creation**: Creates new branches with automatic checkout
+- **Branch Switching**: Switches to existing branches safely
+- **Duplicate Prevention**: Avoids creating branches that already exist
+- **Current Branch Detection**: Retrieves active branch information
+
+### File Operations
+Flexible file staging capabilities:
+- **Stage All Files**: Adds all files in repository (default behavior)
+- **Pattern-Based Staging**: Supports specific file patterns and paths
+- **Selective Staging**: Stage individual files or directories
+- **Hidden File Handling**: Automatically excludes git metadata
+
+## Platform Configuration
+
+### Line Ending Management
+Automatic platform-specific configuration:
+- **Windows**: Converts LF to CRLF on checkout, CRLF to LF on commit
+- **Unix/macOS**: Preserves LF line endings without conversion
+- **Safety Warnings**: Configures git to warn about line ending issues
+- **Cross-Platform Compatibility**: Ensures consistent behavior across platforms
+
+## Error Handling
+
+The service provides comprehensive error handling for various scenarios:
+
+### Operation Failures
+- Git command execution errors
+- Missing git binary detection
+- Permission denied errors
+- Invalid repository states
+
+### Validation Errors
+- Non-existent directories
+- Invalid branch names
+- Empty repository handling
+- Staging area conflicts
+
+### Recovery Strategies
+- Graceful degradation for partial failures
+- Clear error reporting with boolean return values
+- Safe handling of edge cases (empty repos, missing files)
+
+## Usage Examples
+
+### Basic Repository Setup
+```python
+from specify_cli.services.git_service import CommandLineGitService
+
+service = CommandLineGitService()
+
+# Initialize repository with files
+project_path = Path("/path/to/project")
+if service.init_repository(project_path):
+    print("Repository initialized successfully")
+else:
+    print("Failed to initialize repository")
+```
+
+### Branch Management
+```python
+# Create and switch to new branch
+if service.create_branch("feature/user-auth", project_path):
+    current = service.get_current_branch(project_path)
+    print(f"Created and switched to branch: {current}")
+
+# Switch to existing branch
+if service.checkout_branch("main", project_path):
+    print("Switched to main branch")
+```
+
+### File Operations
+```python
+# Stage all files
+if service.add_files(project_path):
+    print("All files staged")
+
+# Stage specific files
+if service.add_files(project_path, ["src/", "docs/"]):
+    print("Specific directories staged")
+
+# Commit changes
+if service.commit_changes("Add new feature", project_path):
+    print("Changes committed successfully")
+```
+
+### Repository Information
+```python
+# Check if directory is git repository
+if service.is_git_repository(project_path):
+    # Get current branch
+    branch = service.get_current_branch(project_path)
+    print(f"Current branch: {branch}")
+    
+    # Get remote URL
+    remote = service.get_remote_url(project_path)
+    if remote:
+        print(f"Remote origin: {remote}")
+```
+
+### Platform Configuration
+```python
+# Configure line endings for platform
+if service.configure_platform_line_endings(project_path):
+    print("Platform line endings configured")
+```
+
+## Complete Workflow Example
+
+```python
+from pathlib import Path
+from specify_cli.services.git_service import CommandLineGitService
+
+def setup_project_repository(project_path: Path, feature_name: str) -> bool:
+    service = CommandLineGitService()
+    
+    # Initialize repository
+    if not service.init_repository(project_path):
+        print("Failed to initialize repository")
+        return False
+    
+    # Configure platform-specific settings
+    service.configure_platform_line_endings(project_path)
+    
+    # Create feature branch
+    branch_name = f"feature/{feature_name}"
+    if service.create_branch(branch_name, project_path):
+        print(f"Created feature branch: {branch_name}")
+    
+    # Verify setup
+    current_branch = service.get_current_branch(project_path)
+    is_repo = service.is_git_repository(project_path)
+    
+    print(f"Repository setup complete:")
+    print(f"  - Repository: {'✓' if is_repo else '✗'}")
+    print(f"  - Current branch: {current_branch}")
+    
+    return True
+
+# Usage
+setup_project_repository(Path("/path/to/new-project"), "user-authentication")
+```
+
+## Integration Points
+
+The Git Service integrates with:
+- **Project Manager**: For repository initialization during project setup
+- **Config Service**: For branch naming pattern validation and generation
+- **Template Service**: For committing generated template files
+
+## Implementation Details
+
+### Command Execution
+- Uses `subprocess.run()` with proper error handling
+- Captures both stdout and stderr for debugging
+- Sets working directory context for all operations
+- Implements timeout protection for long-running operations
+
+### Security Considerations
+- Input validation for branch names and commit messages
+- Safe handling of file paths and patterns
+- Protection against command injection
+- Proper escaping of user-provided strings
+
+### Performance Characteristics
+- Minimal overhead for git command execution
+- Efficient batch operations for multiple files
+- Lazy evaluation of repository status
+- Optimized for typical project initialization workflows
+
+## Factory Pattern
+
+```python
+def get_git_service() -> CommandLineGitService:
+    """Factory function to create a CommandLineGitService instance"""
+    return CommandLineGitService()
+```
+
+Use this pattern for consistent service instantiation across the application.
+
+## Dependencies
+
+- **subprocess**: For git command execution
+- **pathlib**: For cross-platform path handling
+- **typing**: For type annotations and optional values
+- **abc**: For abstract base class definitions
+
+The service requires git to be installed and available in the system PATH.

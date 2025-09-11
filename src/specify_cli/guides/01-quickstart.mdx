@@ -1,0 +1,135 @@
+---
+title: Quick Start Guide
+description: Get up and running with SpecifyX in minutes
+sidebar_label: Quick Start
+---
+
+# Quick Start Guide
+
+This guide will help you get started with SpecifyX and spec-driven development in just a few minutes.
+
+## The 3-Step Process
+
+### 1. Install and Initialize
+
+Install SpecifyX and create your first project:
+
+```bash
+# Install SpecifyX
+uv tool install specifyx
+
+# Create a new project
+specifyx init my-awesome-project
+
+# Navigate to your project
+cd my-awesome-project
+```
+
+Or if you don't want to install specifyx (your AI agent will be instructed to also use uvx to run specifyx if you don't have it installed):
+
+```bash
+uvx specifyx init my-awesome-project
+cd my-awesome-project
+```
+
+### 2. Create Your First Specification
+
+Use the `/specify` command with your AI assistant to describe what you want to build:
+
+```bash
+/specify Build a user authentication system that allows users to register, login, and manage their profiles. The system should support email/password authentication, password reset functionality, and basic profile management.
+```
+
+Focus on the **what** and **why**, not the technical implementation details.
+
+### 3. Generate Implementation Plan
+
+Use the `/plan` command to provide your tech stack and architecture choices:
+
+```bash
+/plan The application will use Python with FastAPI for the backend API, SQLite for the database, and React for the frontend. Implement JWT tokens for authentication, bcrypt for password hashing, and include email verification for new accounts.
+```
+
+This generates:
+- Technical architecture decisions
+- Technology stack choices
+- Implementation roadmap
+
+## AI Assistant Integration
+
+SpecifyX generates AI-specific commands for your preferred assistant:
+
+### Claude Integration
+
+After initialization, you'll have these commands available:
+- `/specify` - Create detailed specifications
+- `/plan` - Generate technical implementation plans
+- `/tasks` - Break down into actionable tasks
+
+### Example: Building a Photo Organizer
+
+Here's how to build a photo organization app:
+
+#### 1. Create the Specification
+
+```bash
+/specify Build a photo organization application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface.
+```
+
+The AI assistant will help you refine this into:
+- User stories and requirements
+- Functional specifications
+- Success criteria
+
+#### 2. Generate Implementation Plan
+
+```bash
+/plan The application uses Vite with minimal number of libraries. Use vanilla HTML, CSS, and JavaScript as much as possible. Images are not uploaded anywhere and metadata is stored in a local SQLite database.
+```
+
+This generates:
+- Technical architecture
+- Technology stack decisions
+- Implementation roadmap
+
+#### 3. Create Actionable Tasks
+
+```bash
+/tasks Break down the implementation into actionable development tasks with clear deliverables and dependencies.
+```
+
+This creates:
+- Detailed task list
+- Dependencies and priorities
+- Implementation steps
+
+## Project Structure
+
+After initialization, your project will have a similar structure (depending on the AI assistant you use):
+
+```
+my-project/
+├── .specify/               # SpecifyX configuration
+│   ├── config.toml        # Project settings
+│   ├── scripts/           # Python utility scripts
+│   ├── templates/         # Jinja2 templates
+│   └── memory/            # Project constitution
+├── .claude/               # AI assistant integration
+│   └── commands/          # Custom commands
+├── specs/                 # Feature specifications
+└── README.md             # Project documentation
+```
+
+## Key Principles
+
+- **Specification First**: Define what to build before how to build it
+- **AI-Native Workflow**: Leverage AI assistants for implementation
+- **Iterative Development**: Refine specifications through multiple iterations
+- **Template-Driven**: Use consistent templates for all project artifacts
+
+## Next Steps
+
+- [Installation Guide](/docs/guides/installation) - Detailed setup instructions
+- [Development Workflow](/docs/guides/workflow) - Comprehensive workflow guide
+- [CLI Reference](/docs/reference/cli/init) - Command documentation
+- [Template Service](/docs/reference/api/template_service) - API documentation

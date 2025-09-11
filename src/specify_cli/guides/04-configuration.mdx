@@ -1,0 +1,423 @@
+---
+title: Configuration Management
+description: Complete guide to configuring SpecifyX for your workflow
+category: guide
+sidebar_label: Configuration
+tags: [configuration, setup, toml, branch-naming, templates]
+---
+
+# Configuration Management
+
+SpecifyX uses TOML-based configuration files to manage project settings, branch naming patterns, and template preferences. This guide covers all configuration options and how to customize them for your workflow.
+
+## Configuration Structure
+
+SpecifyX uses a two-level configuration system:
+
+1. **Global Configuration** - User preferences stored in `~/.specify/config.toml`
+2. **Project Configuration** - Project-specific settings in `.specify/config.toml`
+
+Project configuration always overrides global configuration when both are present.
+
+## Configuration File Format
+
+SpecifyX configuration files use TOML format.
+
+## Global Configuration
+
+Create global configuration to set default preferences across all your SpecifyX projects.
+
+### Creating Global Configuration
+
+```bash
+# Create global config directory
+mkdir -p ~/.specify
+
+# Create global configuration file
+cat > ~/.specify/config.toml << 'EOF'
+[project]
+name = "global-defaults"
+
+[project.branch_naming]
+description = "My preferred branch naming pattern"
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "main"
+]
+validation_rules = [
+    "max_length_50",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_slash_only"
+]
+default_pattern = "feature/{feature-name}"
+
+[project.template_settings]
+ai_assistant = "claude"
+template_cache_enabled = true
+
+[project.template_settings.template_variables]
+author_name = "Your Name"
+author_email = "your.email@example.com"
+default_license = "MIT"
+EOF
+```
+
+### Global Configuration Options
+
+#### Template Settings
+- `ai_assistant` - Default AI assistant (`claude`, `gemini`, `copilot`)
+- `config_directory` - Default config directory name (`.specify`)
+- `template_cache_enabled` - Enable template caching (true/false)
+- `custom_templates_dir` - Path to custom templates directory
+- `template_variables` - Default template variables for all projects
+
+#### Branch Naming
+- `patterns` - Default branch naming patterns
+- `validation_rules` - Default validation rules
+- `default_pattern` - Default pattern to use
+- `description` - Description of the naming convention
+
+## Project Configuration
+
+Project configuration is stored in `.specify/config.toml` and overrides global settings.
+
+### Automatic Configuration
+
+When you run `specifyx init`, a project configuration is automatically created:
+
+```bash
+# Initialize with specific AI assistant
+specifyx init my-project --ai claude
+
+# Initialize in current directory
+specifyx init --here --ai gemini
+```
+
+### Manual Configuration
+
+You can manually edit `.specify/config.toml` in your project:
+
+```toml
+[project]
+name = "my-special-project"
+created_at = "2025-09-11T10:30:00"
+
+[project.branch_naming]
+description = "Project-specific branch naming"
+patterns = [
+    "001-{feature-name}",
+    "hotfix-{bug-id}",
+    "main"
+]
+validation_rules = [
+    "max_length_60",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_only"
+]
+default_pattern = "001-{feature-name}"
+
+[project.template_settings]
+ai_assistant = "copilot"
+config_directory = ".specify"
+
+[project.template_settings.template_variables]
+project_type = "web-app"
+framework = "react"
+api_type = "rest"
+```
+
+## Branch Naming Configuration
+
+SpecifyX provides powerful branch naming configuration with validation.
+
+### Predefined Patterns
+
+SpecifyX includes several predefined branch naming patterns:
+
+#### Traditional Spec (`traditional-spec`)
+```toml
+patterns = [
+    "{spec-id}-{feature-name}",
+    "hotfix/{bug-id}",
+    "main",
+    "development"
+]
+```
+
+#### Branch Type (`branch-type`)
+```toml
+patterns = [
+    "feature/{feature-name}",
+    "hotfix/{bug-id}",
+    "bugfix/{bug-id}",
+    "main",
+    "development"
+]
+```
+
+#### Numbered Type (`numbered-type`)
+```toml
+patterns = [
+    "feature/{spec-id}-{feature-name}",
+    "hotfix/{bug-id}",
+    "release/{version}",
+    "main",
+    "development"
+]
+```
+
+#### Team Based (`team-based`)
+```toml
+patterns = [
+    "{team}/{feature-name}",
+    "hotfix/{bug-id}",
+    "release/{version}",
+    "main",
+    "development"
+]
+```
+
+### Custom Patterns
+
+Create your own branch naming patterns using variables:
+
+```toml
+[project.branch_naming]
+description = "Custom project patterns"
+patterns = [
+    "task/{spec-id}-{feature-name}",
+    "epic/{epic-name}",
+    "spike/{research-topic}",
+    "fix/{bug-id}",
+    "chore/{task-name}",
+    "main",
+    "develop"
+]
+```
+
+### Pattern Variables
+
+Use these variables in your patterns:
+
+- `{spec-id}` - Specification ID (3-digit number), if input as number directly will be validated for availability; if input as xxx will be replaced with the next available spec id
+- `{number}` - Any length number
+- `{number-3}` - 3-digit number 
+- `{date}` - Current date (YYYY-MM-DD)
+- `{datetime}` - Current datetime (YYYY-MM-DD-HHMMSS)
+
+Anything other than the above (such as `{feature-name}`, `{bug-id}`, `{version}`, `{team}`, `{epic-name}`, `{task-name}`) is considered a generic string variable and will be passed to AI as description of the variable.
+
+### Validation Rules
+
+Control branch name format with validation rules:
+
+#### Length Rules
+- `max_length_50` - Maximum 50 characters
+- `max_length_X` - Maximum X characters
+
+#### Format Rules
+- `lowercase_only` - Only lowercase letters allowed
+- `no_spaces` - No spaces allowed
+- `alphanumeric_dash_only` - Only letters, numbers, and dashes
+- `alphanumeric_dash_slash_only` - Letters, numbers, dashes, and slashes
+- `no_leading_trailing_dashes` - No dashes at start or end
+- `no_double_dashes` - No consecutive dashes
+- `no_dots` - No dots allowed
+- `valid_git_branch` - Follow Git branch naming rules
+
+### Example Configurations
+
+#### Minimal Configuration
+```toml
+[project.branch_naming]
+patterns = ["feature/{feature-name}", "main"]
+validation_rules = ["lowercase_only", "no_spaces"]
+```
+
+#### Enterprise Configuration
+```toml
+[project.branch_naming]
+description = "Enterprise branch naming with strict validation"
+patterns = [
+    "feature/{team}-{spec-id}-{feature-name}",
+    "hotfix/{team}-{bug-id}",
+    "release/{version}",
+    "main",
+    "development"
+]
+validation_rules = [
+    "max_length_80",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_slash_only",
+    "no_leading_trailing_dashes",
+    "no_double_dashes",
+    "valid_git_branch"
+]
+default_pattern = "feature/{team}-{spec-id}-{feature-name}"
+```
+
+## Template Configuration
+
+Configure how SpecifyX processes templates and generates project files.
+
+### Template Settings
+
+#### AI Assistant Integration
+```toml
+[project.template_settings]
+ai_assistant = "claude"  # or "gemini", "copilot"
+```
+
+This controls which AI-specific templates and commands are generated.
+
+#### Custom Templates Directory
+```toml
+[project.template_settings]
+custom_templates_dir = "/path/to/my/templates"
+```
+
+Point to a directory containing custom Jinja2 templates.
+
+#### Template Caching
+```toml
+[project.template_settings]
+template_cache_enabled = true
+```
+
+Enable or disable template caching for better performance.
+
+### Template Variables
+
+Define variables that will be available in all templates:
+
+```toml
+[project.template_settings.template_variables]
+company_name = "Acme Corporation"
+author_name = "John Doe"
+author_email = "john@acme.com"
+default_license = "MIT"
+project_type = "web-application"
+framework = "react"
+api_style = "rest"
+database = "postgresql"
+deployment_platform = "aws"
+monitoring_tool = "datadog"
+```
+
+These variables can be used in any template:
+
+```markdown
+# {{template_variables.project_type | title}} Project
+
+**Company**: {{template_variables.company_name}}
+**Framework**: {{template_variables.framework}}
+**License**: {{template_variables.default_license}}
+```
+
+## Configuration Examples
+
+### Team Development Workflow
+
+```toml
+[project]
+name = "team-project"
+
+[project.branch_naming]
+description = "Team-based workflow with validation"
+patterns = [
+    "feature/{team}-{feature-name}",
+    "bugfix/{team}-{bug-id}",
+    "hotfix/{bug-id}",
+    "release/{version}",
+    "main",
+    "develop"
+]
+validation_rules = [
+    "max_length_60",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_slash_only"
+]
+default_pattern = "feature/{team}-{feature-name}"
+
+[project.template_settings]
+ai_assistant = "claude"
+
+[project.template_settings.template_variables]
+team_name = "backend-team"
+project_type = "microservice"
+tech_stack = "node-express-postgres"
+```
+
+### Solo Developer Workflow
+
+```toml
+[project]
+name = "personal-project"
+
+[project.branch_naming]
+description = "Simple feature-based branches"
+patterns = [
+    "feature/{feature-name}",
+    "fix/{bug-description}",
+    "main"
+]
+validation_rules = [
+    "max_length_50",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_only"
+]
+default_pattern = "feature/{feature-name}"
+
+[project.template_settings]
+ai_assistant = "copilot"
+template_cache_enabled = true
+
+[project.template_settings.template_variables]
+author_name = "Jane Developer"
+default_license = "MIT"
+```
+
+### Open Source Project
+
+```toml
+[project]
+name = "open-source-lib"
+
+[project.branch_naming]
+description = "Open source contribution workflow"
+patterns = [
+    "feature/{spec-id}-{feature-name}",
+    "bugfix/{issue-number}",
+    "docs/{topic}",
+    "refactor/{component}",
+    "main",
+    "develop"
+]
+validation_rules = [
+    "max_length_80",
+    "lowercase_only",
+    "no_spaces",
+    "alphanumeric_dash_slash_only",
+    "valid_git_branch"
+]
+default_pattern = "feature/{spec-id}-{feature-name}"
+
+[project.template_settings]
+ai_assistant = "claude"
+
+[project.template_settings.template_variables]
+project_name = "awesome-lib"
+license_type = "Apache-2.0"
+maintainer_org = "my-org"
+```
+
+## Next Steps
+
+- [Template Customization Guide](/docs/guides/template-customization) - Learn to customize templates
+- [Best Practices Guide](/docs/guides/best-practices) - Configuration best practices
