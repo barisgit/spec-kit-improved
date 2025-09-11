@@ -129,13 +129,32 @@ class CommandLineGitService(GitService):
             return True
 
         try:
-            subprocess.run(
-                ["git", "checkout", "-b", branch_name],
+            # Check if the branch already exists
+            result = subprocess.run(
+                ["git", "rev-parse", "--verify", f"refs/heads/{branch_name}"],
                 cwd=project_path,
-                check=True,
                 capture_output=True,
                 text=True,
             )
+
+            if result.returncode == 0:
+                # Branch exists, just checkout to it
+                subprocess.run(
+                    ["git", "checkout", branch_name],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            else:
+                # Branch doesn't exist, create it
+                subprocess.run(
+                    ["git", "checkout", "-b", branch_name],
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False

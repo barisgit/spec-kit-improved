@@ -48,7 +48,7 @@ async function main() {
         break;
         
       case 'sync':
-      default:
+      default: {
         console.log('Syncing documentation...');
         const result = await syncService.sync();
         
@@ -65,6 +65,7 @@ async function main() {
           });
         }
         break;
+      }
     }
   } catch (error) {
     console.error('Error:', error instanceof Error ? error.message : error);

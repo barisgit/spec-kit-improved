@@ -99,7 +99,8 @@ title: Old Title
     it('should preserve content after frontmatter', () => {
       const content = '# Header\n\n## Subheader\n\nParagraph text.';
       const frontmatter: FrontmatterData = {
-        title: 'Test'
+        title: 'Test',
+        description: 'Test description'
       };
 
       const result = processor.inject(content, frontmatter);

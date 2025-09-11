@@ -132,12 +132,25 @@ export class SyncService extends EventEmitter {
     // Perform initial sync
     await this.sync();
     
-    // Set up file watcher - expand glob patterns first
+    // Set up file watcher - watch existing files and parent directories for new files
     const patterns: string[] = [];
+    const watchedDirs = new Set<string>();
+    
     for (const pattern of this.config.sourcePatterns) {
       const fullPattern = resolve(__dirname, '../../..', pattern.pattern);
+      
+      // Get existing files for immediate watching
       const expandedFiles = await glob(fullPattern);
       patterns.push(...expandedFiles);
+      
+      // Also watch the parent directories so new files can be detected
+      for (const file of expandedFiles) {
+        const parentDir = dirname(file);
+        if (!watchedDirs.has(parentDir)) {
+          watchedDirs.add(parentDir);
+          patterns.push(parentDir);
+        }
+      }
     }
     
     this.watcher = chokidarWatch(patterns, {
@@ -341,12 +354,22 @@ export class SyncService extends EventEmitter {
       }
     }
     
-    // Only clean in managed directories to avoid removing manual docs
-    const managedDirs = ['reference', 'guides'];
+    // Only clean in configured output subdirectories to avoid removing manual docs
     const existingFiles: string[] = [];
     
-    for (const dir of managedDirs) {
-      const dirPattern = resolve(this.config.outputDir, dir, '**/*.{md,mdx}');
+    // Get unique output subdirectories from source patterns
+    const outputSubdirs = new Set<string>();
+    for (const pattern of this.config.sourcePatterns) {
+      outputSubdirs.add(pattern.outputSubdir);
+    }
+    
+    if (outputSubdirs.size === 0) {
+      console.warn('No output subdirectories configured - skipping cleanup to avoid accidental deletions');
+      return [];
+    }
+    
+    for (const outputSubdir of outputSubdirs) {
+      const dirPattern = resolve(this.config.outputDir, outputSubdir, '**/*.{md,mdx}');
       const dirFiles = await glob(dirPattern);
       existingFiles.push(...dirFiles);
     }
