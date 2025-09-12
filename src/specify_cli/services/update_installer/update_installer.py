@@ -99,7 +99,7 @@ class InstallationMethodDetector:
         if method == "pipx":
             info["update_command"] = "pipx upgrade specifyx"
         elif method == "uv-tool":
-            info["update_command"] = "uv tool upgrade specifyx"
+            info["update_command"] = "uv tool install specifyx --force --upgrade"
         elif method == "pip":
             info["update_command"] = "pip install --upgrade specifyx"
         elif method == "pip-venv":
@@ -219,7 +219,8 @@ class UpdateInstaller:
             if force or _is_pinned_or_url(package_spec):
                 cmd = ["uv", "tool", "install", package_spec, "--force"]
             else:
-                cmd = ["uv", "tool", "upgrade", "specifyx"]
+                # Use --force --upgrade for uv tool upgrade to handle version constraints properly
+                cmd = ["uv", "tool", "install", "specifyx", "--force", "--upgrade"]
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             progress.update(task, completed=1)

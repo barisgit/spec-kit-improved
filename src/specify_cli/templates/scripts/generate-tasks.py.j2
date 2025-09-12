@@ -155,6 +155,7 @@ def generate_tasks_content(
 @app.command()
 def generate(
     context: str = typer.Argument("", help="Additional context for task generation"),
+    spec_id: Optional[str] = typer.Option(None, "--spec-id", help="Spec ID to work with (e.g., '001', '004') - required when using no-branch workflow and multiple specs exist"),
     json_mode: bool = typer.Option(False, "--json", help="Output in JSON format"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress informational messages"),
@@ -167,9 +168,13 @@ def generate(
     a tasks.md file with specific, executable implementation tasks.
     
     Examples:
+        # Traditional workflow (on feature branch)
         specifyx run generate-tasks
         specifyx run generate-tasks "Focus on API endpoints" --verbose
-        specifyx run generate-tasks --json
+        
+        # No-branch workflow (specify spec ID)
+        specifyx run generate-tasks --spec-id 004
+        specifyx run generate-tasks "Focus on API endpoints" --spec-id 004 --json
         
     Note: If 'specifyx' is not found, try: uvx specifyx run generate-tasks
     """
@@ -192,20 +197,37 @@ def generate(
                 echo_error(error_msg)
             raise typer.Exit(1)
             
-        # Check if on feature branch
-        if not helpers.is_feature_branch(current_branch):
-            error_msg = f"Not on a feature branch: {current_branch}"
-            if json_mode:
-                print(json.dumps({"error": error_msg}))
+        # spec_id is passed as parameter from the CLI
+        feature_dir = None
+        error_msg = None
+        
+        # If spec_id is provided, use it directly
+        if spec_id:
+            feature_dir = helpers.find_spec_by_id(spec_id)
+            if not feature_dir:
+                available_specs = helpers.list_available_specs()
+                if available_specs:
+                    spec_list = "\n".join([f"  {spec['id']} - {spec['name']}" for spec in available_specs])
+                    error_msg = f"Spec ID '{spec_id}' not found.\n\nAvailable specs:\n{spec_list}"
+                else:
+                    error_msg = f"Spec ID '{spec_id}' not found. No specs available. Create one with: specifyx run create-feature 'feature name'"
+        else:
+            # Traditional workflow: try to detect from branch
+            if helpers.is_feature_branch(current_branch):
+                feature_dir = helpers.find_feature_directory(current_branch)
+                if not feature_dir:
+                    error_msg = f"Cannot find feature directory for branch: {current_branch}"
             else:
-                echo_error(error_msg)
-                echo_info("Switch to a feature branch first", quiet)
-            raise typer.Exit(1)
-            
-        # Find feature directory
-        feature_dir = helpers.find_feature_directory(current_branch)
-        if not feature_dir:
-            error_msg = f"Cannot find feature directory for branch: {current_branch}"
+                # On main/non-feature branch without spec_id - show available specs
+                available_specs = helpers.list_available_specs()
+                if available_specs:
+                    spec_list = "\n".join([f"  specifyx run generate-tasks --spec-id {spec['id']}" for spec in available_specs])
+                    spec_names = "\n".join([f"  {spec['id']} - {spec['name']}" for spec in available_specs])
+                    error_msg = f"Multiple specs available on {current_branch} branch. Specify which one to use:\n{spec_list}\n\nAvailable specs:\n{spec_names}"
+                else:
+                    error_msg = f"No specs found. Create one with: specifyx run create-feature 'feature name'"
+        
+        if not feature_dir or error_msg:
             if json_mode:
                 print(json.dumps({"error": error_msg}))
             else:
@@ -233,6 +255,7 @@ def generate(
             if json_mode:
                 print(json.dumps({"error": error_msg}))
             else:
+                error_msg = error_msg or "No feature directory found"
                 echo_error(error_msg)
                 echo_info("Use the /plan command in Claude Code first", quiet)
             raise typer.Exit(1)

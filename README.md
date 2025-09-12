@@ -58,8 +58,15 @@ cd my-project
 # Check system requirements  
 specifyx check
 
-# Run project scripts
-specifyx run --list
+# Traditional workflow (with feature branches)
+specifyx run create-feature "User authentication"
+specifyx run setup-plan setup
+specifyx run generate-tasks
+
+# No-branch workflow (single branch development)
+specifyx run create-feature "User login" --no-branch
+specifyx run setup-plan setup --spec-id 001
+specifyx run generate-tasks --spec-id 001
 ```
 
 <div align="center">

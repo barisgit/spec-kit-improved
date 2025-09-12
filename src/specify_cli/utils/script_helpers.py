@@ -753,6 +753,62 @@ class ScriptHelpers:
 
         return any(re.match(pattern, branch_name) for pattern in feature_patterns)
 
+    def is_no_branch_workflow(self) -> bool:
+        """
+        Check if project is configured for no-branch workflow.
+
+        Returns:
+            bool: True if project uses no-branch workflow
+        """
+        branch_config = self.get_branch_naming_config()
+        patterns = branch_config.get("patterns", [])
+        return "current" in patterns
+
+    def find_feature_directory_for_workflow(
+        self, current_branch: Optional[str] = None
+    ) -> Optional[Path]:
+        """
+        Find feature directory supporting both traditional and no-branch workflows.
+
+        Args:
+            current_branch: Branch name to search for. Uses current branch if None.
+
+        Returns:
+            Path: Feature directory path, or None if not found
+        """
+        if current_branch is None:
+            current_branch = self.get_current_branch()
+
+        if not current_branch:
+            return None
+
+        # Check if using no-branch workflow
+        is_no_branch = self.is_no_branch_workflow()
+
+        # For no-branch workflow or non-feature branches, find the most recent spec
+        if is_no_branch or not self.is_feature_branch(current_branch):
+            # First try to find by branch name (in case it matches somehow)
+            feature_dir = self.find_feature_directory(current_branch)
+
+            # If no match, look for most recent spec directory
+            if not feature_dir:
+                specs_dir = self.get_repo_root() / "specs"
+                if specs_dir.exists():
+                    spec_dirs = [
+                        d
+                        for d in specs_dir.iterdir()
+                        if d.is_dir() and (d / "spec.md").exists()
+                    ]
+                    if spec_dirs:
+                        # Sort by directory name (assuming numeric prefixes like 001-, 002-)
+                        spec_dirs.sort(key=lambda x: x.name)
+                        feature_dir = spec_dirs[-1]  # Get the most recent one
+
+            return feature_dir
+        else:
+            # Traditional feature branch workflow
+            return self.find_feature_directory(current_branch)
+
     def get_current_date(self) -> str:
         """Get current date in YYYY-MM-DD format."""
         from datetime import datetime
@@ -767,6 +823,60 @@ class ScriptHelpers:
 
         # Fallback to current directory name
         return self.get_repo_root().name
+
+    def list_available_specs(self) -> List[Dict[str, str]]:
+        """
+        List all available spec directories with their IDs and names.
+
+        Returns:
+            List[Dict]: List of specs with 'id', 'name', and 'path' keys
+        """
+        specs_dir = self.get_repo_root() / "specs"
+        if not specs_dir.exists():
+            return []
+
+        specs = []
+        for spec_dir in specs_dir.iterdir():
+            if spec_dir.is_dir() and (spec_dir / "spec.md").exists():
+                spec_name = spec_dir.name
+                # Extract spec ID (first 3 digits) if present
+                spec_id_match = re.match(r"^(\d{3})-", spec_name)
+                spec_id = spec_id_match.group(1) if spec_id_match else spec_name
+
+                specs.append(
+                    {"id": spec_id, "name": spec_name, "path": str(spec_dir.absolute())}
+                )
+
+        # Sort by spec ID/name
+        specs.sort(key=lambda x: x["id"])
+        return specs
+
+    def find_spec_by_id(self, spec_id: str) -> Optional[Path]:
+        """
+        Find spec directory by ID.
+
+        Args:
+            spec_id: Spec ID to find (e.g., "001", "004")
+
+        Returns:
+            Path: Spec directory path, or None if not found
+        """
+        specs_dir = self.get_repo_root() / "specs"
+        if not specs_dir.exists():
+            return None
+
+        # Normalize spec ID (ensure 3 digits)
+        normalized_id = spec_id.zfill(3)
+
+        for spec_dir in specs_dir.iterdir():
+            if (
+                spec_dir.is_dir()
+                and (spec_dir / "spec.md").exists()
+                and spec_dir.name.startswith(f"{normalized_id}-")
+            ):
+                return spec_dir
+
+        return None
 
     def get_author_name(self) -> str:
         """Get author name from config or git config."""

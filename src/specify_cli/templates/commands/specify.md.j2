@@ -29,6 +29,10 @@ Given the feature description provided as an argument, do this:
 3. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 4. Report completion with branch name, spec file path, and readiness for the next phase.
 
+**Next Steps After Specification:**
+- **Traditional workflow**: Use `/plan` and `/tasks` commands (auto-detect from branch)
+- **No-branch workflow**: Use `/plan` and `/tasks` with `--spec-id` parameter from the JSON output above
+
 {% if ai_assistant == 'claude' -%}
 Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 

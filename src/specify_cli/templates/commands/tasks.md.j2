@@ -9,7 +9,13 @@ This is the third step in the Spec-Driven Development lifecycle.
 
 Given the context provided as an argument, do this:
 
-1. Run `specifyx run generate-tasks "context" --json` (or `uvx specifyx run generate-tasks "context" --json` if specifyx not found) from repo root to automatically generate tasks.md. This will:
+1. Run `specifyx run generate-tasks "context" --json` (or `uvx specifyx run generate-tasks "context" --json` if specifyx not found) from repo root to automatically generate tasks.md. 
+
+   **For No-Branch Workflow:**
+   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run generate-tasks "context" --spec-id 001 --json`
+   - The error message will show available spec IDs if `--spec-id` is required
+   
+   This will:
    - Scan the current feature directory for available design documents (plan.md, data-model.md, contracts/, etc.)
    - Analyze the documents and extract entities, contracts, user stories, and tech stack
    - Generate a complete tasks.md file using the tasks-template.md.j2

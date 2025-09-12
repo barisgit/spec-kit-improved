@@ -153,16 +153,30 @@ def create_feature(description: str, branch_name: Optional[str] = None, spec_id:
     if not rules_valid:
         return False, {"error": f"Branch name '{final_branch_name}' validation failed: {rules_error}"}
     
-    # Create smart sequential directory name
-    # Always uses format: 001-feature-name with intelligent slash handling
-    dir_name = helpers.branch_to_directory_name(final_branch_name, feature_num)
-    feature_dir = specs_dir / dir_name
-    
     try:
         # Check if using no-branch workflow
         branch_config = helpers.get_branch_naming_config()
         patterns = branch_config.get('patterns', [])
         is_no_branch = no_branch or 'current' in patterns or final_branch_name == 'current'
+        
+        # Create smart sequential directory name
+        # For no-branch workflow, derive from description instead of branch name
+        if is_no_branch:
+            # Create clean feature name from description for directory naming
+            clean_desc = re.sub(r'[^a-z0-9]', '-', description.lower())
+            clean_desc = re.sub(r'-+', '-', clean_desc)  # Remove multiple hyphens
+            clean_desc = clean_desc.strip('-')  # Remove leading/trailing hyphens
+            
+            # Extract first 2-3 meaningful words for feature name
+            words = [w for w in clean_desc.split('-') if w and len(w) > 2][:3]
+            derived_feature_name = '-'.join(words) if words else 'feature'
+            
+            dir_name = f"{feature_num}-{derived_feature_name}"
+        else:
+            # Traditional workflow: uses format: 001-feature-name with intelligent slash handling
+            dir_name = helpers.branch_to_directory_name(final_branch_name, feature_num)
+        
+        feature_dir = specs_dir / dir_name
         
         if not is_no_branch:
             # Create and switch to new branch using git service from helpers
