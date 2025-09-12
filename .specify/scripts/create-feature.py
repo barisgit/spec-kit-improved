@@ -30,7 +30,7 @@ def create_feature(
     description: str,
     branch_name: Optional[str] = None,
     spec_id: Optional[str] = None,
-    json_mode: bool = False,
+    no_branch: bool = False,
 ) -> Tuple[bool, Dict[str, str]]:
     """
     Create new feature with branch and spec file.
@@ -40,6 +40,7 @@ def create_feature(
         branch_name: Optional custom branch name (validated against patterns)
         spec_id: Optional custom spec ID (e.g., "001", "042") - must be unique
         json_mode: Whether to format output as JSON
+        no_branch: Whether to skip branch creation and work on current branch
 
     Returns:
         Tuple of (success: bool, result: Dict[str, str])
@@ -49,8 +50,6 @@ def create_feature(
     Raises:
         No exceptions - all errors are captured and returned in result dict
     """
-    _ = json_mode
-
     # Initialize ScriptHelpers
     helpers = ScriptHelpers()
 
@@ -173,12 +172,25 @@ def create_feature(
     feature_dir = specs_dir / dir_name
 
     try:
-        # Create and switch to new branch using git service from helpers
-        git_service = helpers._git_service
-        if not git_service.create_branch(final_branch_name, repo_root):
-            return False, {
-                "error": f"Failed to create branch '{final_branch_name}'. Branch may already exist or git operation failed."
-            }
+        # Check if using no-branch workflow
+        branch_config = helpers.get_branch_naming_config()
+        patterns = branch_config.get("patterns", [])
+        is_no_branch = (
+            no_branch or "current" in patterns or final_branch_name == "current"
+        )
+
+        if not is_no_branch:
+            # Create and switch to new branch using git service from helpers
+            git_service = helpers._git_service
+            if not git_service.create_branch(final_branch_name, repo_root):
+                return False, {
+                    "error": f"Failed to create branch '{final_branch_name}'. Branch may already exist or git operation failed."
+                }
+        else:
+            # No-branch workflow: stay on current branch
+            git_service = helpers._git_service
+            current_branch = git_service.get_current_branch(repo_root)
+            final_branch_name = current_branch or "main"
 
         # Create feature directory
         try:
@@ -257,6 +269,9 @@ def main(
     json_mode: bool = typer.Option(
         False, "--json", help="Output results in JSON format"
     ),
+    no_branch: bool = typer.Option(
+        False, "--no-branch", help="Skip branch creation and work on current branch"
+    ),
 ):
     """Create a new feature with automated branch and spec file generation.
 
@@ -297,7 +312,7 @@ def main(
         raise typer.Exit(1)
 
     # Create the feature
-    success, result = create_feature(description, branch_name, spec_id, json_mode)
+    success, result = create_feature(description, branch_name, spec_id, no_branch)
 
     if not success:
         helpers.output_result(result, success=False, json_mode=json_mode)

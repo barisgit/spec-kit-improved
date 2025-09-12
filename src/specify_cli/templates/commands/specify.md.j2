@@ -15,6 +15,7 @@ Given the feature description provided as an argument, do this:
    - Default patterns usually include: `feature/{feature-name}`, `hotfix/{bug-id}`, `bugfix/{bug-id}`, `main`, `development`
    - The command auto-generates branch names from the first pattern and description unless `--branch-name` is specified
    - Custom branch names: `specifyx run create-feature "description" --branch-name "feature/custom-name" --json`
+   - **No-branch workflow**: `specifyx run create-feature "description" --no-branch --json` (stays on current branch, no branch switching)
    - Branch names are validated against patterns in `.specify/config.toml`
    - Feature descriptions should be 3-100 characters and contain at least one letter
    - IMPORTANT: It is recommended to use custom branch names to be more clear about the feature
@@ -29,22 +30,22 @@ Given the feature description provided as an argument, do this:
 4. Report completion with branch name, spec file path, and readiness for the next phase.
 
 {% if ai_assistant == 'claude' -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing.
+Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 
 **Claude Code Integration:**
 - You may use subagent to gather more information about the codebase and the feature description
 {% elif ai_assistant == 'gemini' -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing.
+Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 
 **Gemini Integration:**
 - Use this command to start new features
 {% elif ai_assistant == 'copilot' -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing.
+Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 
 **GitHub Copilot Integration:**
 - Use this command in your IDE or terminal
 {% else -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing.
+Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 
 **Generic AI Assistant:**
 - Use this command to create feature specifications

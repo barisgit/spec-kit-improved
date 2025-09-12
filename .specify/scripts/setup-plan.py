@@ -64,6 +64,7 @@ def setup_plan_structure(
     helpers: ScriptHelpers,
     force: bool = False,
     quiet: bool = False,
+    json_mode: bool = False,
     debug: bool = False,
 ) -> Tuple[bool, Dict[str, str]]:
     """Setup implementation plan structure."""
@@ -98,7 +99,7 @@ def setup_plan_structure(
                         "feature_name": result["BRANCH"],
                         "branch_name": result["BRANCH"],
                         "author_name": "",
-                        "creation_date": "2025-09-10",
+                        "creation_date": "2025-09-12",
                         "project_name": "spec-kit-improved",
                     },
                     output_path=impl_plan,
@@ -106,14 +107,14 @@ def setup_plan_structure(
                 if not success:
                     echo_error(
                         f"Failed to render plan template: {error}",
-                        json_mode=False,
+                        json_mode=json_mode,
                         quiet=quiet,
                     )
                     return False, {"error": f"Template rendering failed: {error}"}
             else:
                 echo_error(
                     f"Plan template not found at {template_path}",
-                    json_mode=False,
+                    json_mode=json_mode,
                     quiet=quiet,
                 )
                 return False, {"error": f"Plan template not found: {template_path}"}
@@ -129,7 +130,7 @@ def setup_plan_structure(
                         "feature_name": result["BRANCH"],
                         "branch_name": result["BRANCH"],
                         "author_name": "",
-                        "creation_date": "2025-09-10",
+                        "creation_date": "2025-09-12",
                         "project_name": "spec-kit-improved",
                     },
                     output_path=feature_spec,
@@ -137,14 +138,14 @@ def setup_plan_structure(
                 if not success:
                     echo_error(
                         f"Failed to render spec template: {error}",
-                        json_mode=False,
+                        json_mode=json_mode,
                         quiet=quiet,
                     )
                     return False, {"error": f"Template rendering failed: {error}"}
             else:
                 echo_error(
                     f"Spec template not found at {template_path}",
-                    json_mode=False,
+                    json_mode=json_mode,
                     quiet=quiet,
                 )
                 return False, {"error": f"Spec template not found: {template_path}"}
@@ -231,7 +232,7 @@ def setup(
     helpers = ScriptHelpers()
 
     # Main operation
-    success, result = setup_plan_structure(helpers, force, quiet, debug)
+    success, result = setup_plan_structure(helpers, force, quiet, json_mode, debug)
 
     if success:
         echo_success(

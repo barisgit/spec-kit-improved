@@ -102,6 +102,16 @@ class BranchNamingDefaults:
                     "valid_git_branch",
                 ],
             ),
+            BranchNamingPattern(
+                name="no-branch",
+                description="Single-branch workflow - develop all features on current branch or manually created branch",
+                patterns=[
+                    "current",  # Special pattern indicating no branch creation
+                ],
+                validation_rules=[
+                    # No validation rules needed for no-branch workflow
+                ],
+            ),
         ]
     )
 

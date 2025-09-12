@@ -34,6 +34,8 @@ def analyze_available_documents(helpers: ScriptHelpers, feature_dir: Path) -> Tu
     Returns:
         Tuple[bool, Dict]: (success, analysis_result)
     """
+    _ = helpers
+    
     analysis = {
         'available_docs': [],
         'entities': [],
@@ -279,7 +281,7 @@ def generate(
         else:
             echo_error(error_msg)
         echo_debug(f"Exception details: {type(e).__name__}: {e}", debug)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 if __name__ == "__main__":

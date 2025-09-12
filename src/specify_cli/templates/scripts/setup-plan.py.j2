@@ -52,7 +52,7 @@ def get_feature_paths(helpers: ScriptHelpers) -> Tuple[bool, Dict[str, str]]:
     }
 
 
-def setup_plan_structure(helpers: ScriptHelpers, force: bool = False, quiet: bool = False, debug: bool = False) -> Tuple[bool, Dict[str, str]]:
+def setup_plan_structure(helpers: ScriptHelpers, force: bool = False, quiet: bool = False, json_mode: bool = False, debug: bool = False) -> Tuple[bool, Dict[str, str]]:
     """Setup implementation plan structure."""
     success, result = get_feature_paths(helpers)
     if not success:
@@ -182,7 +182,7 @@ def setup(
     helpers = ScriptHelpers()
     
     # Main operation
-    success, result = setup_plan_structure(helpers, force, quiet, debug)
+    success, result = setup_plan_structure(helpers, force, quiet, json_mode, debug)
     
     if success:
         echo_success("Successfully setup implementation plan structure", quiet, json_mode)

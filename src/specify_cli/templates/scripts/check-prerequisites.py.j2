@@ -271,7 +271,7 @@ def check(
         else:
             echo_error(f"Unexpected error: {str(e)}")
         echo_debug(f"Exception details: {type(e).__name__}: {e}", debug)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 if __name__ == "__main__":

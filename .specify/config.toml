@@ -15,6 +15,7 @@ validation_rules = [
     "lowercase_only",
     "no_spaces",
     "alphanumeric_dash_slash_only",
+    "valid_git_branch",
 ]
 default_pattern = "feature/{feature-name}"
 
