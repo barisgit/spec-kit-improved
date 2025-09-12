@@ -180,6 +180,41 @@ patterns = [
 ]
 ```
 
+#### No Branch (`no-branch`)
+```toml
+patterns = [
+    "current"  # Special pattern - stays on current branch
+]
+description = "Single-branch workflow - develop all features on current branch"
+```
+
+This pattern is ideal for teams that prefer to work on a single main branch without feature branching, simplifying the workflow for smaller teams or rapid prototyping.
+
+**No-Branch Workflow Usage:**
+```bash
+# Initialize with no-branch pattern
+specifyx init my-project --branch-pattern "no-branch"
+
+# Create features without branching (creates meaningful directory names)
+specifyx run create-feature "User authentication system" --no-branch
+# Creates: specs/001-user-authentication-system/
+
+# Work with specific specs using --spec-id
+specifyx run setup-plan setup --spec-id 001
+specifyx run generate-tasks --spec-id 001
+```
+
+When multiple specs exist on the main branch, commands will show helpful error messages with available options:
+```
+Multiple specs available on main branch. Specify which one to use:
+  specifyx run setup-plan --spec-id 001
+  specifyx run setup-plan --spec-id 002
+
+Available specs:
+  001 - user-authentication-system
+  002 - payment-integration
+```
+
 ### Custom Patterns
 
 Create your own branch naming patterns using variables:

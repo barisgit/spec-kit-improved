@@ -113,6 +113,50 @@ Brief description and business value.
 - **Document changes**: Add comments explaining custom logic
 - **Version control**: Track template changes with project
 
+## Workflow Selection
+
+SpecifyX supports multiple development workflows to match your team's preferences:
+
+### Traditional Branch-Based Development (Recommended for Teams)
+Best for teams with parallel feature development:
+1. **Create feature branch**: `specifyx run create-feature "User authentication"`
+   - Creates branch: `feature/user-authentication`
+   - Creates directory: `specs/001-feature-user-authentication/`
+2. **Setup planning**: `specifyx run setup-plan setup` (auto-detects from branch)
+3. **Generate tasks**: `specifyx run generate-tasks` (auto-detects from branch)
+4. **Implement feature**: Use generated scripts and templates
+5. **Merge when complete**: Ensure branch is ready for integration
+
+### Single-Branch Development (No Branching)
+Perfect for small teams or solo developers who prefer simplicity:
+1. **Create specification**: `specifyx run create-feature "User authentication system" --no-branch`
+   - Creates meaningful directory: `specs/001-user-authentication-system/`
+   - Stays on current branch (main)
+2. **Setup planning**: `specifyx run setup-plan setup --spec-id 001`
+3. **Generate tasks**: `specifyx run generate-tasks --spec-id 001`
+4. **Work on current branch**: Develop directly on main/master
+5. **Commit frequently**: Make small, incremental commits
+
+### When to Use No-Branch Workflow:
+- Working solo or in very small teams (2-3 people)
+- Rapid prototyping or exploration projects
+- Simple applications with minimal feature complexity
+- Teams practicing trunk-based development
+- Projects with infrequent releases
+
+### Error Handling in No-Branch Workflow:
+When multiple specs exist, commands provide helpful guidance:
+```bash
+❯ specifyx run setup-plan setup
+Multiple specs available on main branch. Specify which one to use:
+  specifyx run setup-plan --spec-id 001
+  specifyx run setup-plan --spec-id 002
+
+Available specs:
+  001 - user-authentication-system
+  002 - payment-integration
+```
+
 ## Team Collaboration
 
 ### Specification Reviews
