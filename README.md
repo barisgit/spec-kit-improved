@@ -21,7 +21,7 @@ SpecifyX is a modern Python CLI tool for spec-driven development that helps team
 
 - **Easy Installation**: `uv tool install specifyx` or `uvx specifyx` 
 - **Jinja2 Templating**: Variables, conditionals, loops for complex project generation
-- **Flexible Branch Naming**: Custom patterns like `feature/{name}` or `task/{id}-{name}`
+- **Flexible Branch Naming**: Custom patterns like `feature/{name}`, `task/{id}-{name}`, or no-branch workflow
 - **Configuration System**: TOML-based preferences and settings
 - **Interactive UI**: Menus, progress tracking, colored output
 

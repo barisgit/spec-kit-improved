@@ -100,12 +100,31 @@ Brief description and business value.
 
 ## Development Workflow
 
-### Branch-Based Development
-1. **Create feature branch**: `specifyx init feature-name`
+### Choosing Your Workflow
+
+SpecifyX supports multiple development workflows to match your team's preferences:
+
+#### Branch-Based Development (Recommended for Teams)
+Best for teams with parallel feature development:
+1. **Create feature branch**: `specifyx run create-feature "feature name"`
 2. **Write specification**: Complete spec.md before coding
 3. **Implement feature**: Use generated scripts and templates
 4. **Update documentation**: Keep specs current with changes
 5. **Clean merge**: Ensure branch is ready for integration
+
+#### Single-Branch Development (No Branching)
+Perfect for small teams or solo developers who prefer simplicity:
+1. **Create specification**: `specifyx run create-feature "feature name" --no-branch`
+2. **Work on current branch**: Develop directly on main/master
+3. **Commit frequently**: Make small, incremental commits
+4. **Update specs**: Keep specifications current with implementation
+
+Use no-branch workflow when:
+- Working solo or in very small teams (2-3 people)
+- Rapid prototyping or exploration projects
+- Simple applications with minimal feature complexity
+- Teams practicing trunk-based development
+- Projects with infrequent releases
 
 ### Template Customization
 - **Start small**: Modify existing templates before creating new ones

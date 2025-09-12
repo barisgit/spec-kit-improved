@@ -418,6 +418,36 @@ author_name = "Jane Developer"
 default_license = "MIT"
 ```
 
+### Single Branch Workflow (No Branching)
+
+For teams that prefer to work directly on the main branch:
+
+```toml
+[project]
+name = "simple-project"
+
+[project.branch_naming]
+description = "Single-branch development - no feature branches"
+patterns = [
+    "current"  # Stay on current branch for all development
+]
+validation_rules = []  # No validation needed
+default_pattern = "current"
+
+[project.template_settings]
+ai_assistant = "claude"
+
+[project.template_settings.template_variables]
+workflow_type = "single-branch"
+team_size = "small"
+```
+
+This configuration is ideal for:
+- Small teams or solo developers
+- Rapid prototyping projects
+- Simple applications with minimal complexity
+- Teams that prefer trunk-based development
+
 ### Open Source Project
 
 ```toml
