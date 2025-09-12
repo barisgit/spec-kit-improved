@@ -36,7 +36,7 @@ This command sets up a new project using the modular service architecture to orc
 - `--ai TEXT` - AI assistant to use: claude, gemini, copilot (interactive if not specified)
 
 ### Branch Naming Configuration
-- `--branch-pattern TEXT` - Branch naming pattern: '001-feature-name' or 'feature/&#123;name&#125;' (interactive if not specified)
+- `--branch-pattern TEXT` - Branch naming pattern: `001-feature-name` or `feature/{name}` (interactive if not specified)
 
 ### Template Source Options
 - `--use-remote` - Force download templates from remote repository instead of using local ones
@@ -81,8 +81,11 @@ specifyx init my-project --ai copilot
 ### Branch Naming Patterns
 ```bash
 # Use specific branch pattern
-specifyx init my-project --branch-pattern "feature/&#123;name&#125;"
+specifyx init my-project --branch-pattern "feature/{name}"
 specifyx init my-project --branch-pattern "001-feature-name"
+
+# Use no-branch workflow (single branch development)
+specifyx init my-project --branch-pattern "no-branch"
 ```
 
 ### Template Sources
@@ -103,7 +106,7 @@ specifyx init my-project --verbose
 specifyx init --here --force
 
 # Complete non-interactive setup
-specifyx init my-project --ai claude --branch-pattern "feature/&#123;name&#125;" --yes
+specifyx init my-project --ai claude --branch-pattern "feature/{name}" --yes
 ```
 
 ## Generated Structure
@@ -143,8 +146,8 @@ name = "my-project"
 ai_assistant = "claude"
 
 [branch_naming]
-patterns = ["feature/&#123;feature-name&#125;", "hotfix/&#123;bug-id&#125;"]
-default_pattern = "feature/&#123;feature-name&#125;"
+patterns = ["feature/{feature-name}", "hotfix/{bug-id}"]
+default_pattern = "feature/{feature-name}"
 
 [templates]
 source = "local"  # or "remote"
