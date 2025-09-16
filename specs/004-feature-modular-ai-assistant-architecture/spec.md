@@ -6,7 +6,7 @@
 **Input**: User description: "modular AI assistant plugin system"
 
 ## Executive Summary
-Reorganize SpecifyX's AI assistant code from scattered files into organized assistant folders with type-safe injection points and auto-documentation. Replace template conditionals with clean injection points while maintaining full type safety and automatic documentation generation. This enables easier maintenance, cleaner code organization, and simpler addition of new AI assistants.
+Reorganize SpecifyX's AI assistant code from scattered files into organized assistant folders with Pydantic-validated models, Abstract Base Classes, and type-safe injection points. Replace template conditionals with enum-based injection points while providing runtime validation, JSON schema generation, and automatic documentation. This enables easier maintenance, cleaner code organization, robust validation, and simpler addition of new AI assistants through clear ABC contracts.
 
 ## Execution Flow (main)
 ```
@@ -74,28 +74,30 @@ As a SpecifyX maintainer, I want all AI assistant logic organized in dedicated f
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
-- **FR-001**: System MUST organize all AI assistant logic into dedicated assistant folders for better code organization
-- **FR-002**: Templates MUST use type-safe, assistant-agnostic injection points instead of conditional logic
-- **FR-003**: System MUST provide full TypeScript-style type safety for all assistant configurations and injections
-- **FR-004**: Documentation MUST auto-generate from typed assistant definitions without manual maintenance
-- **FR-005**: New AI assistants MUST be addable by creating a single folder with typed configuration file
-- **FR-006**: System MUST validate all assistant configurations and injection points at build/runtime
-- **FR-007**: Injection points MUST have clear, documented interfaces that any assistant can implement
-- **FR-008**: System MUST maintain backward compatibility with existing projects and configurations
-- **FR-009**: Assistant registry MUST use static imports (no dynamic discovery) for performance and reliability
-- **FR-010**: All assistant capabilities MUST be discoverable through type-safe interfaces
+- **FR-001**: System MUST organize all AI assistant logic into dedicated assistant folders with Pydantic models and Abstract Base Classes
+- **FR-002**: Templates MUST use enum-based, assistant-agnostic injection points instead of conditional logic
+- **FR-003**: System MUST provide Pydantic-based runtime validation with detailed error messages for all configurations
+- **FR-004**: System MUST generate JSON schemas automatically from Pydantic models for API documentation
+- **FR-005**: New AI assistants MUST implement Abstract Base Class contracts ensuring consistent interfaces
+- **FR-006**: System MUST validate all assistant configurations at runtime using Pydantic field validators
+- **FR-007**: Injection points MUST use type-safe Enums with clear documentation for all assistant implementations
+- **FR-008**: System MUST maintain backward compatibility through Pydantic serialization/deserialization
+- **FR-009**: Assistant registry MUST use Abstract Base Classes with static factory pattern for type safety
+- **FR-010**: All assistant capabilities MUST be discoverable through ABC method contracts and JSON schema introspection
 
 ### Non-Functional Requirements
-- **NFR-001**: Assistant addition MUST require minimal code changes (ideally just adding folder + one import)
-- **NFR-002**: Template rendering MUST maintain current performance (no degradation)
-- **NFR-003**: Build-time validation MUST catch all configuration errors before runtime
-- **NFR-004**: Documentation generation MUST be automatic and always current
+- **NFR-001**: Assistant addition MUST require only ABC implementation and Pydantic model creation
+- **NFR-002**: Template rendering MUST maintain current performance through efficient enum-based injection
+- **NFR-003**: Pydantic validation MUST catch all configuration errors at model instantiation time
+- **NFR-004**: JSON schema generation MUST be automatic from Pydantic models with no manual maintenance
+- **NFR-005**: Runtime validation MUST provide clear, actionable error messages for configuration issues
 
 ### Key Entities *(include if feature involves data)*
-- **Assistant Configuration**: Typed data structure defining assistant properties, directories, and capabilities
-- **Injection Registry**: Type-safe mapping of injection point names to assistant-provided values
-- **Template Context**: Enhanced context object that includes assistant injections with type validation
-- **Assistant Module**: Self-contained folder with configuration, injections, and optional template overrides
+- **Assistant Configuration**: Pydantic BaseModel with field validation, JSON schema generation, and immutability
+- **Injection Point Registry**: Enum-based type-safe mapping with runtime validation and introspection
+- **Assistant Provider**: Abstract Base Class defining required methods and contracts for all assistants
+- **Template Context**: Enhanced Pydantic model with assistant injections and cross-field validation
+- **Assistant Factory**: Abstract factory pattern for creating validated assistant instances
 
 ---
 
