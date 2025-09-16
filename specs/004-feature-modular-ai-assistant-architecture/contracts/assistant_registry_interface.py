@@ -56,7 +56,9 @@ class AssistantRegistry(Protocol):
         """
         ...
 
-    def get_injection_provider(self, name: AssistantName) -> Optional[InjectionProvider]:
+    def get_injection_provider(
+        self, name: AssistantName
+    ) -> Optional[InjectionProvider]:
         """
         Get injection provider for assistant.
 
@@ -209,7 +211,7 @@ class RegistryInitializer(Protocol):
     def validate_consistency(
         self,
         configs: List[AssistantConfig],
-        providers: Dict[AssistantName, InjectionProvider]
+        providers: Dict[AssistantName, InjectionProvider],
     ) -> ValidationErrors:
         """
         Validate consistency between configs and providers.

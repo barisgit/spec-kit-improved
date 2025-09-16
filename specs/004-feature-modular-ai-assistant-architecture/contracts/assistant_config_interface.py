@@ -17,20 +17,23 @@ class AssistantConfig:
     This replaces the current scattered configuration approach with
     a clean, validated structure that all assistants must implement.
     """
-    name: str                    # Unique identifier (e.g., "claude")
-    display_name: str           # Human-readable name (e.g., "Claude Code")
-    description: str            # Brief description for UI
-    base_directory: str         # Target directory (e.g., ".claude")
-    context_file: str          # Main context file path
-    commands_directory: str    # Commands directory path
-    memory_directory: str      # Memory/constitution directory path
+
+    name: str  # Unique identifier (e.g., "claude")
+    display_name: str  # Human-readable name (e.g., "Claude Code")
+    description: str  # Brief description for UI
+    base_directory: str  # Target directory (e.g., ".claude")
+    context_file: str  # Main context file path
+    commands_directory: str  # Commands directory path
+    memory_directory: str  # Memory/constitution directory path
 
     def __post_init__(self):
         """Validate configuration on construction."""
         if not self.name or not self.name.islower():
             raise ValueError(f"Assistant name must be non-empty lowercase: {self.name}")
-        if not self.base_directory.startswith('.'):
-            raise ValueError(f"Base directory must start with '.': {self.base_directory}")
+        if not self.base_directory.startswith("."):
+            raise ValueError(
+                f"Base directory must start with '.': {self.base_directory}"
+            )
         if not self.display_name:
             raise ValueError("Display name cannot be empty")
         if not self.context_file or not self.commands_directory:
@@ -137,6 +140,7 @@ class InjectionPointNames:
     """
     Constants for injection point names to ensure consistency.
     """
+
     COMMAND_PREFIX = "assistant_command_prefix"
     SETUP_INSTRUCTIONS = "assistant_setup_instructions"
     MEMORY_CONFIGURATION = "assistant_memory_configuration"

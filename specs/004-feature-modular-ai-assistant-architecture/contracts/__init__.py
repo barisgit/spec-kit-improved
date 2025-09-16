@@ -16,14 +16,18 @@ All interfaces are designed for static typing and build-time validation
 rather than runtime discovery for maximum performance and type safety.
 """
 
+# Type aliases for convenience
 from .assistant_config_interface import (
+    OPTIONAL_INJECTION_POINTS,
+    REQUIRED_INJECTION_POINTS,
     AssistantConfig,
+    AssistantName,
     AssistantValidator,
     DocumentationGenerator,
     InjectionPointNames,
+    InjectionPoints,
     InjectionProvider,
-    OPTIONAL_INJECTION_POINTS,
-    REQUIRED_INJECTION_POINTS,
+    ValidationErrors,
 )
 from .assistant_registry_interface import (
     AssistantRegistry,
@@ -40,13 +44,6 @@ from .template_injection_interface import (
     TemplateRenderer,
 )
 
-# Type aliases for convenience
-from .assistant_config_interface import (
-    AssistantName,
-    InjectionPoints,
-    ValidationErrors,
-)
-
 __all__ = [
     # Core configuration types
     "AssistantConfig",
@@ -54,12 +51,10 @@ __all__ = [
     "AssistantName",
     "InjectionPoints",
     "ValidationErrors",
-
     # Registry interfaces
     "AssistantRegistry",
     "RegistryInitializer",
     "BuildTimeValidator",
-
     # Template interfaces
     "TemplateContext",
     "TemplateRenderer",
@@ -67,14 +62,11 @@ __all__ = [
     "ConditionalConverter",
     "TemplateAnalyzer",
     "TemplateEnhancer",
-
     # Validation interfaces
     "AssistantValidator",
     "InjectionValidator",
-
     # Documentation interfaces
     "DocumentationGenerator",
-
     # Constants
     "InjectionPointNames",
     "REQUIRED_INJECTION_POINTS",

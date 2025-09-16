@@ -57,9 +57,7 @@ class InjectionPointResolver(Protocol):
     """
 
     def resolve_injection(
-        self,
-        assistant_name: AssistantName,
-        injection_point: str
+        self, assistant_name: AssistantName, injection_point: str
     ) -> str:
         """
         Resolve injection point to its value for given assistant.
@@ -73,10 +71,7 @@ class InjectionPointResolver(Protocol):
         """
         ...
 
-    def resolve_all_injections(
-        self,
-        assistant_name: AssistantName
-    ) -> InjectionPoints:
+    def resolve_all_injections(self, assistant_name: AssistantName) -> InjectionPoints:
         """
         Resolve all injection points for given assistant.
 
@@ -110,9 +105,7 @@ class TemplateRenderer(Protocol):
     """
 
     def render_with_injections(
-        self,
-        template_content: str,
-        context: TemplateContext
+        self, template_content: str, context: TemplateContext
     ) -> str:
         """
         Render template with injection points and standard context.
@@ -174,7 +167,7 @@ class ConditionalConverter(Protocol):
         self,
         template_content: str,
         conditional_block: Dict[str, Any],
-        injection_point_name: str
+        injection_point_name: str,
     ) -> str:
         """
         Convert specific conditional block to injection point.
@@ -189,10 +182,7 @@ class ConditionalConverter(Protocol):
         """
         ...
 
-    def suggest_injection_point_name(
-        self,
-        conditional_block: Dict[str, Any]
-    ) -> str:
+    def suggest_injection_point_name(self, conditional_block: Dict[str, Any]) -> str:
         """
         Suggest appropriate injection point name for conditional.
 
@@ -265,9 +255,7 @@ class InjectionValidator(Protocol):
     """
 
     def validate_injection_implementation(
-        self,
-        assistant_name: AssistantName,
-        injection_points: InjectionPoints
+        self, assistant_name: AssistantName, injection_points: InjectionPoints
     ) -> List[str]:
         """
         Validate injection point implementation for assistant.
@@ -282,9 +270,7 @@ class InjectionValidator(Protocol):
         ...
 
     def validate_template_injection_usage(
-        self,
-        template_content: str,
-        available_injections: List[str]
+        self, template_content: str, available_injections: List[str]
     ) -> List[str]:
         """
         Validate injection point usage in template.
