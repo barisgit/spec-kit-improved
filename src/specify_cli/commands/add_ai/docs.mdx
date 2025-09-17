@@ -1,0 +1,169 @@
+---
+title: "add-ai Command"
+description: "Add AI assistants to existing SpecifyX projects"
+---
+
+# add-ai Command
+
+The `add-ai` command adds AI-specific files and configurations to an existing SpecifyX project. This allows you to integrate AI assistants like Claude, Gemini, or GitHub Copilot into projects that weren't originally set up with AI support.
+
+## Overview
+
+Multiple AI assistants can coexist in the same project since each uses separate directories and configuration files. The command creates context files, command templates, and agent configurations specific to the chosen AI assistant.
+
+## Basic Usage
+
+```bash
+# Interactive selection (recommended)
+specifyx add-ai
+
+# Direct assistant specification
+specifyx add-ai claude
+specifyx add-ai gemini
+specifyx add-ai copilot
+
+# With confirmation skip
+specifyx add-ai claude --yes
+```
+
+## Information Commands
+
+```bash
+# List all available assistants and their status
+specifyx add-ai --list
+
+# Show available injection points
+specifyx add-ai --injection-points
+
+# Show specific assistant's injection values
+specifyx add-ai --show-values claude
+specifyx add-ai --show-values gemini
+```
+
+## Advanced Options
+
+```bash
+# Overwrite existing files
+specifyx add-ai claude --force
+
+# Preview what would be created
+specifyx add-ai claude --dry-run
+
+# Skip confirmation prompts
+specifyx add-ai claude --yes
+```
+
+## Interactive Mode
+
+When run without specifying an assistant, the command provides an interactive selection menu showing:
+
+- **Available assistants** with their display names
+- **Status indicators**:
+  - `✓ Configured` - Already fully set up
+  - `⚠️ Partial` - Partially configured (missing files)
+  - `✗ Not configured` - Not set up
+- **Smart defaults** to unconfigured assistants
+
+Already configured assistants appear dimmed but remain selectable if you want to reconfigure them.
+
+## Status Indicators
+
+The `--list` option shows a comprehensive status table:
+
+| Status | Meaning |
+|--------|---------|
+| ✓ Configured | All required files exist and are properly configured |
+| ⚠️ Partial | Some files exist but configuration is incomplete |
+| ✗ Not configured | Assistant has not been added to this project |
+
+## File Creation
+
+When adding an AI assistant, the command creates:
+
+- **Context file** (e.g., `CLAUDE.md`, `GEMINI.md`) - Project-specific AI context
+- **Commands directory** - AI-specific command templates and workflows
+- **Agents directory** - Pre-configured AI agents for specialized tasks
+
+Example for Claude:
+```
+.claude/
+├── commands/
+│   ├── plan.md
+│   ├── specify.md
+│   └── tasks.md
+├── agents/
+│   └── (agent configurations)
+└── CLAUDE.md (context file)
+```
+
+## Injection Points
+
+Use `--injection-points` to see all available template injection points that AI assistants can provide:
+
+**Required Points** (all assistants must provide):
+- `ai_assistant_name` - Internal name for the assistant
+- `ai_assistant_display_name` - Human-readable name
+- `ai_context_file` - Path to context file
+- `ai_commands_directory` - Directory for command templates
+
+**Optional Points** (assistants may provide):
+- `ai_setup_instructions` - Setup and authentication steps
+- `ai_workflow_integration` - Integration with development workflows
+- `ai_memory_configuration` - Memory and context management settings
+
+Use `--show-values <assistant>` to see the actual values a specific assistant provides for these injection points.
+
+## Error Handling
+
+The command validates several conditions:
+
+1. **Project Check**: Ensures you're in a SpecifyX project (`.specify/` directory exists)
+2. **Assistant Validation**: Verifies the specified assistant is available
+3. **File Conflicts**: Warns when overwriting existing files (use `--force` to proceed)
+4. **Template Rendering**: Ensures all templates render successfully
+
+## Next Steps
+
+After successfully adding an AI assistant:
+
+1. **Customize Context**: Edit the generated context file (e.g., `CLAUDE.md`) to include project-specific information
+2. **Explore Commands**: Review command templates in the commands directory
+3. **Verify Setup**: Run `specifyx check` to validate the configuration
+4. **Test Integration**: Try using the AI assistant with your project
+
+## Troubleshooting
+
+**"Not a SpecifyX project" error**:
+- Run `specifyx init` first to initialize the project
+
+**Assistant already configured**:
+- Use `--force` to overwrite existing files
+- Or use `--list` to check current status
+
+**Template rendering failed**:
+- Check that all required project files exist
+- Verify the project configuration in `.specify/config.toml`
+- Run with `--dry-run` to preview without making changes
+
+**Permission errors**:
+- Ensure you have write permissions in the project directory
+- Check that target directories are not read-only
+
+## Examples
+
+```bash
+# Quick setup for Claude
+specifyx add-ai claude --yes
+
+# Check what's already configured
+specifyx add-ai --list
+
+# See what Claude would provide
+specifyx add-ai --show-values claude
+
+# Preview Gemini setup without making changes
+specifyx add-ai gemini --dry-run
+
+# Force reconfigure existing assistant
+specifyx add-ai copilot --force --yes
+```

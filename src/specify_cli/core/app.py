@@ -176,10 +176,12 @@ def callback(
 def register_commands():
     """Register commands with the main app."""
     from specify_cli.commands import check_command, init_command, run_app, update_app
+    from specify_cli.commands.add_ai import add_ai_command
 
     # Register commands directly on main app
     app.command("init")(init_command)
     app.command("check")(check_command)
+    app.command("add-ai")(add_ai_command)
 
     # Register run command with subcommands - the default command is 'run_command'
     app.add_typer(run_app, name="run")
