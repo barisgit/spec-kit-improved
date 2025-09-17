@@ -7,7 +7,7 @@ configurations with zero hardcoding and complete type safety using Pydantic.
 
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Set
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -28,6 +28,8 @@ class TemplateConfig(BaseModel):
     class Config:
         frozen = True
         extra = "forbid"
+        validate_assignment = True
+        str_strip_whitespace = True
 
 
 class ContextFileConfig(BaseModel):
@@ -39,6 +41,8 @@ class ContextFileConfig(BaseModel):
     class Config:
         frozen = True
         extra = "forbid"
+        validate_assignment = True
+        str_strip_whitespace = True
 
 
 class InjectionPoint(str, Enum):
@@ -50,13 +54,49 @@ class InjectionPoint(str, Enum):
     """
 
     COMMAND_PREFIX = "assistant_command_prefix"
+    """Command prefix for the AI assistant (e.g., 'claude ', 'cursor '). Used in CLI command examples and documentation."""
+
     SETUP_INSTRUCTIONS = "assistant_setup_instructions"
+    """Step-by-step setup instructions for getting the AI assistant ready for use in the project."""
+
     CONTEXT_FILE_PATH = "assistant_context_file_path"
+    """Path to the main context file where the AI assistant stores project-specific configuration and instructions."""
+
+    CONTEXT_FILE_DESCRIPTION = "assistant_context_file_description"
+    """Brief description of the context file format and purpose for the AI assistant."""
+
     MEMORY_CONFIGURATION = "assistant_memory_configuration"
+    """Description of how the AI assistant manages project memory, context, and persistent information."""
+
     REVIEW_COMMAND = "assistant_review_command"
+    """Specific command used to trigger code review functionality with the AI assistant."""
+
     DOCUMENTATION_URL = "assistant_documentation_url"
+    """Official documentation URL for the AI assistant, providing comprehensive usage guides and API references."""
+
     WORKFLOW_INTEGRATION = "assistant_workflow_integration"
+    """Description of how the AI assistant integrates with development workflows, CI/CD, and automation tools."""
+
     CUSTOM_COMMANDS = "assistant_custom_commands"
+    """List of custom or specialized commands available with this AI assistant beyond basic functionality."""
+
+    CONTEXT_FRONTMATTER = "assistant_context_frontmatter"
+    """YAML frontmatter or metadata block that should be included at the top of the assistant's context files."""
+
+    IMPORT_SYNTAX = "assistant_import_syntax"
+    """Syntax used by the AI assistant to import or reference external files within its context system."""
+
+    BEST_PRACTICES = "assistant_best_practices"
+    """Recommended best practices and usage patterns for getting optimal results from the AI assistant."""
+
+    TROUBLESHOOTING = "assistant_troubleshooting"
+    """Common troubleshooting steps and solutions for issues that may arise when using the AI assistant."""
+
+    LIMITATIONS = "assistant_limitations"
+    """Known limitations, constraints, or considerations when using the AI assistant in development workflows."""
+
+    FILE_EXTENSIONS = "assistant_file_extensions"
+    """File extensions and formats that the AI assistant works best with or has specialized support for."""
 
 
 class AssistantConfig(BaseModel):
@@ -130,14 +170,25 @@ class AssistantConfig(BaseModel):
         """Validate that all paths are under the base directory."""
         base_path = Path(self.base_directory)
 
-        # Validate context file
+        # Validate context file - allow it to be in project root or under base directory
         context_path = Path(self.context_file.file)
-        try:
-            context_path.relative_to(base_path)
-        except ValueError as e:
+
+        # Context file can be in project root (like CLAUDE.md) or under base directory
+        is_in_base_dir = True
+        is_in_project_root = (
+            context_path.name == context_path.as_posix()
+        )  # Simple filename like "CLAUDE.md"
+
+        if not is_in_project_root:
+            try:
+                context_path.relative_to(base_path)
+            except ValueError:
+                is_in_base_dir = False
+
+        if not is_in_project_root and not is_in_base_dir:
             raise ValueError(
-                f"Context file '{self.context_file.file}' must be under base directory '{self.base_directory}'"
-            ) from e
+                f"Context file '{self.context_file.file}' must be in project root or under base directory '{self.base_directory}'"
+            )
 
         # Validate commands directory
         commands_path = Path(self.command_files.directory)
@@ -201,18 +252,11 @@ class AssistantConfig(BaseModel):
         # No extra fields allowed - strict validation
         extra = "forbid"
 
-        # Schema generation example for documentation
-        json_schema_extra = {
-            "example": {
-                "name": "claude",
-                "display_name": "Claude Code",
-                "description": "Anthropic's Claude Code AI assistant",
-                "base_directory": ".claude",
-                "context_file": {"file": ".claude/CLAUDE.md", "file_format": "md"},
-                "command_files": {"directory": ".claude/commands", "file_format": "md"},
-                "agent_files": {"directory": ".claude/agents", "file_format": "md"},
-            }
-        }
+        # Enhanced validation settings
+        validate_assignment = True  # Validate on assignment, not just initialization
+        str_strip_whitespace = True  # Automatically strip whitespace from strings
+        validate_default = True  # Validate default values
+        use_enum_values = True  # Use enum values in validation errors
 
 
 # Required injection points that every assistant must provide
@@ -224,17 +268,43 @@ REQUIRED_INJECTION_POINTS: Set[InjectionPoint] = {
 
 # Optional injection points that assistants may provide
 OPTIONAL_INJECTION_POINTS: Set[InjectionPoint] = {
+    InjectionPoint.CONTEXT_FILE_DESCRIPTION,
     InjectionPoint.MEMORY_CONFIGURATION,
     InjectionPoint.REVIEW_COMMAND,
     InjectionPoint.DOCUMENTATION_URL,
     InjectionPoint.WORKFLOW_INTEGRATION,
     InjectionPoint.CUSTOM_COMMANDS,
+    InjectionPoint.CONTEXT_FRONTMATTER,
+    InjectionPoint.IMPORT_SYNTAX,
+    InjectionPoint.BEST_PRACTICES,
+    InjectionPoint.TROUBLESHOOTING,
+    InjectionPoint.LIMITATIONS,
+    InjectionPoint.FILE_EXTENSIONS,
 }
 
 # All valid injection points (for validation)
 ALL_INJECTION_POINTS: Set[InjectionPoint] = (
     REQUIRED_INJECTION_POINTS | OPTIONAL_INJECTION_POINTS
 )
+
+# Injection point descriptions for UI display and help text
+INJECTION_POINT_DESCRIPTIONS: Dict[InjectionPoint, str] = {
+    InjectionPoint.COMMAND_PREFIX: "Command prefix for the AI assistant (e.g., 'claude ', 'cursor '). Used in CLI command examples and documentation.",
+    InjectionPoint.SETUP_INSTRUCTIONS: "Step-by-step setup instructions for getting the AI assistant ready for use in the project.",
+    InjectionPoint.CONTEXT_FILE_PATH: "Path to the main context file where the AI assistant stores project-specific configuration and instructions.",
+    InjectionPoint.CONTEXT_FILE_DESCRIPTION: "Brief description of the context file format and purpose for the AI assistant.",
+    InjectionPoint.MEMORY_CONFIGURATION: "Description of how the AI assistant manages project memory, context, and persistent information.",
+    InjectionPoint.REVIEW_COMMAND: "Specific command used to trigger code review functionality with the AI assistant.",
+    InjectionPoint.DOCUMENTATION_URL: "Official documentation URL for the AI assistant, providing comprehensive usage guides and API references.",
+    InjectionPoint.WORKFLOW_INTEGRATION: "Description of how the AI assistant integrates with development workflows, CI/CD, and automation tools.",
+    InjectionPoint.CUSTOM_COMMANDS: "List of custom or specialized commands available with this AI assistant beyond basic functionality.",
+    InjectionPoint.CONTEXT_FRONTMATTER: "YAML frontmatter or metadata block that should be included at the top of the assistant's context files.",
+    InjectionPoint.IMPORT_SYNTAX: "Syntax used by the AI assistant to import or reference external files within its context system.",
+    InjectionPoint.BEST_PRACTICES: "Recommended best practices and usage patterns for getting optimal results from the AI assistant.",
+    InjectionPoint.TROUBLESHOOTING: "Common troubleshooting steps and solutions for issues that may arise when using the AI assistant.",
+    InjectionPoint.LIMITATIONS: "Known limitations, constraints, or considerations when using the AI assistant in development workflows.",
+    InjectionPoint.FILE_EXTENSIONS: "File extensions and formats that the AI assistant works best with or has specialized support for.",
+}
 
 # Type aliases for better type safety and readability
 InjectionValues = Dict[InjectionPoint, str]

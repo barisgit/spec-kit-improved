@@ -48,6 +48,7 @@ class ClaudeValidator:
         """Check if Claude is authenticated (basic check)."""
         # In a real implementation, this would check for auth tokens
         # For now, just return True to avoid blocking functionality
+        # TODO
         return True
 
     def _validate_config_files(self, result: ValidationResult) -> ValidationResult:

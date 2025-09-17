@@ -40,7 +40,7 @@ class ClaudeProvider(AssistantProvider):
             description="Anthropic's Claude Code AI assistant",
             base_directory=".claude",
             context_file=ContextFileConfig(
-                file=".claude/CLAUDE.md", file_format=FileFormat.MARKDOWN
+                file="CLAUDE.md", file_format=FileFormat.MARKDOWN
             ),
             command_files=TemplateConfig(
                 directory=".claude/commands",
@@ -63,11 +63,19 @@ class ClaudeProvider(AssistantProvider):
             InjectionPoint.COMMAND_PREFIX: "claude ",
             InjectionPoint.SETUP_INSTRUCTIONS: "Install Claude Code and run 'claude auth' to authenticate with your Anthropic account",
             InjectionPoint.CONTEXT_FILE_PATH: self._assistant_config.context_file.file,
+            InjectionPoint.CONTEXT_FILE_DESCRIPTION: ", CLAUDE.md for Claude Code",
             InjectionPoint.MEMORY_CONFIGURATION: "Spec-driven development workflow with Claude Code integration",
             InjectionPoint.REVIEW_COMMAND: "claude review --comprehensive --fix-issues",
             InjectionPoint.DOCUMENTATION_URL: "https://docs.anthropic.com/en/docs/claude-code",
             InjectionPoint.WORKFLOW_INTEGRATION: "GitHub Actions integration with Claude Code for automated code review and generation",
             InjectionPoint.CUSTOM_COMMANDS: "claude generate, claude review, claude chat, claude test",
+            InjectionPoint.CONTEXT_FRONTMATTER: 'description: "Claude Code context file for this project"',
+            # High-priority injection points
+            InjectionPoint.IMPORT_SYNTAX: "Use `@path/to/file.ext` syntax to import files with relative paths",
+            InjectionPoint.BEST_PRACTICES: "Use descriptive prompts, break complex tasks into steps, leverage Claude's code analysis capabilities",
+            InjectionPoint.TROUBLESHOOTING: "Check Claude Code status with `claude --version`, ensure authentication with `claude auth`, verify file permissions",
+            InjectionPoint.LIMITATIONS: "Claude Code works best with well-structured projects, requires clear context, may need multiple iterations for complex tasks",
+            InjectionPoint.FILE_EXTENSIONS: ".md, .py, .js, .ts, .json, .yaml, .toml (prefers markdown for documentation)",
         }
 
     def validate_setup(self) -> ValidationResult:

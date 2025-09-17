@@ -28,7 +28,7 @@ from ..types import (
     ContextFileConfig,
     FileFormat,
     InjectionValues,
-    TemplateConfig
+    TemplateConfig,
 )
 from .validator import GeminiValidator
 
@@ -44,16 +44,13 @@ class GeminiProvider(AssistantProvider):
             description="Google's Gemini CLI AI assistant",
             base_directory=".gemini",
             context_file=ContextFileConfig(
-                file=".gemini/GEMINI.md",
-                file_format=FileFormat.MARKDOWN
+                file=".gemini/GEMINI.md", file_format=FileFormat.MARKDOWN
             ),
             command_files=TemplateConfig(
-                directory=".gemini/commands",
-                file_format=FileFormat.MARKDOWN
+                directory=".gemini/commands", file_format=FileFormat.MARKDOWN
             ),
             agent_files=TemplateConfig(
-                directory=".gemini/agents",
-                file_format=FileFormat.MARKDOWN
+                directory=".gemini/agents", file_format=FileFormat.MARKDOWN
             ),
         )
         self._validator = GeminiValidator(self._assistant_config)
@@ -69,6 +66,7 @@ class GeminiProvider(AssistantProvider):
             InjectionPoint.COMMAND_PREFIX: "gemini ",
             InjectionPoint.SETUP_INSTRUCTIONS: "Install Node.js 20+, run 'npm install -g @google/gemini-cli', and configure API key",
             InjectionPoint.CONTEXT_FILE_PATH: self._assistant_config.context_file.file,
+            InjectionPoint.CONTEXT_FILE_DESCRIPTION: ", GEMINI.md for Gemini CLI",
             InjectionPoint.MEMORY_CONFIGURATION: (
                 "# Gemini CLI Memory Configuration\n"
                 "# Project-specific context and conversation history\n"
@@ -93,6 +91,12 @@ class GeminiProvider(AssistantProvider):
                 '# gemini -p "prompt" - Quick prompt without terminal interface\n'
                 "# Built-in tools: Google Search grounding, file operations, shell commands, web fetching"
             ),
+            InjectionPoint.CONTEXT_FRONTMATTER: 'description: "Gemini AI configuration for this project"',
+            InjectionPoint.IMPORT_SYNTAX: "No file import syntax - provide full context in each interaction",
+            InjectionPoint.BEST_PRACTICES: "Use specific prompts, leverage Google Search grounding, utilize built-in tools, provide clear context",
+            InjectionPoint.TROUBLESHOOTING: "Check `gemini --version`, verify API key configuration, ensure Node.js 20+ compatibility",
+            InjectionPoint.LIMITATIONS: "Requires API key, limited conversation history, no persistent file context across sessions",
+            InjectionPoint.FILE_EXTENSIONS: ".md, .js, .ts, .py, .json, .yaml (supports most common formats)",
         }
 
     def validate_setup(self) -> ValidationResult:
@@ -121,5 +125,12 @@ class GeminiProvider(AssistantProvider):
 
         Future versions might support imports, in which case this method
         would implement Gemini-specific import syntax.
+
+        Args:
+            current_dir: Current working directory (unused for Gemini)
+            target_file: Target file to import (unused for Gemini)
         """
+        # Parameters are unused since Gemini doesn't support file imports
+        _ = current_dir
+        _ = target_file
         return ""

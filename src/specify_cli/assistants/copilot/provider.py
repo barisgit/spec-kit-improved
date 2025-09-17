@@ -17,7 +17,7 @@ from ..types import (
     FileFormat,
     InjectionPoint,
     InjectionValues,
-    TemplateConfig
+    TemplateConfig,
 )
 
 
@@ -32,16 +32,13 @@ class CopilotProvider(AssistantProvider):
             description="GitHub's Copilot AI assistant",
             base_directory=".github",
             context_file=ContextFileConfig(
-                file=".github/copilot-instructions.md",
-                file_format=FileFormat.MARKDOWN
+                file=".github/copilot-instructions.md", file_format=FileFormat.MARKDOWN
             ),
             command_files=TemplateConfig(
-                directory=".github/copilot/commands",
-                file_format=FileFormat.MARKDOWN
+                directory=".github/copilot/commands", file_format=FileFormat.MARKDOWN
             ),
             agent_files=TemplateConfig(
-                directory=".github/copilot/agents",
-                file_format=FileFormat.MARKDOWN
+                directory=".github/copilot/agents", file_format=FileFormat.MARKDOWN
             ),
         )
 
@@ -59,6 +56,7 @@ class CopilotProvider(AssistantProvider):
                 "'gh extension install github/gh-copilot'"
             ),
             InjectionPoint.CONTEXT_FILE_PATH: self._assistant_config.context_file.file,
+            InjectionPoint.CONTEXT_FILE_DESCRIPTION: ", .github/copilot-instructions.md for GitHub Copilot",
             InjectionPoint.MEMORY_CONFIGURATION: (
                 "# GitHub Copilot Memory Configuration\n"
                 "# Store project context, coding patterns, and preferences\n"
@@ -88,6 +86,12 @@ class CopilotProvider(AssistantProvider):
                 "# gh copilot explain          # Explain code functionality\n"
                 "# gh copilot translate        # Convert between languages"
             ),
+            InjectionPoint.CONTEXT_FRONTMATTER: 'description: "GitHub Copilot instructions for this project"',
+            InjectionPoint.IMPORT_SYNTAX: "Use HTML comments `<!-- @import path/to/file -->` to reference other instruction files",
+            InjectionPoint.BEST_PRACTICES: "Write clear, specific instructions; use examples; leverage GitHub context; structure content hierarchically",
+            InjectionPoint.TROUBLESHOOTING: "Check `gh copilot` extension status, verify GitHub CLI authentication, ensure proper repository context",
+            InjectionPoint.LIMITATIONS: "Context limited to repository scope, requires GitHub Copilot subscription, works best with GitHub-hosted projects",
+            InjectionPoint.FILE_EXTENSIONS: ".md, .js, .ts, .py, .java, .go, .rb (GitHub's supported languages)",
         }
 
     def validate_setup(self) -> ValidationResult:
