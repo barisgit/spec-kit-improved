@@ -65,7 +65,13 @@ class PathDefaults:
 
     # Template categories that exist in the template package
     TEMPLATE_CATEGORIES: Final[List[str]] = field(
-        default_factory=lambda: ["commands", "scripts", "memory", "runtime_templates"]
+        default_factory=lambda: [
+            "commands",
+            "scripts",
+            "memory",
+            "runtime_templates",
+            "context",
+        ]
     )
 
     # Files/directories to skip during project creation

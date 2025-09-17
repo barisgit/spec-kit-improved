@@ -26,6 +26,7 @@ class TemplateCategory(Enum):
     SCRIPTS = "scripts"  # Python executable scripts
     MEMORY = "memory"  # Memory/context files
     RUNTIME = "runtime_templates"  # Runtime templates for project use
+    CONTEXT = "context"  # AI assistant context files (CLAUDE.md, main.mdc, etc.)
 
 
 @dataclass

@@ -302,8 +302,8 @@ class ProjectInitOptions:
     """Options for project initialization"""
 
     project_name: Optional[str] = None
-    ai_assistant: str = field(
-        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    ai_assistants: List[str] = field(
+        default_factory=lambda: [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
     )
     use_current_dir: bool = False
     skip_git: bool = False
