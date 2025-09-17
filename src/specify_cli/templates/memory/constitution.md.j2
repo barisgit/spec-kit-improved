@@ -13,12 +13,8 @@ All specifications, plans, and tasks follow standardized templates; Jinja2 templ
 TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced; Integration tests required for new services and API changes; Contract tests validate all external interfaces.
 
 ### IV. AI Assistant Integration
-{% if ai_assistant == 'claude' -%}
-Claude Code commands (specify, plan, tasks) drive the workflow; Python scripts provide cross-platform reliability; Generated commands integrate seamlessly with Claude's capabilities; All templates support Claude-specific features and syntax.
-{% elif ai_assistant == 'gemini' -%}
-Gemini CLI integration for specification and planning workflows; Python-based scripts ensure consistent execution across platforms; Templates optimized for Gemini's interaction patterns; Clear command structure for Gemini's processing capabilities.
-{% elif ai_assistant == 'copilot' -%}
-GitHub Copilot integration through IDE and command-line tools; Python scripts provide reliable automation for development workflow; Templates structured for Copilot's code generation patterns; Commands work seamlessly in IDE environments.
+{% if assistant_memory_configuration -%}
+{{ assistant_memory_configuration }}
 {% else -%}
 AI assistant agnostic design with fallback behaviors; Python scripts provide cross-platform automation; Templates include generic patterns for any AI workflow; Extensible structure for future AI assistant integration.
 {% endif %}
@@ -36,7 +32,7 @@ Default branch pattern: `001-feature-name`; Spec directories match branch names 
 {% endif %}
 
 ### File Organization
-Configuration stored in `.specify/config.toml` using TOML format; Templates in `.specify/templates/` for user customization; Python scripts in `.specify/scripts/` with executable permissions; Memory files in `.specify/memory/` for project documentation; AI-specific commands in `.{{ ai_assistant }}/commands/` directory.
+Configuration stored in `.specify/config.toml` using TOML format; Templates in `.specify/templates/` for user customization; Python scripts in `.specify/scripts/` with executable permissions; Memory files in `.specify/memory/` for project documentation{% if assistant_context_file_path %}; AI-specific context file at `{{ assistant_context_file_path }}`{% endif %}{% if assistant_command_prefix %}; Commands use `{{ assistant_command_prefix }}` prefix{% endif %}.
 
 ### Quality Gates
 All generated files must pass validation before use; Templates must render without errors; Python scripts must execute successfully; Git operations must complete cleanly; User prompts must validate input before processing.

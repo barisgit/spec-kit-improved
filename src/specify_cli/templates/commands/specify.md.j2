@@ -1,6 +1,8 @@
 ---
 name: specify
-description: "Start a new feature by creating a specification and feature branch. This is the first step in the Spec-Driven Development lifecycle."
+description: "Start a new feature specification. {{ assistant_workflow_integration if assistant_workflow_integration else 'This is the first step in the Spec-Driven Development lifecycle.' }}"
+ai_assistant: "{{ ai_assistant }}"
+command_prefix: "{{ assistant_command_prefix if assistant_command_prefix else '' }}"
 ---
 
 Start a new feature by creating a specification and feature branch for {{ project_name }}.
@@ -33,24 +35,21 @@ Given the feature description provided as an argument, do this:
 - **Traditional workflow**: Use `/plan` and `/tasks` commands (auto-detect from branch)
 - **No-branch workflow**: Use `/plan` and `/tasks` with `--spec-id` parameter from the JSON output above
 
-{% if ai_assistant == 'claude' -%}
 Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 
-**Claude Code Integration:**
-- You may use subagent to gather more information about the codebase and the feature description
-{% elif ai_assistant == 'gemini' -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
+{% if assistant_workflow_integration -%}
 
-**Gemini Integration:**
-- Use this command to start new features
-{% elif ai_assistant == 'copilot' -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
+**{{ ai_assistant | title }} Integration:**
+{{ assistant_workflow_integration }}
+{% endif %}
 
-**GitHub Copilot Integration:**
-- Use this command in your IDE or terminal
-{% else -%}
-Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
+{% if assistant_setup_instructions -%}
 
-**Generic AI Assistant:**
-- Use this command to create feature specifications
-{% endif -%}
+**Setup Requirements:**
+{{ assistant_setup_instructions }}
+{% endif %}
+
+{% if assistant_command_prefix -%}
+
+**Command Prefix:** `{{ assistant_command_prefix }}`
+{% endif %}

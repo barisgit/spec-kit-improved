@@ -220,7 +220,7 @@ class HttpxDownloadService(DownloadService):
             return False
 
     def download_github_release_template(
-        self, ai_assistant: str, destination_path: Path
+        self, destination_path: Path
     ) -> Tuple[bool, Dict]:
         """Download template from spec-kit GitHub releases.
 
@@ -249,7 +249,6 @@ class HttpxDownloadService(DownloadService):
             # Look for specifyx-templates or spec-kit-template patterns
             patterns = [
                 "specifyx-templates",  # New SpecifyX format
-                f"spec-kit-template-{ai_assistant}",  # Legacy per-AI format (fallback)
                 "spec-kit-template",  # Generic format
             ]
 
