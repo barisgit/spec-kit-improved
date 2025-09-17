@@ -693,7 +693,7 @@ class TomlConfigService(ConfigService):
 
                 # Update AI assistant if different
                 current_ai = (
-                    config.template_settings.ai_assistant
+                    config.template_settings.primary_assistant
                     if config.template_settings
                     else None
                 )

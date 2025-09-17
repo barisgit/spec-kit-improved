@@ -1,0 +1,270 @@
+---
+title: Memory Service
+description: Type-safe memory file management system for AI assistant context integration
+category: service
+tags: [memory, ai-assistant, type-safety, discovery, formatting]
+---
+
+# Memory Service
+
+The Memory Service provides a type-safe system for discovering, categorizing, and formatting memory files for AI assistant context integration. It enables automatic discovery of project memory files and generates assistant-specific import statements with proper validation and error handling.
+
+## Overview
+
+The service consists of four main components:
+- **MemoryFileDiscovery** - Pattern-based file discovery with categorization
+- **MemoryFileFormatter** - Assistant-specific import formatting
+- **MemoryConfigManager** - Configuration management with defaults
+- **MemoryManager** - High-level API with backwards compatibility
+
+## Key Features
+
+### Type-Safe Architecture
+- Pydantic models for complete type safety and validation
+- Immutable data structures with frozen configurations
+- Comprehensive error handling and graceful failures
+- Strong typing for all memory file operations
+
+### Pattern-Based Discovery
+- Configurable file patterns with glob support
+- Category-based file organization (constitution, principles, guidelines, standards)
+- Priority-based sorting and file limiting
+- Extension filtering with validation
+
+### Assistant Integration
+- Assistant-specific import formatting using provider interfaces
+- Support for assistants that don't support imports
+- Relative path calculation for context files
+- Integration with existing assistant injection system
+
+## Core Data Models
+
+### MemoryFile Types
+```python
+class DiscoveredMemoryFile(BaseModel):
+    path: Path              # Full path to the memory file
+    filename: str           # Just the filename
+    category: MemoryCategory # Categorized type
+    priority: int           # Priority for ordering
+    exists: bool            # Whether the file exists
+```
+
+### Memory Categories
+```python
+class MemoryCategory(str, Enum):
+    CONSTITUTION = "constitution"
+    PRINCIPLES = "principles"
+    GUIDELINES = "guidelines"
+    STANDARDS = "standards"
+    DOCUMENTATION = "documentation"
+    OTHER = "other"
+```
+
+### Import Formatting
+```python
+class FormattedMemoryImport(BaseModel):
+    import_string: str                    # Assistant-specific import
+    source_file: DiscoveredMemoryFile     # Source file info
+    assistant_name: AssistantName         # Target assistant
+```
+
+## File Discovery
+
+### MemoryFileDiscovery
+```python
+discovery = MemoryFileDiscovery(project_path, config)
+
+# Discover all files matching patterns
+all_files = discovery.discover_all_files()
+
+# Filter by category
+constitution_files = discovery.discover_by_category(MemoryCategory.CONSTITUTION)
+
+# Get only existing files
+existing_files = discovery.discover_existing_files_only()
+
+# Check for constitution files
+has_constitution = discovery.has_constitution_files()
+```
+
+### Configuration Patterns
+```python
+patterns = [
+    MemoryFilePattern(
+        filename_pattern="constitution.md",
+        category=MemoryCategory.CONSTITUTION,
+        priority=1
+    ),
+    MemoryFilePattern(
+        filename_pattern="*.md",
+        category=MemoryCategory.DOCUMENTATION,
+        priority=10
+    )
+]
+```
+
+## Memory Formatting
+
+### Assistant-Specific Formatting
+```python
+formatter = MemoryFileFormatter(project_path)
+
+# Format imports for specific assistant
+imports = formatter.format_imports_for_assistant(
+    assistant_name=AssistantName.CLAUDE,
+    memory_files=discovered_files,
+    context_file_dir=Path("/project/.claude")
+)
+
+# Check if assistant supports imports
+supports = formatter.supports_imports(AssistantName.CLAUDE)
+```
+
+### Import Section Generation
+```python
+section = MemoryImportSection(
+    imports=formatted_imports,
+    assistant_name=AssistantName.CLAUDE,
+    has_constitution=True,
+    has_other_files=True
+)
+
+# Render complete section with headers
+rendered = section.render()
+```
+
+## Configuration Management
+
+### MemoryConfigManager
+```python
+config_manager = MemoryConfigManager(project_path)
+
+# Load configuration (defaults if no file exists)
+config = config_manager.load_config()
+
+# Get default patterns and settings
+default_config = config_manager.get_default_config()
+
+# Check if config file exists
+exists = config_manager.config_exists()
+```
+
+### Default Configuration
+```python
+MemoryImportConfig(
+    enabled=True,
+    extensions=[".md", ".txt"],
+    max_files=10,
+    patterns=[
+        # Constitution files (priority 1)
+        MemoryFilePattern("constitution.md", MemoryCategory.CONSTITUTION, 1),
+        # Principles files (priority 2)
+        MemoryFilePattern("principles.md", MemoryCategory.PRINCIPLES, 2),
+        # Guidelines files (priority 3)
+        MemoryFilePattern("guidelines.md", MemoryCategory.GUIDELINES, 3),
+        # Wildcard patterns (priority 10)
+        MemoryFilePattern("*.md", MemoryCategory.DOCUMENTATION, 10)
+    ]
+)
+```
+
+## High-Level API
+
+### MemoryManager (Backwards Compatible)
+```python
+manager = MemoryManager(project_path)
+
+# Discover memory files (legacy interface)
+files = manager.discover_memory_files(extensions=[".md", ".txt"])
+
+# Format imports for assistant
+imports = manager.format_imports_for_assistant(
+    ai_assistant=AssistantName.CLAUDE,
+    context_file_dir=context_dir,
+    import_list=["constitution.md", "principles.md"]
+)
+
+# Generate complete import section
+section = manager.generate_import_section(
+    ai_assistant=AssistantName.CLAUDE,
+    context_file_dir=context_dir
+)
+```
+
+## File Organization
+
+Memory files are expected in the `.specify/memory/` directory:
+```
+.specify/
+└── memory/
+    ├── constitution.md     # Core project constitution (priority 1)
+    ├── principles.md       # Development principles (priority 2)
+    ├── guidelines.md       # Coding guidelines (priority 3)
+    ├── standards.md        # Quality standards (priority 4)
+    └── other-docs.md       # Additional documentation (priority 10)
+```
+
+## Error Handling
+
+The service provides robust error handling:
+- **Graceful degradation**: Missing files don't break imports
+- **Assistant validation**: Checks for import support before formatting
+- **Path validation**: Ensures proper relative path calculation
+- **Type safety**: Pydantic validation prevents runtime errors
+- **Silent failures**: Formatting errors are caught and skipped
+
+## Integration Points
+
+The Memory Service integrates with:
+- **Assistant Providers**: Uses `format_import()` method for formatting
+- **Template System**: Provides memory imports for context file generation
+- **Project Manager**: Automatically discovers project memory files
+- **Configuration Service**: Planned integration for TOML-based configuration
+
+## Performance Characteristics
+
+- File discovery: O(n) where n is files in memory directory
+- Pattern matching: O(p*f) where p is patterns, f is files
+- Memory usage: < 1MB for typical projects with < 100 memory files
+- Caching: Discovery results cached per MemoryManager instance
+
+## Usage Examples
+
+### Basic Memory Discovery
+```python
+from specify_cli.services.memory_service import MemoryManager
+
+manager = MemoryManager(project_path)
+files = manager.discover_memory_files()
+print(f"Found {len(files)} memory files")
+```
+
+### Claude-Specific Import Generation
+```python
+from specify_cli.assistants.types import AssistantName
+
+section = manager.generate_import_section(
+    ai_assistant=AssistantName.CLAUDE,
+    context_file_dir=Path("/project/.claude")
+)
+
+# Use in template context
+context = {
+    "memory_imports": section,
+    "project_name": "my-project"
+}
+```
+
+### Custom Pattern Configuration
+```python
+from specify_cli.services.memory_service import MemoryFileDiscovery, MemoryImportConfig
+
+config = MemoryImportConfig(
+    extensions=[".md", ".txt", ".rst"],
+    max_files=20,
+    patterns=[custom_patterns]
+)
+
+discovery = MemoryFileDiscovery(project_path, config)
+files = discovery.discover_all_files()
+```
