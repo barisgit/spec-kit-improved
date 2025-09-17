@@ -26,6 +26,11 @@ export const DEFAULT_CONFIG: SyncConfiguration = {
       pattern: 'src/specify_cli/contributing/*.{md,mdx}',
       type: 'contributing',
       outputSubdir: 'docs/contributing'
+    },
+    {
+      pattern: 'src/specify_cli/assistants/*/docs.{md,mdx}',
+      type: 'architecture',
+      outputSubdir: 'docs/reference/architecture'
     }
   ],
   outputDir: 'docs',

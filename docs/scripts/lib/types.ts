@@ -2,7 +2,7 @@
  * Type definitions for the documentation synchronization system
  */
 
-export type DocumentationType = 'command' | 'service' | 'guide' | 'about' | 'contributing';
+export type DocumentationType = 'command' | 'service' | 'guide' | 'about' | 'contributing' | 'architecture';
 
 export interface FrontmatterData {
   title: string;
