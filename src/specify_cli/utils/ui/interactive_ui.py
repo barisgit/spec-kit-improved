@@ -74,6 +74,7 @@ class InteractiveUI:
         default: Optional[List[str]] = None,
         min_selections: int = 0,
         max_selections: Optional[int] = None,
+        header: Optional[str] = None,
     ) -> List[str]:
         """Multi-selection interface with arrow keys.
 
@@ -83,6 +84,7 @@ class InteractiveUI:
             default: Default selected choices
             min_selections: Minimum number of selections required
             max_selections: Maximum number of selections allowed
+            header: Optional header text to display above choices
 
         Returns:
             List of selected choice values
@@ -96,6 +98,7 @@ class InteractiveUI:
             default=default,
             min_selections=min_selections,
             max_selections=max_selections,
+            header=header,
         )
 
         return result
