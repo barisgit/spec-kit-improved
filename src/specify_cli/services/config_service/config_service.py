@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import tomli_w
 
-from specify_cli.models.config import ProjectConfig
+from specify_cli.models.config import ProjectConfig, ensure_system_path
 
 if TYPE_CHECKING:
     from specify_cli.models.config import BranchNamingConfig
@@ -769,34 +769,36 @@ class TomlConfigService(ConfigService):
         try:
             import copy
 
-            # Create a deep copy to avoid modifying the original config
             config_copy = copy.deepcopy(config)
 
-            # Normalize paths for the specific platform
-            if platform_name == "windows":
-                # Ensure Windows-style paths
-                if (
-                    config_copy.template_settings
-                    and config_copy.template_settings.custom_templates_dir
-                ):
-                    config_copy.template_settings.custom_templates_dir = Path(
-                        str(config_copy.template_settings.custom_templates_dir).replace(
-                            "/", "\\"
-                        )
+            data = config_copy.to_dict()
+
+            project_section = data.get("project") or {}
+            template_settings = project_section.get("template_settings") or {}
+            custom_templates_dir = template_settings.get("custom_templates_dir")
+
+            if custom_templates_dir:
+                if platform_name == "windows":
+                    template_settings["custom_templates_dir"] = (
+                        custom_templates_dir.replace("/", "\\")
                     )
-            else:
-                # Ensure Unix-style paths
-                if (
-                    config_copy.template_settings
-                    and config_copy.template_settings.custom_templates_dir
-                ):
-                    config_copy.template_settings.custom_templates_dir = Path(
-                        str(config_copy.template_settings.custom_templates_dir).replace(
-                            "\\", "/"
-                        )
+                else:
+                    template_settings["custom_templates_dir"] = (
+                        custom_templates_dir.replace("\\", "/")
                     )
 
-            return self.save_project_config(project_path, config_copy)
+            config_dir = project_path / ".specify"
+            config_dir.mkdir(exist_ok=True)
+
+            config_file = config_dir / "config.toml"
+
+            with open(config_file, "wb") as f:
+                tomli_w.dump(data, f)
+
+            return True
+        except (OSError, PermissionError) as e:
+            logging.error(f"Configuration operation failed: {e}")
+            return False
         except Exception:
             return False
 
@@ -818,28 +820,18 @@ class TomlConfigService(ConfigService):
                 return None
 
             # Normalize paths for the specific platform
-            if platform_name == "windows":
-                # Ensure Windows-style paths
-                if (
-                    config.template_settings
-                    and config.template_settings.custom_templates_dir
-                ):
-                    config.template_settings.custom_templates_dir = Path(
-                        str(config.template_settings.custom_templates_dir).replace(
-                            "/", "\\"
-                        )
-                    )
-            else:
-                # Ensure Unix-style paths
-                if (
-                    config.template_settings
-                    and config.template_settings.custom_templates_dir
-                ):
-                    config.template_settings.custom_templates_dir = Path(
-                        str(config.template_settings.custom_templates_dir).replace(
-                            "\\", "/"
-                        )
-                    )
+            if (
+                config.template_settings
+                and config.template_settings.custom_templates_dir
+            ):
+                raw_value = str(config.template_settings.custom_templates_dir)
+                if platform_name == "windows":
+                    normalized = raw_value.replace("/", "\\")
+                else:
+                    normalized = raw_value.replace("\\", "/")
+                config.template_settings.custom_templates_dir = ensure_system_path(
+                    normalized
+                )
 
             return config
         except Exception:

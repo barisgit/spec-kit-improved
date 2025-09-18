@@ -325,7 +325,8 @@ class FileOperations:
         """
         import os
 
-        path_str = str(Path(path))
+        # Avoid instantiating platform-specific Path classes when os.name is patched
+        path_str = str(path)
 
         # Convert to platform-specific separators
         if os.name == "nt":  # Windows

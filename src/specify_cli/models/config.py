@@ -5,9 +5,10 @@ These models define the structure for project and global configurations,
 supporting TOML serialization and validation.
 """
 
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PosixPath, WindowsPath
 from typing import Any, Dict, List, Optional
 
 from .defaults import BRANCH_DEFAULTS
@@ -131,7 +132,8 @@ class TemplateConfig:
         """Create instance from dictionary (TOML deserialization)"""
         custom_templates_dir = None
         if "custom_templates_dir" in data and data["custom_templates_dir"]:
-            custom_templates_dir = Path(data["custom_templates_dir"])
+            raw_dir = data["custom_templates_dir"]
+            custom_templates_dir = ensure_system_path(raw_dir)
 
         # Handle backward compatibility: convert old ai_assistant to ai_assistants
         ai_assistants = data.get("ai_assistants")
@@ -215,3 +217,17 @@ class ProjectConfig:
             branch_naming=BranchNamingConfig(),
             template_settings=TemplateConfig(),
         )
+
+
+_SYSTEM_PATH_CLS = WindowsPath if os.name == "nt" else PosixPath
+
+
+def ensure_system_path(value: Any) -> Path:
+    """Coerce a raw path-like value into a Path using the host system class."""
+    if isinstance(value, Path):
+        return value
+
+    try:
+        return Path(value)
+    except NotImplementedError:
+        return _SYSTEM_PATH_CLS(str(value))
