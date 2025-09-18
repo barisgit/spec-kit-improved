@@ -483,6 +483,7 @@ class HttpxDownloadService(DownloadService):
         self, repo_url: str, template_name: str, destination_path: Path
     ) -> bool:
         """Download a specific template from a repository."""
+        _ = template_name
         try:
             # For spec-kit, use the release-based download
             if "spec-kit" in repo_url.lower():
