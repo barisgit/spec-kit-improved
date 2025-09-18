@@ -313,6 +313,12 @@ class ProjectInitOptions:
     branch_naming_config: Optional[BranchNamingConfig] = None
     force: bool = False
 
+    def __post_init__(self):
+        """Validate and set defaults for project initialization options."""
+        # If ai_assistants is explicitly empty, provide default
+        if not self.ai_assistants:
+            self.ai_assistants = [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
+
 
 @dataclass
 class ProjectInitResult:

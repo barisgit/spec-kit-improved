@@ -487,7 +487,7 @@ class HttpxDownloadService(DownloadService):
             # For spec-kit, use the release-based download
             if "spec-kit" in repo_url.lower():
                 success, metadata = self.download_github_release_template(
-                    template_name, destination_path.parent
+                    destination_path.parent
                 )
                 if success and metadata:
                     # The download method saves to destination_path.parent, so we need to move/extract

@@ -1,6 +1,9 @@
 from .template_service import (
     JinjaTemplateService,
     RenderResult,
+    TemplateChange,
+    TemplateChangeType,
+    TemplateDiff,
     TemplateFolderMapping,
     TemplateRenderResult,
     TemplateService,
@@ -13,5 +16,8 @@ __all__ = [
     "TemplateFolderMapping",
     "RenderResult",
     "TemplateRenderResult",
+    "TemplateChange",
+    "TemplateChangeType",
+    "TemplateDiff",
     "get_template_service",
 ]

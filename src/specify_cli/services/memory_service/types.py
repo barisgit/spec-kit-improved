@@ -9,7 +9,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from specify_cli.assistants.types import AssistantName
 
@@ -105,8 +105,7 @@ class DiscoveredMemoryFile(BaseModel):
     priority: int = Field(..., description="Priority for ordering")
     exists: bool = Field(..., description="Whether the file actually exists")
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class FormattedMemoryImport(BaseModel):
@@ -122,8 +121,7 @@ class FormattedMemoryImport(BaseModel):
         ..., description="Assistant this import was formatted for"
     )
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class MemoryImportSection(BaseModel):
@@ -174,8 +172,7 @@ class MemoryImportSection(BaseModel):
 
         return "\n".join(sections)
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 # Type aliases for better readability

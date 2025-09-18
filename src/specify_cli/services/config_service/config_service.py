@@ -674,7 +674,9 @@ class TomlConfigService(ConfigService):
                 if ai_assistant:
                     from specify_cli.models.config import TemplateConfig
 
-                    config.template_settings = TemplateConfig(ai_assistant=ai_assistant)
+                    config.template_settings = TemplateConfig(
+                        ai_assistants=[ai_assistant]
+                    )
 
                 # Set branch naming config if provided
                 if branch_naming_config:
@@ -702,14 +704,14 @@ class TomlConfigService(ConfigService):
                         from specify_cli.models.config import TemplateConfig
 
                         config.template_settings = TemplateConfig(
-                            ai_assistant=ai_assistant
+                            ai_assistants=[ai_assistant]
                         )
                     else:
                         # Create new TemplateConfig with updated ai_assistant
                         from specify_cli.models.config import TemplateConfig
 
                         config.template_settings = TemplateConfig(
-                            ai_assistant=ai_assistant,
+                            ai_assistants=[ai_assistant],
                             config_directory=config.template_settings.config_directory,
                             custom_templates_dir=config.template_settings.custom_templates_dir,
                             template_cache_enabled=config.template_settings.template_cache_enabled,
@@ -741,7 +743,7 @@ class TomlConfigService(ConfigService):
                 from specify_cli.models.config import TemplateConfig
 
                 default_config.template_settings = TemplateConfig(
-                    ai_assistant=ai_assistant
+                    ai_assistants=[ai_assistant]
                 )
             if branch_naming_config:
                 is_valid, error = self.validate_branch_naming_config(

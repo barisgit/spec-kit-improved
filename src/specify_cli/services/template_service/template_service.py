@@ -11,6 +11,7 @@ import platform
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
@@ -64,6 +65,61 @@ class RenderResult:
     @property
     def total_files(self) -> int:
         return len(self.rendered_files) + len(self.copied_files)
+
+
+class TemplateChangeType(Enum):
+    """Types of template changes."""
+
+    ADDED = "added"
+    MODIFIED = "modified"
+    DELETED = "deleted"
+    UNCHANGED = "unchanged"
+
+
+@dataclass
+class TemplateChange:
+    """Represents a change to a template."""
+
+    template_name: str
+    change_type: TemplateChangeType
+    old_content: Optional[str] = None
+    new_content: Optional[str] = None
+    category: Optional[str] = None
+    lines_added: int = 0
+    lines_removed: int = 0
+    should_skip: bool = False  # Whether this file should be skipped during updates
+
+
+@dataclass
+class TemplateDiff:
+    """Result of comparing template sets."""
+
+    changes: List[TemplateChange] = field(default_factory=list)
+
+    @property
+    def has_changes(self) -> bool:
+        return any(
+            change.change_type != TemplateChangeType.UNCHANGED
+            for change in self.changes
+        )
+
+    @property
+    def added_count(self) -> int:
+        return len(
+            [c for c in self.changes if c.change_type == TemplateChangeType.ADDED]
+        )
+
+    @property
+    def modified_count(self) -> int:
+        return len(
+            [c for c in self.changes if c.change_type == TemplateChangeType.MODIFIED]
+        )
+
+    @property
+    def deleted_count(self) -> int:
+        return len(
+            [c for c in self.changes if c.change_type == TemplateChangeType.DELETED]
+        )
 
 
 @dataclass
@@ -268,6 +324,21 @@ class TemplateService(ABC):
         self, context: TemplateContext, platform_name: str
     ) -> TemplateContext:
         """Enhance template context with platform-specific information"""
+        pass
+
+    @abstractmethod
+    def compare_templates(
+        self, project_path: Path, new_template_dir: Optional[Path] = None
+    ) -> TemplateDiff:
+        """Compare current project files with templates from a source.
+
+        Args:
+            project_path: Path to the current project
+            new_template_dir: New template directory to compare against (None for built-in)
+
+        Returns:
+            TemplateDiff object with all changes
+        """
         pass
 
 
@@ -523,8 +594,8 @@ class JinjaTemplateService(TemplateService):
                 injection_values = assistant.get_injection_values()
                 for injection_point, value in injection_values.items():
                     key_name = (
-                        str(injection_point.value)
-                        if hasattr(injection_point, "value")
+                        str(injection_point.name)
+                        if hasattr(injection_point, "name")
                         else str(injection_point)
                     )
                     context_dict[key_name] = value
@@ -964,8 +1035,8 @@ class JinjaTemplateService(TemplateService):
                     for injection_point, value in injection_values.items():
                         # Convert enum to string and make it template-friendly
                         key_name = (
-                            str(injection_point.value)
-                            if hasattr(injection_point, "value")
+                            str(injection_point.name)
+                            if hasattr(injection_point, "name")
                             else str(injection_point)
                         )
                         context_dict[key_name] = value
@@ -977,9 +1048,15 @@ class JinjaTemplateService(TemplateService):
             ):
                 patterns = context.branch_naming_config.patterns
                 if patterns:
-                    # Use first pattern as primary
-                    context_dict["branch_pattern"] = patterns[0]
-                    context_dict["branch_patterns"] = patterns
+                    # Handle both list and dict patterns
+                    if isinstance(patterns, dict):
+                        # Dict case: get first value
+                        context_dict["branch_pattern"] = next(iter(patterns.values()))
+                        context_dict["branch_patterns"] = patterns
+                    else:
+                        # List case: get first item
+                        context_dict["branch_pattern"] = patterns[0]
+                        context_dict["branch_patterns"] = patterns
 
             # Add date alias for creation_date to support templates that expect 'date'
             if "creation_date" in context_dict and "date" not in context_dict:
@@ -1411,7 +1488,6 @@ class JinjaTemplateService(TemplateService):
         original_filesystem_root = self._filesystem_root
         original_use_filesystem = self._use_filesystem
 
-        all_results_successful = True
         all_errors = []
 
         try:
@@ -1437,7 +1513,6 @@ class JinjaTemplateService(TemplateService):
                 )
 
                 if not result.success:
-                    all_results_successful = False
                     all_errors.extend(
                         [f"{ai_assistant}: {error}" for error in result.errors]
                     )
@@ -1450,7 +1525,309 @@ class JinjaTemplateService(TemplateService):
             self._use_filesystem = original_use_filesystem
 
         # Return combined result
-        return RenderResult(success=all_results_successful, errors=all_errors)
+        return RenderResult(errors=all_errors)
+
+    def compare_templates(
+        self, project_path: Path, new_template_dir: Optional[Path] = None
+    ) -> TemplateDiff:
+        """Compare current project files with templates from a source."""
+        changes = []
+
+        # Get new templates (built-in if new_template_dir is None)
+        if new_template_dir is None:
+            new_templates = self._get_builtin_template_contents()
+        else:
+            new_templates = self._get_directory_template_contents(new_template_dir)
+
+        # Get all AI assistants in project to determine what files to compare
+        ai_directories = self._get_ai_directories(project_path)
+
+        # Render new templates to get final file contents
+        rendered_new_files = self._render_templates_for_comparison(
+            new_templates, project_path, ai_directories
+        )
+
+        # Only compare files that templates would actually generate
+        # Don't include arbitrary project files like .claude/doc/*
+        for file_path in sorted(rendered_new_files.keys()):
+            # Get current content for this specific template-generated file
+            current_file_path = project_path / file_path
+            current_content = None
+            if current_file_path.exists():
+                try:
+                    current_content = current_file_path.read_text(encoding="utf-8")
+                except Exception:
+                    # Skip files we can't read
+                    continue
+
+            new_content = rendered_new_files[file_path]
+
+            # Check if this file should be skipped
+            should_skip = self._should_skip_file_update(file_path, project_path)
+
+            if current_content is None:
+                # New file to be added
+                lines_added = len(new_content.splitlines()) if new_content else 0
+                changes.append(
+                    TemplateChange(
+                        template_name=file_path,
+                        change_type=TemplateChangeType.ADDED,
+                        new_content=new_content,
+                        category=self._get_file_category(file_path),
+                        lines_added=lines_added,
+                        should_skip=should_skip,
+                    )
+                )
+            elif current_content != new_content:
+                # File modified
+                lines_added, lines_removed = self._calculate_line_diff(
+                    current_content, new_content
+                )
+                changes.append(
+                    TemplateChange(
+                        template_name=file_path,
+                        change_type=TemplateChangeType.MODIFIED,
+                        old_content=current_content,
+                        new_content=new_content,
+                        category=self._get_file_category(file_path),
+                        lines_added=lines_added,
+                        lines_removed=lines_removed,
+                        should_skip=should_skip,
+                    )
+                )
+            else:
+                # File unchanged
+                changes.append(
+                    TemplateChange(
+                        template_name=file_path,
+                        change_type=TemplateChangeType.UNCHANGED,
+                        category=self._get_file_category(file_path),
+                        should_skip=should_skip,
+                    )
+                )
+
+        return TemplateDiff(changes=changes)
+
+    def _get_builtin_template_contents(self) -> dict[str, str]:
+        """Get contents of all built-in templates."""
+        templates = {}
+        try:
+            import specify_cli.templates as templates_pkg
+
+            # Use the same categories as discover_templates
+            categories = PATH_DEFAULTS.TEMPLATE_CATEGORIES
+
+            for category in categories:
+                try:
+                    category_files = importlib.resources.files(templates_pkg) / category
+                    if category_files.is_dir():
+                        for file_path in category_files.iterdir():
+                            if file_path.is_file() and file_path.name.endswith(
+                                TEMPLATE_EXTENSION
+                            ):
+                                content = file_path.read_text(encoding="utf-8")
+                                # Use relative path as key
+                                template_key = f"{category}/{file_path.name}"
+                                templates[template_key] = content
+                except Exception:
+                    # Skip problematic categories
+                    continue
+        except Exception:
+            # Return empty dict if we can't access built-in templates
+            pass
+
+        return templates
+
+    def _get_directory_template_contents(self, template_dir: Path) -> dict[str, str]:
+        """Get contents of all templates in a directory."""
+        templates = {}
+
+        if not template_dir.exists() or not template_dir.is_dir():
+            return templates
+
+        try:
+            # Recursively find all .j2 templates
+            for template_file in template_dir.rglob(f"*{TEMPLATE_EXTENSION}"):
+                if PATH_DEFAULTS.should_skip_file(template_file):
+                    continue
+
+                try:
+                    content = template_file.read_text(encoding="utf-8")
+                    # Use relative path from template_dir as key
+                    relative_path = template_file.relative_to(template_dir)
+                    templates[str(relative_path)] = content
+                except Exception:
+                    # Skip problematic files
+                    continue
+        except Exception:
+            # Return what we have if there's an error
+            pass
+
+        return templates
+
+    def _get_template_category(self, template_path: str) -> str:
+        """Extract category from template path."""
+        if "/" in template_path:
+            return template_path.split("/")[0]
+        return "unknown"
+
+    def _get_ai_directories(self, project_path: Path) -> list[str]:
+        """Get list of AI assistant directories in the project."""
+        ai_dirs = []
+        for dir_path in project_path.iterdir():
+            if dir_path.is_dir() and dir_path.name.startswith("."):
+                # Check if this matches any known AI assistant pattern
+                known_assistants = ["claude", "copilot", "cursor", "gemini"]
+                dir_name = dir_path.name[1:]  # Remove the dot
+                if dir_name in known_assistants:
+                    ai_dirs.append(dir_name)
+        return ai_dirs
+
+    def _render_templates_for_comparison(
+        self, templates: dict[str, str], project_path: Path, ai_assistants: list[str]
+    ) -> dict[str, str]:
+        """Render templates to get final file contents for comparison."""
+        rendered_files = {}
+
+        # For each AI assistant, render templates
+        for ai_assistant in ai_assistants:
+            context = self._create_comparison_context(project_path, ai_assistant)
+
+            for template_path, template_content in templates.items():
+                try:
+                    # Create Jinja2 template
+                    env = Environment(keep_trailing_newline=True)
+                    template = env.from_string(template_content)
+
+                    # Render with context
+                    rendered_content = template.render(**self._prepare_context(context))
+
+                    # Determine output file path
+                    output_path = self._determine_output_path_for_ai(
+                        template_path, ai_assistant, project_path
+                    )
+
+                    if output_path:
+                        rendered_files[output_path] = rendered_content
+
+                except Exception:
+                    # Skip templates that can't be rendered
+                    continue
+
+        return rendered_files
+
+    def _create_comparison_context(
+        self, project_path: Path, ai_assistant: str
+    ) -> TemplateContext:
+        """Create a basic template context for comparison rendering."""
+        from specify_cli.models.config import BranchNamingConfig
+
+        return TemplateContext(
+            project_name=project_path.name,
+            ai_assistant=ai_assistant,
+            project_path=project_path,
+            branch_naming_config=BranchNamingConfig(),
+        )
+
+    def _determine_output_path_for_ai(
+        self,
+        template_path: str,
+        ai_assistant: str,
+        project_path: Path,  # noqa: ARG002
+    ) -> Optional[str]:
+        """Determine where a template would be rendered for a specific AI assistant."""
+        # Remove .j2 extension
+        if template_path.endswith(TEMPLATE_EXTENSION):
+            base_path = template_path[: -len(TEMPLATE_EXTENSION)]
+        else:
+            base_path = template_path
+
+        # Get category (first part of path)
+        if "/" not in base_path:
+            return None
+
+        category, filename = base_path.split("/", 1)
+
+        # Determine output path based on category and AI assistant
+        if category == "commands":
+            assistant = get_assistant(ai_assistant)
+            if assistant:
+                commands_dir = assistant.config.command_files.directory
+                return f"{commands_dir}/{filename}"
+        elif category == "context":
+            assistant = get_assistant(ai_assistant)
+            if assistant:
+                return assistant.config.context_file.file
+        elif category == "scripts":
+            return f".specify/scripts/{filename}"
+        elif category == "memory":
+            return f".specify/memory/{filename}"
+
+        return None
+
+    def _should_skip_file_update(self, file_path: str, project_path: Path) -> bool:
+        """Determine if a file should be skipped during updates."""
+        # Skip context files by default (they contain user customizations)
+        if self._is_context_file(file_path, project_path):
+            return True
+
+        # Skip any files in .specify/memory (user data)
+        return file_path.startswith(".specify/memory/")
+
+    def _is_context_file(self, file_path: str, project_path: Path) -> bool:  # noqa: ARG002
+        """Check if a file is a context file (like CLAUDE.md, COPILOT.md, etc.)."""
+        # Check against known AI assistants
+        from specify_cli.assistants import get_all_assistants
+
+        assistants = get_all_assistants()
+        for assistant in assistants:
+            if file_path == assistant.config.context_file.file:
+                return True
+        return False
+
+    def _get_file_category(self, file_path: str) -> str:
+        """Get category for a project file."""
+        if file_path.startswith(".specify/"):
+            if "scripts" in file_path:
+                return "scripts"
+            elif "memory" in file_path:
+                return "memory"
+            return "config"
+        elif file_path.startswith("."):
+            # AI assistant directory
+            return "assistant"
+        elif "/" not in file_path:
+            return "root"
+        else:
+            return "other"
+
+    def _calculate_line_diff(
+        self, old_content: Optional[str], new_content: Optional[str]
+    ) -> tuple[int, int]:
+        """Calculate lines added and removed between two content strings."""
+        old_lines = [] if old_content is None else old_content.splitlines()
+        new_lines = [] if new_content is None else new_content.splitlines()
+
+        # Simple line count difference (could be enhanced with proper diff algorithm)
+        old_count = len(old_lines)
+        new_count = len(new_lines)
+
+        if new_count > old_count:
+            lines_added = new_count - old_count
+            lines_removed = 0
+        elif old_count > new_count:
+            lines_added = 0
+            lines_removed = old_count - new_count
+        else:
+            # Same number of lines, but content changed
+            # Count actual differences (simplified)
+            different_lines = sum(
+                1 for old, new in zip(old_lines, new_lines, strict=False) if old != new
+            )
+            lines_added = different_lines
+            lines_removed = different_lines
+
+        return lines_added, lines_removed
 
 
 def get_template_service() -> JinjaTemplateService:
