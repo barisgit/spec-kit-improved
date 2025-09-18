@@ -6,20 +6,16 @@ from typing import Optional
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
 
 from specify_cli.assistants import (
-    get_all_assistants,
     get_assistant,
     list_assistant_names,
 )
-from specify_cli.assistants.types import (
-    INJECTION_POINT_DESCRIPTIONS,
-    OPTIONAL_INJECTION_POINTS,
-    REQUIRED_INJECTION_POINTS,
+from specify_cli.services import (
+    AssistantManagementService,
+    CommandLineGitService,
+    TomlConfigService,
 )
-from specify_cli.models.project import ProjectInitOptions
-from specify_cli.services import CommandLineGitService, TomlConfigService
 from specify_cli.services.project_manager import ProjectManager
 from specify_cli.utils.ui_helpers import select_ai_assistant_for_add
 
@@ -37,135 +33,31 @@ def get_project_manager() -> ProjectManager:
     )
 
 
-def check_assistant_status(project_path: Path, assistant_name: str) -> str:
-    """Check if an assistant is already configured in the project.
-
-    Returns:
-        'configured', 'partial', or 'missing'
-    """
-    assistant = get_assistant(assistant_name)
-    if not assistant:
-        return "missing"
-
-    config = assistant.config
-
-    # Check if base directory exists
-    base_dir = project_path / config.base_directory
-    if not base_dir.exists():
-        return "missing"
-
-    # Check if context file exists
-    context_file = project_path / config.context_file.file
-    if not context_file.exists():
-        return "partial"
-
-    # Check if commands directory exists
-    commands_dir = project_path / config.command_files.directory
-    if not commands_dir.exists():
-        return "partial"
-
-    return "configured"
-
-
-def show_assistant_status(project_path: Path) -> None:
-    """Show the status of all available assistants."""
-    table = Table(title="AI Assistant Status")
-    table.add_column("Assistant", style="cyan")
-    table.add_column("Display Name", style="white")
-    table.add_column("Status", style="bold")
-    table.add_column("Base Directory", style="dim")
-
-    assistants = get_all_assistants()
-
-    for assistant in assistants:
-        status = check_assistant_status(project_path, assistant.config.name)
-
-        if status == "configured":
-            status_text = "[green]✓ Configured[/green]"
-        elif status == "partial":
-            status_text = "[yellow]⚠️  Partial[/yellow]"
-        else:
-            status_text = "[red]✗ Not configured[/red]"
-
-        table.add_row(
-            assistant.config.name,
-            assistant.config.display_name,
-            status_text,
-            assistant.config.base_directory,
-        )
-
-    console.print(table)
-
-
-def show_injection_points_info() -> None:
-    """Show information about injection points and their descriptions."""
-    console.print("\n[bold cyan]Injection Points Reference[/bold cyan]")
-    console.print(
-        "These are the template injection points that AI assistants can provide:\n"
+def get_assistant_management_service(
+    project_manager: ProjectManager,
+) -> AssistantManagementService:
+    """Factory function to create AssistantManagementService with dependencies."""
+    return AssistantManagementService(
+        project_manager=project_manager,
+        console=console,
     )
 
-    # Required injection points
-    console.print("[bold green]Required Injection Points[/bold green]")
-    console.print("Every AI assistant must provide these injection points:")
 
-    for point in REQUIRED_INJECTION_POINTS:
-        description = INJECTION_POINT_DESCRIPTIONS.get(
-            point, "No description available"
-        )
-        console.print(f"  • [cyan]{point.value}[/cyan]")
-        console.print(f"    {description}\n")
-
-    # Optional injection points
-    console.print("[bold yellow]Optional Injection Points[/bold yellow]")
-    console.print("AI assistants may optionally provide these injection points:")
-
-    for point in OPTIONAL_INJECTION_POINTS:
-        description = INJECTION_POINT_DESCRIPTIONS.get(
-            point, "No description available"
-        )
-        console.print(f"  • [cyan]{point.value}[/cyan]")
-        console.print(f"    {description}\n")
-
-
-def show_assistant_injection_values(assistant_name: str) -> None:
-    """Show the injection point values for a specific assistant."""
-    assistant = get_assistant(assistant_name)
-    if not assistant:
-        console.print(f"[red]Error:[/red] Assistant '{assistant_name}' not found")
-        return
-
-    injection_values = assistant.get_injection_values()
-
+def confirm_creation(assistant, files_to_create: list[str], force: bool) -> bool:
+    """Ask user to confirm file creation."""
     console.print(
-        f"\n[bold cyan]Injection Point Values for {assistant.config.display_name}[/bold cyan]"
+        f"\nThis will create files for [cyan]{assistant.config.display_name}[/cyan]:"
     )
-    console.print("These are the actual values this assistant provides:\n")
 
-    # Group by required vs optional
-    required_values = {
-        k: v for k, v in injection_values.items() if k in REQUIRED_INJECTION_POINTS
-    }
-    optional_values = {
-        k: v for k, v in injection_values.items() if k in OPTIONAL_INJECTION_POINTS
-    }
+    for file_path in files_to_create:
+        console.print(f"  [green]+[/green] {file_path}")
 
-    if required_values:
-        console.print("[bold green]Required Values[/bold green]")
-        for point, value in required_values.items():
-            description = INJECTION_POINT_DESCRIPTIONS.get(
-                point, "No description available"
-            )
-            console.print(f"  • [cyan]{point.value}[/cyan]: [white]{value}[/white]")
-            console.print(f"    [dim]{description}[/dim]\n")
+    if force:
+        console.print(
+            "\n[yellow]Warning: --force will overwrite existing files![/yellow]"
+        )
 
-    if optional_values:
-        console.print("[bold yellow]Optional Values[/bold yellow]")
-        for point, value in optional_values.items():
-            description = INJECTION_POINT_DESCRIPTIONS.get(
-                point, "No description available"
-            )
-            console.print(f"  • [cyan]{point.value}[/cyan]: [white]{value}[/white]")
-            console.print(f"    [dim]{description}[/dim]\n")
+    return typer.confirm("\nProceed?")
 
 
 def add_ai_command(
@@ -207,10 +99,11 @@ def add_ai_command(
     """
     project_path = Path.cwd()
     project_manager = get_project_manager()
+    assistant_service = get_assistant_management_service(project_manager)
 
     # Handle informational options that don't require a SpecifyX project
     if show_injection_points:
-        show_injection_points_info()
+        assistant_service.show_injection_points_info()
         return
 
     if show_assistant_values:
@@ -228,7 +121,7 @@ def add_ai_command(
             )
             raise typer.Exit(1)
 
-        show_assistant_injection_values(assistant_name)
+        assistant_service.show_assistant_injection_values(assistant_name)
         return
 
     # Check if this is a SpecifyX project
@@ -244,7 +137,7 @@ def add_ai_command(
         console.print(
             f"\n[bold]AI Assistant Status for [cyan]{project_path.name}[/cyan][/bold]\n"
         )
-        show_assistant_status(project_path)
+        assistant_service.show_assistant_status(project_path)
         return
 
     # Interactive selection if no assistant specified
@@ -269,14 +162,14 @@ def add_ai_command(
         raise typer.Exit(1)
 
     # Check current status
-    status = check_assistant_status(project_path, assistant_name)
+    status = assistant_service.check_assistant_status(project_path, assistant_name)
 
     console.print(
         Panel.fit(
             f"[bold cyan]Adding AI Assistant[/bold cyan]\n"
             f"Assistant: [green]{assistant.config.display_name}[/green]\n"
             f"Project: [cyan]{project_path.name}[/cyan]\n"
-            f"Current Status: {get_status_text(status)}",
+            f"Current Status: {assistant_service.get_status_text(status)}",
             border_style="cyan",
         )
     )
@@ -290,7 +183,9 @@ def add_ai_command(
         raise typer.Exit(0)
 
     # Show what will be created
-    files_to_create = get_files_to_create(assistant, project_path)
+    files_to_create = assistant_service.get_files_to_create(
+        assistant_name, project_path
+    )
 
     if dry_run:
         console.print("\n[bold]Files that would be created:[/bold]")
@@ -304,7 +199,9 @@ def add_ai_command(
         raise typer.Exit(0)
 
     # Create the assistant files
-    success = create_assistant_files(project_manager, project_path, assistant_name)
+    success = assistant_service.create_assistant_files(
+        project_path, assistant_name, force
+    )
 
     if success:
         console.print(
@@ -327,126 +224,3 @@ def add_ai_command(
     else:
         console.print(f"[red]✗[/red] Failed to add {assistant.config.display_name}")
         raise typer.Exit(1)
-
-
-def get_status_text(status: str) -> str:
-    """Convert status to colored text."""
-    if status == "configured":
-        return "[green]✓ Configured[/green]"
-    elif status == "partial":
-        return "[yellow]⚠️  Partially configured[/yellow]"
-    else:
-        return "[red]✗ Not configured[/red]"
-
-
-def get_files_to_create(assistant, project_path: Path) -> list[str]:
-    """Get list of files that will be created."""
-    files = []
-    config = assistant.config
-
-    # Context file
-    context_file = project_path / config.context_file.file
-    files.append(str(context_file.relative_to(project_path)))
-
-    # Commands directory (will contain multiple files)
-    commands_dir = config.command_files.directory
-    files.append(f"{commands_dir}/")
-
-    # Agents directory (will contain multiple files)
-    agents_dir = config.agent_files.directory
-    files.append(f"{agents_dir}/")
-
-    return files
-
-
-def confirm_creation(assistant, files_to_create: list[str], force: bool) -> bool:
-    """Ask user to confirm file creation."""
-    console.print(
-        f"\nThis will create files for [cyan]{assistant.config.display_name}[/cyan]:"
-    )
-
-    for file_path in files_to_create:
-        console.print(f"  [green]+[/green] {file_path}")
-
-    if force:
-        console.print(
-            "\n[yellow]Warning: --force will overwrite existing files![/yellow]"
-        )
-
-    return typer.confirm("\nProceed?")
-
-
-def create_assistant_files(
-    project_manager: ProjectManager, project_path: Path, assistant_name: str
-) -> bool:
-    """Create AI assistant files using the project manager."""
-    try:
-        # Create minimal options for AI-only initialization
-        options = ProjectInitOptions(
-            project_name=project_path.name,
-            ai_assistants=[assistant_name],
-            use_current_dir=True,  # Initialize in current directory
-            force=True,  # Allow overwriting since we already confirmed
-        )
-
-        # Use the project manager to create only AI-specific files
-        # We'll need to add a method for this
-        return create_ai_only_files(project_manager, options, project_path)
-
-    except Exception as e:
-        console.print(f"[red]Error creating files:[/red] {e}")
-        return False
-
-
-def create_ai_only_files(
-    project_manager: ProjectManager, options: ProjectInitOptions, project_path: Path
-) -> bool:
-    """Create only AI-specific files using the existing template system."""
-    try:
-        # Load existing project config to update it
-        from specify_cli.services import TomlConfigService
-
-        config_service = TomlConfigService()
-
-        project_config = config_service.load_project_config(project_path)
-        if project_config:
-            # Add the new assistant to the existing config
-            project_config.template_settings.add_assistant(options.ai_assistants[0])
-
-            # Save the updated config
-            config_service.save_project_config(project_path, project_config)
-        else:
-            console.print(
-                "[yellow]Warning: Could not load project config, proceeding anyway[/yellow]"
-            )
-
-        # Create template context for the new assistant
-        from specify_cli.models.config import BranchNamingConfig
-        from specify_cli.models.project import TemplateContext
-
-        context = TemplateContext(
-            project_name=options.project_name or project_path.name,
-            ai_assistant=options.ai_assistants[0],
-            project_path=project_path,
-            branch_naming_config=project_config.branch_naming
-            if project_config
-            else BranchNamingConfig(),
-        )
-
-        # Use the existing template rendering system
-        render_result = project_manager._render_all_templates(context)
-
-        if render_result.success:
-            console.print(
-                f"[green]✓[/green] Created {options.ai_assistants[0]} files using template system"
-            )
-            return True
-        else:
-            console.print("[red]Template rendering failed:[/red]")
-            for error in render_result.errors:
-                console.print(f"  • {error}")
-            return False
-
-    except Exception as e:
-        console.print(f"[red]Error creating files:[/red] {e}")
-        return False
