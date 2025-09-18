@@ -281,16 +281,14 @@ class TemplateAuditor:
                         f.write(f"- `{relative_path}`\n")
                     f.write("\n")
 
-        self.console.print(
-            f"Comparison report generated: {report_path}", style="blue"
-        )
+        self.console.print(f"Comparison report generated: {report_path}", style="blue")
 
     def _analyze_injection_differences(
         self, f, template_name: str, assistant_names: List[str]
     ) -> None:
         """Analyze injection point differences between assistants for a template."""
         _ = template_name
-        
+
         # Get injection values for each assistant
         injection_data = {}
         for assistant_name in assistant_names:
@@ -309,7 +307,7 @@ class TemplateAuditor:
 
         # Compare values for each injection point
         differences_found = False
-        for point in sorted(all_points, key=lambda x: x.value):
+        for point in sorted(all_points, key=lambda x: x.name):
             values = {}
             for assistant_name in assistant_names:
                 if assistant_name in injection_data:
@@ -320,7 +318,7 @@ class TemplateAuditor:
             unique_values = set(values.values())
             if len(unique_values) > 1:
                 differences_found = True
-                f.write(f"- **{point.value}:**\n")
+                f.write(f"- **{point.name}:**\n")
                 for assistant_name, value in values.items():
                     value_str = str(value)
                     if ("\n" in value_str) or ("`" in value_str):

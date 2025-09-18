@@ -6,7 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/specifyx.svg)](https://badge.fury.io/py/specifyx)
 
 <div align="center">
-  <p><strong><a href="https://specifyx.dev">📚 Documentation</a> • <a href="https://specifyx.dev/docs/guides/quickstart">🚀 Quick Start</a> • <a href="https://github.com/barisgit/spec-kit-improved/issues">💬 Support</a></strong></p>
+  <p><strong><a href="https://specifyx.dev">Documentation</a> • <a href="https://specifyx.dev/docs/guides/quickstart">Quick Start</a> • <a href="https://github.com/barisgit/spec-kit-improved/issues">Support</a></strong></p>
 </div>
 
 ---
@@ -70,7 +70,7 @@ specifyx run generate-tasks --spec-id 001
 ```
 
 <div align="center">
-  <p><strong>🎯 <a href="https://specifyx.dev">Visit specifyx.dev for comprehensive guides and examples</a></strong></p>
+  <p><strong><a href="https://specifyx.dev">Visit specifyx.dev for comprehensive guides and examples</a></strong></p>
 </div>
 
 ## What is Spec-Driven Development?
