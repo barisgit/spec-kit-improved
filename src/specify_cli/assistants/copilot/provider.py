@@ -10,12 +10,12 @@ import subprocess
 from pathlib import Path
 from typing import List
 
+from ..injection_points import InjectionPoint
 from ..interfaces import AssistantProvider, ValidationResult
 from ..types import (
     AssistantConfig,
     ContextFileConfig,
     FileFormat,
-    InjectionPoint,
     InjectionValues,
     TemplateConfig,
 )
@@ -84,10 +84,11 @@ class CopilotProvider(AssistantProvider):
                 "# Custom Copilot Commands\n"
                 "# gh copilot suggest          # Get code suggestions\n"
                 "# gh copilot explain          # Explain code functionality\n"
-                "# gh copilot translate        # Convert between languages"
+                "# gh copilot config           # Configure Copilot settings\n"
+                "# gh copilot alias            # Create command aliases"
             ),
             InjectionPoint.CONTEXT_FRONTMATTER: 'description: "GitHub Copilot instructions for this project"',
-            InjectionPoint.IMPORT_SYNTAX: "Use HTML comments `<!-- @import path/to/file -->` to reference other instruction files",
+            InjectionPoint.IMPORT_SYNTAX: "No special import syntax - use standard GitHub repository structure and file references",
             InjectionPoint.BEST_PRACTICES: "Write clear, specific instructions; use examples; leverage GitHub context; structure content hierarchically",
             InjectionPoint.TROUBLESHOOTING: "Check `gh copilot` extension status, verify GitHub CLI authentication, ensure proper repository context",
             InjectionPoint.LIMITATIONS: "Context limited to repository scope, requires GitHub Copilot subscription, works best with GitHub-hosted projects",

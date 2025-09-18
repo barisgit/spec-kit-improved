@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .types import (
     AssistantConfig,
@@ -63,16 +63,15 @@ class ValidationResult(BaseModel):
         new_warnings = self.warnings + [warning]
         return self.model_copy(update={"warnings": new_warnings})
 
-    class Config:
-        """Pydantic configuration with example schema."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "is_valid": True,
                 "errors": [],
                 "warnings": ["API key not configured - some features may not work"],
             }
         }
+    )
 
 
 class AssistantProvider(ABC):

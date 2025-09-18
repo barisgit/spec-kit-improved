@@ -151,7 +151,6 @@ class InjectionPointNames:
 
 # Required injection points that all assistants must provide
 REQUIRED_INJECTION_POINTS = {
-    InjectionPointNames.COMMAND_PREFIX,
     InjectionPointNames.SETUP_INSTRUCTIONS,
     InjectionPointNames.CONTEXT_FILE_PATH,
 }

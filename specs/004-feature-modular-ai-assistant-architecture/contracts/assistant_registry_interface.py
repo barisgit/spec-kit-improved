@@ -5,14 +5,13 @@ This module defines interfaces for the static registry that manages
 AI assistant configurations and injection providers.
 """
 
-from typing import Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
-from .assistant_config_interface import (
+from specify_cli.assistants.interfaces import AssistantProvider
+from specify_cli.assistants.types import (
     AssistantConfig,
     AssistantName,
-    InjectionPoints,
-    InjectionProvider,
-    ValidationErrors,
+    InjectionValues,
 )
 
 
@@ -58,7 +57,7 @@ class AssistantRegistry(Protocol):
 
     def get_injection_provider(
         self, name: AssistantName
-    ) -> Optional[InjectionProvider]:
+    ) -> Optional[AssistantProvider]:
         """
         Get injection provider for assistant.
 
@@ -70,7 +69,7 @@ class AssistantRegistry(Protocol):
         """
         ...
 
-    def get_injections(self, name: AssistantName) -> InjectionPoints:
+    def get_injections(self, name: AssistantName) -> InjectionValues:
         """
         Get injection points for assistant.
 
@@ -82,7 +81,7 @@ class AssistantRegistry(Protocol):
         """
         ...
 
-    def validate_all(self) -> ValidationErrors:
+    def validate_all(self) -> List[str]:
         """
         Validate all registered assistants.
 
@@ -124,7 +123,7 @@ class TemplateEnhancer(Protocol):
         """
         ...
 
-    def validate_injection_usage(self, template_content: str) -> ValidationErrors:
+    def validate_injection_usage(self, template_content: str) -> List[str]:
         """
         Validate injection point usage in template.
 
@@ -145,7 +144,7 @@ class BuildTimeValidator(Protocol):
     rather than runtime for faster feedback.
     """
 
-    def validate_type_safety(self) -> ValidationErrors:
+    def validate_type_safety(self) -> List[str]:
         """
         Validate type safety across all assistant modules.
 
@@ -154,7 +153,7 @@ class BuildTimeValidator(Protocol):
         """
         ...
 
-    def validate_injection_points(self) -> ValidationErrors:
+    def validate_injection_points(self) -> List[str]:
         """
         Validate injection point definitions and usage.
 
@@ -163,7 +162,7 @@ class BuildTimeValidator(Protocol):
         """
         ...
 
-    def validate_template_compatibility(self) -> ValidationErrors:
+    def validate_template_compatibility(self) -> List[str]:
         """
         Validate template compatibility with all assistants.
 
@@ -199,7 +198,7 @@ class RegistryInitializer(Protocol):
         """
         ...
 
-    def load_injection_providers(self) -> Dict[AssistantName, InjectionProvider]:
+    def load_injection_providers(self) -> Dict[AssistantName, AssistantProvider]:
         """
         Load all injection providers from static imports.
 
@@ -211,8 +210,8 @@ class RegistryInitializer(Protocol):
     def validate_consistency(
         self,
         configs: List[AssistantConfig],
-        providers: Dict[AssistantName, InjectionProvider],
-    ) -> ValidationErrors:
+        providers: Dict[AssistantName, AssistantProvider],
+    ) -> List[str]:
         """
         Validate consistency between configs and providers.
 
@@ -227,6 +226,6 @@ class RegistryInitializer(Protocol):
 
 
 # Type aliases for registry operations
-RegistryState = Dict[str, any]
-LoadResult = tuple[List[AssistantConfig], Dict[AssistantName, InjectionProvider]]
-InitializationResult = tuple[bool, ValidationErrors]
+RegistryState = Dict[str, Any]
+LoadResult = tuple[List[AssistantConfig], Dict[AssistantName, AssistantProvider]]
+InitializationResult = tuple[bool, List[str]]

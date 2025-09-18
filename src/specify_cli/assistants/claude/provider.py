@@ -17,12 +17,12 @@ Usage:
 from pathlib import Path
 from typing import List
 
+from ..injection_points import InjectionPoint
 from ..interfaces import AssistantProvider, ValidationResult
 from ..types import (
     AssistantConfig,
     ContextFileConfig,
     FileFormat,
-    InjectionPoint,
     InjectionValues,
     TemplateConfig,
 )
@@ -61,19 +61,19 @@ class ClaudeProvider(AssistantProvider):
         """Return Claude-specific injection point values."""
         return {
             InjectionPoint.COMMAND_PREFIX: "claude ",
-            InjectionPoint.SETUP_INSTRUCTIONS: "Install Claude Code and run 'claude auth' to authenticate with your Anthropic account",
+            InjectionPoint.SETUP_INSTRUCTIONS: "Install Claude Code with 'npm install -g @anthropic-ai/claude-code', then run 'claude' (prompts for login on first use)",
             InjectionPoint.CONTEXT_FILE_PATH: self._assistant_config.context_file.file,
             InjectionPoint.CONTEXT_FILE_DESCRIPTION: ", CLAUDE.md for Claude Code",
             InjectionPoint.MEMORY_CONFIGURATION: "Spec-driven development workflow with Claude Code integration",
-            InjectionPoint.REVIEW_COMMAND: "claude review --comprehensive --fix-issues",
+            InjectionPoint.REVIEW_COMMAND: "/review (within Claude Code REPL)",
             InjectionPoint.DOCUMENTATION_URL: "https://docs.anthropic.com/en/docs/claude-code",
             InjectionPoint.WORKFLOW_INTEGRATION: "GitHub Actions integration with Claude Code for automated code review and generation",
-            InjectionPoint.CUSTOM_COMMANDS: "claude generate, claude review, claude chat, claude test",
+            InjectionPoint.CUSTOM_COMMANDS: 'claude (interactive REPL), claude "query" (start with prompt), claude -p "query" (SDK query), claude -c (continue conversation), claude update, claude mcp',
             InjectionPoint.CONTEXT_FRONTMATTER: 'description: "Claude Code context file for this project"',
             # High-priority injection points
             InjectionPoint.IMPORT_SYNTAX: "Use `@path/to/file.ext` syntax to import files with relative paths",
             InjectionPoint.BEST_PRACTICES: "Use descriptive prompts, break complex tasks into steps, leverage Claude's code analysis capabilities",
-            InjectionPoint.TROUBLESHOOTING: "Check Claude Code status with `claude --version`, ensure authentication with `claude auth`, verify file permissions",
+            InjectionPoint.TROUBLESHOOTING: "Check Claude Code status with `claude --version`, restart authentication by running `claude` again, verify file permissions",
             InjectionPoint.LIMITATIONS: "Claude Code works best with well-structured projects, requires clear context, may need multiple iterations for complex tasks",
             InjectionPoint.FILE_EXTENSIONS: ".md, .py, .js, .ts, .json, .yaml, .toml (prefers markdown for documentation)",
         }
@@ -87,9 +87,9 @@ class ClaudeProvider(AssistantProvider):
         config = self._assistant_config
         return [
             "Install Claude Code CLI from Anthropic",
-            "Run 'claude auth' to authenticate with your Anthropic account",
+            "Run 'claude' to start authentication (prompts on first use)",
             "Verify installation with 'claude --version'",
-            "Test functionality with 'claude help'",
+            "Test functionality with 'claude' to start interactive session",
             f"Configure context file at {config.context_file.file} ({config.context_file.file_format.value} format)",
             f"Set up commands directory at {config.command_files.directory} ({config.command_files.file_format.value} format)",
             f"Create agent files in {config.agent_files.directory} ({config.agent_files.file_format.value} format)",

@@ -7,7 +7,7 @@ replaces conditional logic with clean, assistant-agnostic injection points.
 
 from typing import Any, Dict, List, Protocol
 
-from .assistant_config_interface import AssistantName, InjectionPoints
+from specify_cli.assistants.types import AssistantName, InjectionValues
 
 
 class TemplateContext(Protocol):
@@ -29,7 +29,7 @@ class TemplateContext(Protocol):
         ...
 
     @property
-    def assistant_injections(self) -> InjectionPoints:
+    def assistant_injections(self) -> InjectionValues:
         """Assistant-specific injection point values."""
         ...
 
@@ -71,7 +71,7 @@ class InjectionPointResolver(Protocol):
         """
         ...
 
-    def resolve_all_injections(self, assistant_name: AssistantName) -> InjectionPoints:
+    def resolve_all_injections(self, assistant_name: AssistantName) -> InjectionValues:
         """
         Resolve all injection points for given assistant.
 
@@ -255,7 +255,7 @@ class InjectionValidator(Protocol):
     """
 
     def validate_injection_implementation(
-        self, assistant_name: AssistantName, injection_points: InjectionPoints
+        self, assistant_name: AssistantName, injection_points: InjectionValues
     ) -> List[str]:
         """
         Validate injection point implementation for assistant.

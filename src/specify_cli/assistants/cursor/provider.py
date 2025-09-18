@@ -16,12 +16,12 @@ import shutil
 from pathlib import Path
 from typing import List
 
+from ..injection_points import InjectionPoint
 from ..interfaces import AssistantProvider, ValidationResult
 from ..types import (
     AssistantConfig,
     ContextFileConfig,
     FileFormat,
-    InjectionPoint,
     InjectionValues,
     TemplateConfig,
 )
@@ -56,14 +56,14 @@ class CursorProvider(AssistantProvider):
     def get_injection_values(self) -> InjectionValues:
         """Return Cursor-specific injection point values."""
         return {
-            InjectionPoint.COMMAND_PREFIX: "",
+            InjectionPoint.COMMAND_PREFIX: "Ctrl+K (or Cmd+K), ",
             InjectionPoint.SETUP_INSTRUCTIONS: "Install Cursor editor and configure .cursor/rules/main.mdc with project-specific rules",
             InjectionPoint.CONTEXT_FILE_PATH: self._assistant_config.context_file.file,
             InjectionPoint.CONTEXT_FILE_DESCRIPTION: ", .cursor/rules/main.mdc for Cursor",
             InjectionPoint.MEMORY_CONFIGURATION: (
                 "MDC rule file configuration for Cursor AI behavior and project context"
             ),
-            InjectionPoint.REVIEW_COMMAND: "Cursor AI: Review Code",
+            InjectionPoint.REVIEW_COMMAND: "Use Cursor's AI chat or Ctrl+K for code review",
             InjectionPoint.DOCUMENTATION_URL: "https://docs.cursor.com",
             InjectionPoint.WORKFLOW_INTEGRATION: (
                 "Configure .cursor/rules for AI-powered code completion and chat"
@@ -72,10 +72,9 @@ class CursorProvider(AssistantProvider):
                 "Use Cursor's AI chat and code completion features for development assistance"
             ),
             InjectionPoint.CONTEXT_FRONTMATTER: 'alwaysApply: true\ndescription: "Main Cursor AI rules for this project"',
-            # High-priority injection points
             InjectionPoint.IMPORT_SYNTAX: "Use `@file-path` syntax in .mdc files to reference other rule files",
             InjectionPoint.BEST_PRACTICES: "Create specific .cursor/rules files for different contexts, use clear rule descriptions, enable alwaysApply for main rules",
-            InjectionPoint.TROUBLESHOOTING: "Check .cursor/rules syntax, ensure proper MDC formatting, verify Cursor editor version compatibility",
+            InjectionPoint.TROUBLESHOOTING: "Check .cursor/rules syntax, ensure proper MDC formatting, restart Cursor editor if rules not loading",
             InjectionPoint.LIMITATIONS: "Cursor AI context window limits, requires well-formed .mdc files, works best with TypeScript/JavaScript projects",
             InjectionPoint.FILE_EXTENSIONS: ".mdc, .md, .ts, .js, .tsx, .jsx, .py (specializes in .mdc rule files)",
         }

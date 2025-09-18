@@ -12,6 +12,7 @@ from .constants import (
     REQUIRED_INJECTION_POINTS,
     InjectionPointNames,
 )
+from .injection_points import InjectionPoint
 from .interfaces import (
     AssistantFactory,
     AssistantProvider,
@@ -39,7 +40,6 @@ from .types import (
     AssistantPaths,
     ContextFileConfig,
     FileFormat,
-    InjectionPoint,
     InjectionValues,
     TemplateConfig,
 )

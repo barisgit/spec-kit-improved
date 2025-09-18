@@ -122,9 +122,16 @@ def select_ai_assistant_for_add(project_path: Path) -> str:
     Raises:
         KeyboardInterrupt: If user cancels selection
     """
-    from specify_cli.commands.add_ai.add_ai import check_assistant_status
+    from specify_cli.services.assistant_management_service.assistant_management_service import (
+        AssistantManagementService,
+    )
+    from specify_cli.services.project_manager import ProjectManager
 
     ui = InteractiveUI()
+
+    # Create assistant management service for status checking
+    project_manager = ProjectManager()
+    assistant_service = AssistantManagementService(project_manager)
 
     # Use the new assistant registry
     assistants = get_all_assistants()
@@ -134,7 +141,9 @@ def select_ai_assistant_for_add(project_path: Path) -> str:
     available_assistants = []
 
     for assistant in assistants:
-        status = check_assistant_status(project_path, assistant.config.name)
+        status = assistant_service.check_assistant_status(
+            project_path, assistant.config.name
+        )
 
         if status == "configured":
             # Dim already configured assistants

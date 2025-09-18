@@ -20,8 +20,7 @@ Usage:
 from pathlib import Path
 from typing import List
 
-from specify_cli.assistants.types import InjectionPoint
-
+from ..injection_points import InjectionPoint
 from ..interfaces import AssistantProvider, ValidationResult
 from ..types import (
     AssistantConfig,
@@ -70,7 +69,7 @@ class GeminiProvider(AssistantProvider):
             InjectionPoint.MEMORY_CONFIGURATION: (
                 "# Gemini CLI Memory Configuration\n"
                 "# Project-specific context and conversation history\n"
-                "# Configure memory settings in .gemini/memory/ directory\n"
+                "# Configure context using .gemini/GEMINI.md files\n"
                 "# Enable conversation persistence with 1M token context window\n"
                 "# Use built-in tools: Google Search, file operations, shell commands"
             ),
@@ -78,18 +77,20 @@ class GeminiProvider(AssistantProvider):
             InjectionPoint.DOCUMENTATION_URL: "https://developers.google.com/gemini-code-assist/docs/gemini-cli",
             InjectionPoint.WORKFLOW_INTEGRATION: (
                 "# Gemini CLI workflow integration\n"
-                "# Use '/security:analyze' for security vulnerability scanning\n"
-                "# Use '/deploy' for Cloud Run deployment\n"
                 "# Use '/tools' to list available built-in tools\n"
+                "# Install extensions for additional capabilities:\n"
+                "# - Security: gemini extensions install https://github.com/google-gemini/gemini-cli-security\n"
+                "# - Deploy: gemini extensions install https://github.com/GoogleCloudPlatform/cloud-run-mcp\n"
                 "# Use 'gemini -p \"prompt\"' for quick prompts without terminal UI"
             ),
             InjectionPoint.CUSTOM_COMMANDS: (
-                "# Gemini CLI built-in tools and extensions\n"
-                "# /security:analyze - Comprehensive security vulnerability scan\n"
-                "# /deploy - Deploy applications to Google Cloud Run\n"
+                "# Gemini CLI built-in tools and commands\n"
                 "# /tools - List all available built-in tools\n"
                 '# gemini -p "prompt" - Quick prompt without terminal interface\n'
-                "# Built-in tools: Google Search grounding, file operations, shell commands, web fetching"
+                "# Built-in tools: Google Search grounding, file operations, shell commands, web fetching\n"
+                "# Extensions (require separate install):\n"
+                "#   /security:analyze - Security analysis (via extension)\n"
+                "#   /deploy - Cloud Run deployment (via extension)"
             ),
             InjectionPoint.CONTEXT_FRONTMATTER: 'description: "Gemini AI configuration for this project"',
             InjectionPoint.IMPORT_SYNTAX: "No file import syntax - provide full context in each interaction",

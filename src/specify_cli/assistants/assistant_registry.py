@@ -44,6 +44,10 @@ class StaticAssistantRegistry(AssistantRegistry):
 
     def get_assistant(self, name: AssistantName) -> Optional[AssistantProvider]:
         """Retrieve a registered assistant by name."""
+        if not isinstance(name, str):
+            raise TypeError(
+                f"Assistant name must be a string, got {type(name).__name__}"
+            )
         return self._assistants.get(name)
 
     def get_all_assistants(self) -> List[AssistantProvider]:
@@ -74,6 +78,10 @@ class StaticAssistantRegistry(AssistantRegistry):
 
     def unregister_assistant(self, name: AssistantName) -> bool:
         """Remove an assistant from the registry."""
+        if not isinstance(name, str):
+            raise TypeError(
+                f"Assistant name must be a string, got {type(name).__name__}"
+            )
         if name in self._assistants:
             del self._assistants[name]
             return True
@@ -89,6 +97,10 @@ class StaticAssistantRegistry(AssistantRegistry):
 
     def is_registered(self, name: AssistantName) -> bool:
         """Check if an assistant is registered."""
+        if not isinstance(name, str):
+            raise TypeError(
+                f"Assistant name must be a string, got {type(name).__name__}"
+            )
         return name in self._assistants
 
     def __len__(self) -> int:
@@ -97,4 +109,8 @@ class StaticAssistantRegistry(AssistantRegistry):
 
     def __contains__(self, name: AssistantName) -> bool:
         """Support 'in' operator for checking registration."""
+        if not isinstance(name, str):
+            raise TypeError(
+                f"Assistant name must be a string, got {type(name).__name__}"
+            )
         return name in self._assistants
