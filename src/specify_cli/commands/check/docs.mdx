@@ -45,9 +45,12 @@ The command checks for optional tools that enhance the SpecifyX experience:
 - Provides installation link if not found
 
 #### AI Assistant Tools
-- **Claude**: Checks for `claude` CLI tool
-- **Gemini**: Checks for `gemini` CLI tool  
-- Provides installation links if not found
+Dynamically checks all registered AI assistants including:
+- **Claude**: Checks for `claude` CLI tool availability
+- **Gemini**: Checks for `gemini` CLI tool availability
+- **GitHub Copilot**: Checks for copilot extension availability
+- **Custom assistants**: Any additional assistants from the registry
+- Provides specific installation instructions and documentation URLs for each assistant
 
 ## Output Format
 
@@ -56,8 +59,11 @@ The command provides colored, user-friendly output:
 ```
 ✓ Internet connection available
 ✓ git found
-⚠️ claude not found
-   Install with: https://docs.anthropic.com/en/docs/claude-code/setup
+✓ claude found
+⚠️ gemini not found
+   Install from: https://github.com/google-gemini/gemini-cli
+⚠️ copilot not found
+   GitHub Copilot extension required
 ✓ SpecifyX CLI is ready to use!
 ```
 

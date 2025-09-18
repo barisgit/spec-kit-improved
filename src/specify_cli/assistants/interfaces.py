@@ -10,7 +10,7 @@ Benefits of ABC Approach:
     - **IDE Support**: Better autocomplete and error detection
     - **Runtime Checks**: Python enforces implementation of abstract methods
     - **Clear Documentation**: Abstract methods document the interface
-    - **Type Safety**: MyPy can validate implementations
+    - **Type Safety**: pyrefly can validate implementations
     - **Extensibility**: Easy to add new abstract methods
 """
 

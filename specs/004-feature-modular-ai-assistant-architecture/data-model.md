@@ -63,7 +63,7 @@ class AssistantConfig(BaseModel):
 - **Immutability**: Frozen config prevents accidental modifications
 - **JSON Schema**: Automatic generation for documentation and API validation
 - **Clear Errors**: Field-level error messages with validation context
-- **Type Safety**: Full type checking with mypy/pyright support
+- **Type Safety**: Full type checking with pyrefly support
 
 ### InjectionPoint (String Enum)
 **Purpose**: Type-safe enumeration of template injection points
@@ -387,7 +387,7 @@ class ITemplateEnhancer(ABC):
 3. Business logic validation (via IAssistantValidator ABC)
 4. Injection point validation (enum-based type safety)
 5. Template compatibility validation (runtime template checks)
-6. Build-time type checking (mypy/pyright static analysis)
+6. Build-time type checking (pyrefly static analysis)
 ```
 
 ## Error Handling Strategy

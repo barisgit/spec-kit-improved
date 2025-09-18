@@ -7,7 +7,7 @@
 - SpecifyX installed and working
 - Access to terminal/command line
 - Test project directory available
-- Python type checker (mypy or pyright) available
+- Python type checker (pyrefly) available
 
 ## Test Scenario 1: Assistant Organization Verification
 
@@ -36,7 +36,7 @@
 **Objective**: Verify type safety works across all assistant configurations
 
 ### Steps:
-1. Run type checker: `mypy src/specify_cli/assistants/`
+1. Run type checker: `pyrefly check src/specify_cli/assistants/`
 2. Verify all assistant configs are properly typed
 3. Check injection provider protocol compliance
 4. Run build-time validation
@@ -169,7 +169,7 @@
 ### Quick Validation
 ```bash
 # Test type safety
-mypy src/specify_cli/assistants/
+pyrefly check src/specify_cli/assistants/
 
 # Test basic functionality
 specifyx check
@@ -185,7 +185,7 @@ cd .. && rm -rf test-project
 ### Comprehensive Validation
 ```bash
 # Full type checking
-mypy src/specify_cli/assistants/ --strict
+pyrefly check src/specify_cli/assistants/ --strict
 
 # Integration tests
 pytest tests/integration/test_assistant_organization.py
@@ -200,7 +200,7 @@ pytest tests/performance/test_assistant_performance.py
 ### Build-Time Validation
 ```bash
 # CI/CD type checking
-mypy src/specify_cli/assistants/ --junit-xml=type-check-results.xml
+pyrefly check src/specify_cli/assistants/ --junit-xml=type-check-results.xml
 
 # Pre-commit validation
 pre-commit run --all-files
@@ -232,7 +232,7 @@ After successful completion of all scenarios:
 ### Debug Commands:
 ```bash
 # Verbose type checking
-mypy src/specify_cli/assistants/ --verbose
+pyrefly check src/specify_cli/assistants/ --verbose
 
 # Check assistant registry
 python -c "from src.specify_cli.assistants import ASSISTANTS; print(ASSISTANTS)"

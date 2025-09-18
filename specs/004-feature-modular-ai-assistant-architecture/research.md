@@ -14,7 +14,7 @@ Research into organizing SpecifyX's AI assistant code with type-safe injection p
 **Decision**: Use TypedDict and Protocol for assistant configurations
 **Rationale**:
 - Native Python typing without external dependencies
-- Full type checking support with mypy/pyright
+- Full type checking support with pyrefly
 - Clear interface definitions for assistant implementations
 - Runtime validation possible with typing.get_type_hints()
 - Compatible with existing dataclass patterns in SpecifyX
@@ -188,7 +188,7 @@ class InjectionProvider(Protocol):
 ## Validation Approach
 
 ### Type Checking
-- mypy/pyright integration in CI/CD
+- pyrefly integration in CI/CD
 - Type validation for all assistant configurations
 - Injection point interface compliance
 - Template context type safety

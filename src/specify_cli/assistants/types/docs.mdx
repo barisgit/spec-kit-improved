@@ -1,0 +1,570 @@
+---
+title: Assistant Type System and Validation
+description: Comprehensive Pydantic-based data models with runtime validation, immutability guarantees, and type safety for all AI assistant configurations
+---
+
+# Assistant Type System and Validation
+
+The SpecifyX assistant type system provides comprehensive Pydantic-based data models with runtime validation, immutability guarantees, and type safety for all AI assistant configurations.
+
+## Design Philosophy
+
+### Type Safety First
+- **Pydantic v2**: Full runtime validation and type checking
+- **Immutable Models**: Frozen models prevent accidental modification
+- **Comprehensive Validation**: Field-level and model-level validation rules
+- **JSON Schema**: Automatic schema generation for API documentation
+
+### Zero-Configuration Validation
+- **Automatic Validation**: All validation occurs at construction time
+- **Detailed Error Messages**: Clear, actionable error messages for validation failures
+- **Cross-Field Validation**: Model-level validators ensure consistency across fields
+- **Pattern Enforcement**: Regex patterns ensure naming conventions
+
+## Core Data Models
+
+### AssistantConfig
+
+The main configuration model for AI assistant definitions:
+
+```python
+@dataclass
+class AssistantConfig(BaseModel):
+    """Type-safe, immutable configuration for AI assistant definitions."""
+
+    name: str = Field(
+        pattern=r"^[a-z][a-z0-9_-]*$",
+        min_length=1,
+        max_length=50,
+        description="Unique assistant identifier"
+    )
+
+    display_name: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Human-readable name for UI display"
+    )
+
+    description: str = Field(
+        min_length=1,
+        max_length=200,
+        description="Brief description of the assistant"
+    )
+
+    base_directory: str = Field(
+        pattern=r"^\.[a-z][a-z0-9_-]*$",
+        description="Base directory for assistant files"
+    )
+
+    context_file: ContextFileConfig
+    command_files: TemplateConfig
+    agent_files: TemplateConfig
+```
+
+#### Validation Rules
+
+**Name Pattern**: `^[a-z][a-z0-9_-]*$`
+- Must start with lowercase letter
+- Can contain lowercase letters, numbers, hyphens, underscores
+- Examples: `claude`, `copilot`, `my-assistant`
+
+**Base Directory Pattern**: `^\.[a-z][a-z0-9_-]*$`
+- Must start with a dot (hidden directory)
+- Follows same naming convention as name
+- Examples: `.claude`, `.github`, `.my-assistant`
+
+**Path Validation**: Model-level validator ensures all paths are under base directory
+
+### ContextFileConfig
+
+Configuration for the main context file:
+
+```python
+@dataclass
+class ContextFileConfig(BaseModel):
+    """Configuration for context file."""
+
+    file: str = Field(
+        min_length=1,
+        description="Context file path"
+    )
+
+    file_format: FileFormat = Field(
+        description="File format for context file"
+    )
+```
+
+#### Special Path Rules
+- **Project Root**: Context file can be in project root (e.g., `CLAUDE.md`)
+- **Base Directory**: Or within the assistant's base directory
+- **Validation**: Model validator ensures path is valid
+
+### TemplateConfig
+
+Configuration for template file generation:
+
+```python
+@dataclass
+class TemplateConfig(BaseModel):
+    """Configuration for template file generation."""
+
+    directory: str = Field(
+        min_length=1,
+        description="Directory path for files"
+    )
+
+    file_format: FileFormat = Field(
+        description="File format for generated files"
+    )
+```
+
+### FileFormat Enum
+
+Supported file formats with validation:
+
+```python
+class FileFormat(str, Enum):
+    """File formats for assistant files."""
+
+    MARKDOWN = "md"
+    MDC = "mdc"  # Cursor rule files
+```
+
+## Validation Features
+
+### Field-Level Validation
+
+#### String Validation
+```python
+@field_validator("display_name")
+@classmethod
+def validate_display_name_not_whitespace(cls, v: str) -> str:
+    """Ensure display name is not just whitespace."""
+    if not v.strip():
+        raise ValueError("Display name cannot be empty or only whitespace")
+    return v.strip()
+```
+
+#### Pattern Validation
+- **Name patterns**: Enforce naming conventions automatically
+- **Path patterns**: Ensure directory structure consistency
+- **Length limits**: Prevent excessively long values
+
+### Model-Level Validation
+
+#### Path Consistency Validation
+```python
+@model_validator(mode="after")
+def validate_paths_under_base(self) -> "AssistantConfig":
+    """Validate that all paths are under the base directory."""
+    base_path = Path(self.base_directory)
+
+    # Context file validation (special rules)
+    context_path = Path(self.context_file.file)
+    is_in_project_root = context_path.name == context_path.as_posix()
+
+    if not is_in_project_root:
+        # Must be under base directory
+        try:
+            context_path.relative_to(base_path)
+        except ValueError:
+            raise ValueError(
+                f"Context file '{self.context_file.file}' must be in project root "
+                f"or under base directory '{self.base_directory}'"
+            )
+
+    # Commands and agents must be under base directory
+    for path_field, path_value in [
+        ("commands", self.command_files.directory),
+        ("agents", self.agent_files.directory),
+    ]:
+        try:
+            Path(path_value).relative_to(base_path)
+        except ValueError as e:
+            raise ValueError(
+                f"{path_field.title()} directory '{path_value}' must be "
+                f"under base directory '{self.base_directory}'"
+            ) from e
+
+    return self
+```
+
+## Model Configuration
+
+### Pydantic ConfigDict
+
+All models use comprehensive configuration for maximum safety:
+
+```python
+model_config = ConfigDict(
+    # Immutability - prevent modification after creation
+    frozen=True,
+
+    # No extra fields allowed - strict validation
+    extra="forbid",
+
+    # Enhanced validation settings
+    validate_assignment=True,     # Validate on assignment
+    str_strip_whitespace=True,    # Automatically strip whitespace
+    validate_default=True,        # Validate default values
+    use_enum_values=True,         # Use enum values in errors
+)
+```
+
+### Benefits of This Configuration
+
+**Immutability (`frozen=True`)**
+- Prevents accidental modification after creation
+- Thread-safe by default
+- Enables safe sharing between components
+
+**Strict Validation (`extra="forbid"`)**
+- Prevents typos in field names
+- Catches unused configuration parameters
+- Ensures only expected fields are present
+
+**Enhanced Validation Options**
+- `validate_assignment=True`: Validates on any field assignment
+- `str_strip_whitespace=True`: Automatic string cleanup
+- `validate_default=True`: Validates default values at model definition time
+
+## Utility Methods
+
+### Path Management
+
+```python
+def get_all_paths(self) -> Set[str]:
+    """Get all file/directory paths defined in this configuration."""
+    return {
+        self.base_directory,
+        self.context_file.file,
+        self.command_files.directory,
+        self.agent_files.directory,
+    }
+
+def is_path_managed(self, path: str) -> bool:
+    """Check if a given path is managed by this assistant."""
+    normalized_path = str(Path(path).as_posix())
+    return any(
+        normalized_path.startswith(managed_path)
+        for managed_path in self.get_all_paths()
+    )
+```
+
+These methods provide:
+- **Path Discovery**: Enumerate all paths managed by an assistant
+- **Ownership Detection**: Determine if a path belongs to an assistant
+- **Conflict Prevention**: Avoid path conflicts between assistants
+
+## Type Aliases
+
+### Enhanced Type Safety
+
+```python
+# Injection point values with metadata
+InjectionValues = Dict[InjectionPointMeta, str]
+
+# String types with semantic meaning
+AssistantName = str          # lowercase, alphanumeric with hyphens/underscores
+AssistantPath = str          # File system path string
+AssistantPaths = Dict[AssistantName, AssistantPath]
+```
+
+### Benefits
+- **Semantic Clarity**: Type names indicate expected content and format
+- **IDE Support**: Better autocomplete and type checking
+- **Documentation**: Self-documenting code through descriptive type names
+
+## Validation Examples
+
+### Success Cases
+
+```python
+# Valid assistant configuration
+config = AssistantConfig(
+    name="claude-code",
+    display_name="Claude Code Assistant",
+    description="Anthropic's AI assistant with code capabilities",
+    base_directory=".claude",
+    context_file=ContextFileConfig(
+        file="CLAUDE.md",  # In project root - allowed
+        file_format=FileFormat.MARKDOWN
+    ),
+    command_files=TemplateConfig(
+        directory=".claude/commands",  # Under base directory - required
+        file_format=FileFormat.MARKDOWN
+    ),
+    agent_files=TemplateConfig(
+        directory=".claude/agents",  # Under base directory - required
+        file_format=FileFormat.MARKDOWN
+    )
+)
+```
+
+### Validation Errors
+
+#### Invalid Name Pattern
+```python
+try:
+    config = AssistantConfig(
+        name="Invalid-Name-With-Uppercase",  # Fails pattern validation
+        # ... other fields
+    )
+except ValueError as e:
+    print(e)  # String should match pattern '^[a-z][a-z0-9_-]*$'
+```
+
+#### Base Directory Pattern
+```python
+try:
+    config = AssistantConfig(
+        name="claude",
+        base_directory="claude",  # Missing leading dot
+        # ... other fields
+    )
+except ValueError as e:
+    print(e)  # String should match pattern '^\.[a-z][a-z0-9_-]*$'
+```
+
+#### Path Consistency
+```python
+try:
+    config = AssistantConfig(
+        name="claude",
+        base_directory=".claude",
+        context_file=ContextFileConfig(
+            file="random/location/context.md",  # Not in root or base dir
+            file_format=FileFormat.MARKDOWN
+        ),
+        # ... other fields
+    )
+except ValueError as e:
+    print(e)  # Context file must be in project root or under base directory
+```
+
+#### Extra Fields
+```python
+try:
+    config = AssistantConfig(
+        name="claude",
+        display_name="Claude",
+        description="AI assistant",
+        base_directory=".claude",
+        context_file=ContextFileConfig(...),
+        command_files=TemplateConfig(...),
+        agent_files=TemplateConfig(...),
+        extra_field="not allowed"  # Forbidden by extra="forbid"
+    )
+except ValueError as e:
+    print(e)  # Extra inputs are not permitted
+```
+
+## Integration Patterns
+
+### With Assistant Providers
+
+```python
+class ClaudeProvider(AssistantProvider):
+    def __init__(self):
+        # Validation happens at construction time
+        self._config = AssistantConfig(
+            name="claude",
+            display_name="Claude Code",
+            description="Anthropic's Claude Code AI assistant",
+            base_directory=".claude",
+            context_file=ContextFileConfig(
+                file="CLAUDE.md",
+                file_format=FileFormat.MARKDOWN
+            ),
+            command_files=TemplateConfig(
+                directory=".claude/commands",
+                file_format=FileFormat.MARKDOWN
+            ),
+            agent_files=TemplateConfig(
+                directory=".claude/agents",
+                file_format=FileFormat.MARKDOWN
+            )
+        )
+
+    @property
+    def config(self) -> AssistantConfig:
+        return self._config  # Immutable - safe to return
+```
+
+### With Registry System
+
+```python
+class StaticAssistantRegistry(AssistantRegistry):
+    def register_assistant(self, assistant: AssistantProvider) -> None:
+        # Config is already validated by Pydantic
+        config = assistant.config
+
+        # Additional business logic validation
+        if not config.name:
+            raise ValueError("Assistant must have a non-empty name")
+
+        if config.name in self._assistants:
+            raise ValueError(f"Assistant '{config.name}' is already registered")
+
+        self._assistants[config.name] = assistant
+```
+
+## Error Handling Best Practices
+
+### Construction-Time Validation
+
+```python
+def create_assistant_config(user_input: dict) -> Optional[AssistantConfig]:
+    """Create assistant config with proper error handling."""
+    try:
+        return AssistantConfig(**user_input)
+    except ValueError as e:
+        # Pydantic provides detailed validation errors
+        print(f"Configuration error: {e}")
+        return None
+    except TypeError as e:
+        # Missing required fields or wrong types
+        print(f"Type error: {e}")
+        return None
+```
+
+### Validation Error Details
+
+Pydantic provides comprehensive error information:
+
+```python
+try:
+    config = AssistantConfig(
+        name="",  # Empty name
+        display_name="   ",  # Whitespace only
+        description="",  # Empty description
+        base_directory="invalid",  # Wrong pattern
+        # Missing required fields
+    )
+except ValueError as e:
+    for error in e.errors():
+        print(f"Field: {error['loc']}")
+        print(f"Error: {error['msg']}")
+        print(f"Input: {error['input']}")
+```
+
+Output:
+```
+Field: ('name',)
+Error: String should have at least 1 character
+Input:
+
+Field: ('display_name',)
+Error: Display name cannot be empty or only whitespace
+Input:
+
+Field: ('base_directory',)
+Error: String should match pattern '^\.[a-z][a-z0-9_-]*$'
+Input: invalid
+
+Field: ('context_file',)
+Error: Field required
+Input: {'name': '', ...}
+```
+
+## Testing Support
+
+### Model Testing
+
+```python
+def test_assistant_config_validation():
+    """Test assistant configuration validation."""
+
+    # Valid configuration
+    config = AssistantConfig(
+        name="test-assistant",
+        display_name="Test Assistant",
+        description="Test description",
+        base_directory=".test",
+        context_file=ContextFileConfig(
+            file="test.md",
+            file_format=FileFormat.MARKDOWN
+        ),
+        command_files=TemplateConfig(
+            directory=".test/commands",
+            file_format=FileFormat.MARKDOWN
+        ),
+        agent_files=TemplateConfig(
+            directory=".test/agents",
+            file_format=FileFormat.MARKDOWN
+        )
+    )
+
+    assert config.name == "test-assistant"
+    assert config.is_path_managed(".test/commands/example.md")
+    assert not config.is_path_managed("other/path.md")
+
+def test_assistant_config_immutability():
+    """Test that configuration is immutable."""
+    config = create_valid_config()
+
+    with pytest.raises(FrozenInstanceError):
+        config.name = "changed"  # Should fail - model is frozen
+```
+
+### Validation Testing
+
+```python
+@pytest.mark.parametrize("invalid_name", [
+    "",  # Empty
+    "Invalid",  # Uppercase
+    "invalid space",  # Space
+    "invalid.dot",  # Dot
+    "a" * 51,  # Too long
+])
+def test_invalid_name_patterns(invalid_name):
+    """Test that invalid names are rejected."""
+    with pytest.raises(ValueError, match="String should match pattern"):
+        AssistantConfig(
+            name=invalid_name,
+            # ... other valid fields
+        )
+```
+
+## Migration Guide
+
+### From Unvalidated Dictionaries
+
+**Before:**
+```python
+# Unvalidated dictionary configuration
+assistant_config = {
+    "name": "claude",
+    "display_name": "Claude Code",
+    "base_directory": ".claude",
+    "context_file": "CLAUDE.md",
+    # No validation, potential for errors
+}
+```
+
+**After:**
+```python
+# Validated Pydantic model
+assistant_config = AssistantConfig(
+    name="claude",
+    display_name="Claude Code",
+    description="Anthropic's Claude Code AI assistant",
+    base_directory=".claude",
+    context_file=ContextFileConfig(
+        file="CLAUDE.md",
+        file_format=FileFormat.MARKDOWN
+    ),
+    # Full validation at construction time
+)
+```
+
+### Benefits of Migration
+
+1. **Type Safety**: Catch configuration errors at development time
+2. **Validation**: Comprehensive validation rules prevent invalid configurations
+3. **Documentation**: Self-documenting models with field descriptions
+4. **IDE Support**: Full autocomplete and type checking
+5. **Immutability**: Prevent accidental configuration changes
+6. **JSON Schema**: Automatic API documentation generation
+
+This type system provides a robust foundation for the AI assistant architecture, ensuring configuration integrity and developer productivity through comprehensive validation and type safety.

@@ -19,7 +19,8 @@ SpecifyX is a modern Python CLI tool for spec-driven development that helps team
 
 ### Key Features
 
-- **Easy Installation**: `uv tool install specifyx` or `uvx specifyx` 
+- **Easy Installation**: `uv tool install specifyx` or `uvx specifyx`
+- **AI Assistant Management**: Add and configure multiple AI assistants (Claude, Copilot, Cursor, Gemini)
 - **Jinja2 Templating**: Variables, conditionals, loops for complex project generation
 - **Flexible Branch Naming**: Custom patterns like `feature/{name}`, `task/{id}-{name}`, or no-branch workflow
 - **Configuration System**: TOML-based preferences and settings
@@ -51,11 +52,14 @@ pipx install specifyx  # or: pip install specifyx
 See SpecifyX in action - initialize a new project and start building:
 
 ```bash
-# Create a new project
-specifyx init my-project
+# Create a new project with AI assistant
+specifyx init my-project --ai claude
 cd my-project
 
-# Check system requirements  
+# Or add AI assistants to existing project
+specifyx add-ai claude,copilot
+
+# Check system requirements
 specifyx check
 
 # Traditional workflow (with feature branches)
@@ -88,8 +92,26 @@ Spec-Driven Development makes **specifications executable** - directly generatin
 
 - **Linux/macOS** (or WSL2 on Windows)
 - **Python 3.11+**
-- AI coding agent: [Claude Code](https://www.anthropic.com/claude-code), [GitHub Copilot](https://code.visualstudio.com/), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- **AI Assistant**: Choose one or more:
+  - [Claude Code](https://www.anthropic.com/claude-code) - Anthropic's AI coding assistant
+  - [GitHub Copilot](https://code.visualstudio.com/) - GitHub's AI assistant
+  - [Cursor](https://cursor.sh/) - AI-powered code editor
+  - [Gemini CLI](https://github.com/google-gemini/gemini-cli) - Google's AI assistant
 - [uv](https://docs.astral.sh/uv/) for package management
+
+## AI Assistant Setup
+
+SpecifyX supports multiple AI assistants with dedicated configurations:
+
+```bash
+# Add AI assistants to your project
+specifyx add-ai claude              # Add Claude Code
+specifyx add-ai copilot,cursor      # Add multiple assistants
+specifyx add-ai --interactive       # Interactive selection
+
+# Update templates when assistants change
+specifyx refresh-templates
+```
 
 ## Development
 

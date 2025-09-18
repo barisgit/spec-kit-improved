@@ -33,7 +33,7 @@ This command sets up a new project using the modular service architecture to orc
 - `--yes`, `-y` - Use defaults for all options not provided and skip interactive prompts
 
 ### AI Assistant Configuration
-- `--ai TEXT` - AI assistant to use: claude, gemini, copilot (interactive if not specified)
+- `--ai TEXT` - AI assistant(s) to use (comma-separated): claude, gemini, copilot (interactive multiselect if not specified)
 
 ### Branch Naming Configuration
 - `--branch-pattern TEXT` - Branch naming pattern: `001-feature-name` or `feature/{name}` (interactive if not specified)
@@ -49,12 +49,12 @@ This command sets up a new project using the modular service architecture to orc
 
 When run without options, the command enters interactive mode:
 1. Prompts for project name (if not provided)
-2. Asks for AI assistant preference (claude, gemini, copilot)
+2. Asks for AI assistant preferences with multiselect (claude, gemini, copilot)
 3. Offers template source selection (local vs remote)
 4. Offers branch naming pattern selection
 5. Creates project structure with progress tracking
 
-The interactive mode can be bypassed using the `--yes` flag, which uses defaults for all unspecified options.
+The interactive mode can be bypassed using the `--yes` flag, which uses defaults for all unspecified options. Multiple AI assistants can be selected simultaneously.
 
 ## Examples
 
@@ -72,10 +72,14 @@ specifyx init my-project --yes
 
 ### AI Assistant Configuration
 ```bash
-# Specify AI assistant directly
+# Specify single AI assistant
 specifyx init my-project --ai claude
 specifyx init my-project --ai gemini
 specifyx init my-project --ai copilot
+
+# Specify multiple AI assistants (comma-separated)
+specifyx init my-project --ai claude,gemini
+specifyx init my-project --ai claude,copilot,gemini
 ```
 
 ### Branch Naming Patterns
@@ -105,8 +109,11 @@ specifyx init my-project --verbose
 # Force initialization in existing directory
 specifyx init --here --force
 
-# Complete non-interactive setup
+# Complete non-interactive setup with single assistant
 specifyx init my-project --ai claude --branch-pattern "feature/{name}" --yes
+
+# Complete setup with multiple assistants
+specifyx init my-project --ai claude,gemini --branch-pattern "feature/{name}" --yes
 ```
 
 ## Generated Structure
@@ -127,9 +134,15 @@ my-project/
 │   │   └── tasks/          # Task templates
 │   └── memory/             # Project constitution and guidelines
 │       └── CONSTITUTION.md # Project principles and standards
-├── .claude/                # AI assistant commands (Claude-specific)
-│   └── commands/           # Slash commands for Claude Code
+├── .claude/                # Claude assistant files (if selected)
+│   ├── commands/           # Slash commands for Claude Code
+│   └── CLAUDE.md           # Claude-specific context file
 ├── .gemini/                # Gemini assistant files (if selected)
+│   ├── commands/           # Gemini command templates
+│   └── GEMINI.md           # Gemini-specific context file
+├── .copilot/               # GitHub Copilot files (if selected)
+│   ├── commands/           # Copilot command templates
+│   └── COPILOT.md          # Copilot-specific context file
 ├── specs/                  # Feature specifications directory
 │   └── README.md           # Specification guidelines
 ├── README.md               # Project documentation
@@ -143,7 +156,7 @@ The command creates a `.specify/config.toml` file with:
 ```toml
 [project]
 name = "my-project"
-ai_assistant = "claude"
+ai_assistants = ["claude", "gemini"]  # Multiple assistants supported
 
 [branch_naming]
 patterns = ["feature/{feature-name}", "hotfix/{bug-id}"]
@@ -168,7 +181,7 @@ The command handles various error scenarios gracefully:
 - Provides clear error messages for network issues
 
 ### Validation Errors
-- Validates AI assistant choices against supported options
+- Validates AI assistant choices against supported options (supports multiple assistants)
 - Validates branch patterns against configured patterns
 - Prevents conflicting options (project name + --here)
 

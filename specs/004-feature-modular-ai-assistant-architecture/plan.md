@@ -39,7 +39,7 @@ Reorganize SpecifyX's AI assistant code from scattered files into organized assi
 **Type Safety**: Python 3.11+ with ABC support, advanced Enum features, and strict typing
 **Architecture**: Abstract Base Classes (ABC) + Pydantic BaseModel + Type-safe Enums
 **Storage**: File system (assistant folder structure, validated configuration files)
-**Testing**: pytest with type checking (mypy/pyright) and Pydantic validation tests
+**Testing**: pytest with type checking (pyrefly) and Pydantic validation tests
 **Target Platform**: Cross-platform (Linux, macOS, Windows via Python)
 **Project Type**: single (CLI tool)
 **Performance Goals**: Template rendering <100ms, Pydantic validation <50ms, Build-time validation
