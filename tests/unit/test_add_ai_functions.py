@@ -182,10 +182,12 @@ class TestFileOperations:
 
         files = assistant_service.get_files_to_create("test_assistant", Path("/tmp"))
 
+        normalized_files = {path.replace("\\", "/") for path in files}
+
         # Check that we get the expected files
-        assert ".test/TEST.md" in files
-        assert ".test/commands/" in files
-        assert ".test/agents/" in files
+        assert ".test/TEST.md" in normalized_files
+        assert ".test/commands/" in normalized_files
+        assert ".test/agents/" in normalized_files
 
     @patch(
         "specify_cli.services.assistant_management_service.assistant_management_service.get_assistant"

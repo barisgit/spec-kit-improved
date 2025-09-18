@@ -36,11 +36,13 @@ class TestTemplateCodeQuality:
         contexts = []
         assistants = get_all_assistants()
 
+        temp_project_path = Path(tempfile.gettempdir()) / "test_project"
+
         for assistant in assistants:
             context = TemplateContext(
                 project_name="test_project",
                 ai_assistant=assistant.config.name,
-                project_path=Path("/tmp/test_project"),
+                project_path=temp_project_path,
                 branch_naming_config=BranchNamingConfig(
                     default_pattern="feature/{feature_name}",
                     patterns=[

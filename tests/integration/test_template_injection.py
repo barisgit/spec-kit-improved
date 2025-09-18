@@ -1,5 +1,7 @@
 """Test template injection integration according to spec task T032."""
 
+import tempfile
+from pathlib import Path
 from typing import List
 
 import pytest
@@ -51,14 +53,14 @@ class TestTemplateInjectionIntegration:
             }
 
             # Create a proper template context that includes both injection points and template variables
-            from pathlib import Path
-
             from specify_cli.models.project import TemplateContext
+
+            temp_project_path = Path(tempfile.gettempdir()) / "test_project"
 
             full_context = TemplateContext(
                 project_name="test_project",
                 ai_assistant="claude",
-                project_path=Path("/tmp/test_project"),
+                project_path=temp_project_path,
             )
 
             template_context = full_context.to_dict()
@@ -145,14 +147,14 @@ class TestTemplateInjectionIntegration:
             }
 
             # Create proper template context for testing
-            from pathlib import Path
-
             from specify_cli.models.project import TemplateContext
+
+            temp_project_path = Path(tempfile.gettempdir()) / "test_project"
 
             full_context = TemplateContext(
                 project_name="test_project",
                 ai_assistant="claude",
-                project_path=Path("/tmp/test_project"),
+                project_path=temp_project_path,
             )
 
             context = full_context.to_dict()
@@ -246,14 +248,14 @@ class TestTemplateInjectionIntegration:
                 }
 
                 # Create full template context
-                from pathlib import Path
-
                 from specify_cli.models.project import TemplateContext
+
+                temp_project_path = Path(tempfile.gettempdir()) / "test_project"
 
                 full_context = TemplateContext(
                     project_name="test_project",
                     ai_assistant=assistant_name,
-                    project_path=Path("/tmp/test_project"),
+                    project_path=temp_project_path,
                 )
 
                 context = full_context.to_dict()
