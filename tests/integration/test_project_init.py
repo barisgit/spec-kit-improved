@@ -53,7 +53,7 @@ class TestProjectInitializationFlow:
             # Test project initialization with standard options
             options = ProjectInitOptions(
                 project_name="integration-test-project",
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=False,
                 skip_git=True,  # Skip git for testing isolation
                 ignore_agent_tools=False,
@@ -107,7 +107,7 @@ class TestProjectInitializationFlow:
             # Initialize in current directory
             options = ProjectInitOptions(
                 project_name=None,  # No name needed for current dir
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=True,
                 skip_git=True,
                 ignore_agent_tools=True,
@@ -151,7 +151,7 @@ class TestProjectInitializationFlow:
 
             options = ProjectInitOptions(
                 project_name="custom-config-project",
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=False,
                 skip_git=True,
                 ignore_agent_tools=False,
@@ -330,7 +330,7 @@ ai_assistant = "claude"
             # Test initialization with invalid project name
             invalid_options = ProjectInitOptions(
                 project_name="Invalid Project Name",  # Spaces should be invalid
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=False,
                 skip_git=True,
                 ignore_agent_tools=False,
@@ -355,7 +355,7 @@ ai_assistant = "claude"
 
                 readonly_options = ProjectInitOptions(
                     project_name="readonly-test",
-                    ai_assistant="claude",
+                    ai_assistants=["claude"],
                     use_current_dir=False,
                     skip_git=True,
                     ignore_agent_tools=False,
@@ -391,7 +391,7 @@ ai_assistant = "claude"
             for ai_assistant in ai_assistants:
                 options = ProjectInitOptions(
                     project_name=f"test-{ai_assistant}",
-                    ai_assistant=ai_assistant,
+                    ai_assistants=[ai_assistant],
                     use_current_dir=False,
                     skip_git=True,
                     ignore_agent_tools=True,

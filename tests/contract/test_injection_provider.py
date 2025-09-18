@@ -5,6 +5,7 @@ These tests validate that the abstract base class contracts are properly
 enforced for all injection provider implementations.
 """
 
+from pathlib import Path
 from typing import List
 
 import pytest
@@ -13,12 +14,12 @@ from specify_cli.assistants.claude import ClaudeProvider
 from specify_cli.assistants.copilot import CopilotProvider
 from specify_cli.assistants.cursor import CursorProvider
 from specify_cli.assistants.gemini import GeminiProvider
+from specify_cli.assistants.injection_points import InjectionPoint, InjectionPointMeta
 from specify_cli.assistants.interfaces import AssistantProvider, ValidationResult
 from specify_cli.assistants.types import (
     AssistantConfig,
     ContextFileConfig,
     FileFormat,
-    InjectionPoint,
     InjectionValues,
     TemplateConfig,
 )
@@ -73,16 +74,13 @@ class TestAbstractBaseClassEnforcement:
                     description="Test description",
                     base_directory=".test",
                     context_file=ContextFileConfig(
-                        file=".test/context.md",
-                        file_format=FileFormat.MARKDOWN
+                        file=".test/context.md", file_format=FileFormat.MARKDOWN
                     ),
                     command_files=TemplateConfig(
-                        directory=".test/commands",
-                        file_format=FileFormat.MARKDOWN
+                        directory=".test/commands", file_format=FileFormat.MARKDOWN
                     ),
                     agent_files=TemplateConfig(
-                        directory=".test/agents",
-                        file_format=FileFormat.MARKDOWN
+                        directory=".test/agents", file_format=FileFormat.MARKDOWN
                     ),
                 )
 
@@ -97,7 +95,7 @@ class TestAbstractBaseClassEnforcement:
             def imports_supported(self) -> bool:
                 return False
 
-            def format_import(self, current_dir, target_file) -> str:
+            def format_import(self, current_dir: Path, target_file: Path) -> str:  # noqa: ARG002
                 return ""
 
             def validate_setup(self) -> ValidationResult:
@@ -178,7 +176,7 @@ class TestConcreteProviderCompliance:
             assert isinstance(injections, dict)
 
             for key, value in injections.items():
-                assert isinstance(key, InjectionPoint)
+                assert isinstance(key, InjectionPointMeta)
                 assert isinstance(value, str)
 
     def test_config_validation_consistency(self, providers):
@@ -318,7 +316,7 @@ class TestMethodReturnTypes:
 
         # Check that it matches the InjectionValues type alias
         for key, value in injections.items():
-            assert isinstance(key, InjectionPoint)
+            assert isinstance(key, InjectionPointMeta)
             assert isinstance(value, str)
 
     def test_validate_setup_returns_validation_result(self, provider):

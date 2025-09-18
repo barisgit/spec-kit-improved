@@ -202,8 +202,8 @@ class TestSelectAiAssistant:
     """Test the select_ai_assistant function."""
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("specify_cli.utils.ui_helpers.AI_DEFAULTS")
-    def test_select_ai_assistant_success(self, mock_ai_defaults, mock_ui_class):
+    @patch("specify_cli.utils.ui_helpers.get_all_assistants")
+    def test_select_ai_assistant_success(self, mock_get_assistants, mock_ui_class):
         """Test successful AI assistant selection."""
         # Setup mocks
         mock_ui = Mock()
@@ -212,16 +212,16 @@ class TestSelectAiAssistant:
 
         # Mock AI assistants
         mock_assistant1 = Mock()
-        mock_assistant1.name = "claude"
-        mock_assistant1.display_name = "Claude"
-        mock_assistant1.description = "Anthropic's AI assistant"
+        mock_assistant1.config.name = "claude"
+        mock_assistant1.config.display_name = "Claude"
+        mock_assistant1.config.description = "Anthropic's AI assistant"
 
         mock_assistant2 = Mock()
-        mock_assistant2.name = "gemini"
-        mock_assistant2.display_name = "Gemini"
-        mock_assistant2.description = "Google's AI assistant"
+        mock_assistant2.config.name = "gemini"
+        mock_assistant2.config.display_name = "Gemini"
+        mock_assistant2.config.description = "Google's AI assistant"
 
-        mock_ai_defaults.ASSISTANTS = [mock_assistant1, mock_assistant2]
+        mock_get_assistants.return_value = [mock_assistant1, mock_assistant2]
 
         # Call function
         result = select_ai_assistant()
@@ -245,9 +245,9 @@ class TestSelectAiAssistant:
         assert call_args[1]["default"] == "claude"
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("specify_cli.utils.ui_helpers.AI_DEFAULTS")
+    @patch("specify_cli.utils.ui_helpers.get_all_assistants")
     def test_select_ai_assistant_keyboard_interrupt(
-        self, mock_ai_defaults, mock_ui_class
+        self, mock_get_assistants, mock_ui_class
     ):
         """Test handling keyboard interrupt during AI assistant selection."""
         # Setup mocks
@@ -257,19 +257,19 @@ class TestSelectAiAssistant:
 
         # Mock AI assistants
         mock_assistant = Mock()
-        mock_assistant.name = "claude"
-        mock_assistant.display_name = "Claude"
-        mock_assistant.description = "Anthropic's AI assistant"
-        mock_ai_defaults.ASSISTANTS = [mock_assistant]
+        mock_assistant.config.name = "claude"
+        mock_assistant.config.display_name = "Claude"
+        mock_assistant.config.description = "Anthropic's AI assistant"
+        mock_get_assistants.return_value = [mock_assistant]
 
         # Call function and expect KeyboardInterrupt to be re-raised
         with pytest.raises(KeyboardInterrupt):
             select_ai_assistant()
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("specify_cli.utils.ui_helpers.AI_DEFAULTS")
+    @patch("specify_cli.utils.ui_helpers.get_all_assistants")
     def test_select_ai_assistant_multiple_options(
-        self, mock_ai_defaults, mock_ui_class
+        self, mock_get_assistants, mock_ui_class
     ):
         """Test selection with multiple AI assistant options."""
         # Setup mocks
@@ -279,21 +279,21 @@ class TestSelectAiAssistant:
 
         # Mock AI assistants
         mock_assistant1 = Mock()
-        mock_assistant1.name = "claude"
-        mock_assistant1.display_name = "Claude"
-        mock_assistant1.description = "Anthropic's AI assistant"
+        mock_assistant1.config.name = "claude"
+        mock_assistant1.config.display_name = "Claude"
+        mock_assistant1.config.description = "Anthropic's AI assistant"
 
         mock_assistant2 = Mock()
-        mock_assistant2.name = "gemini"
-        mock_assistant2.display_name = "Gemini"
-        mock_assistant2.description = "Google's AI assistant"
+        mock_assistant2.config.name = "gemini"
+        mock_assistant2.config.display_name = "Gemini"
+        mock_assistant2.config.description = "Google's AI assistant"
 
         mock_assistant3 = Mock()
-        mock_assistant3.name = "copilot"
-        mock_assistant3.display_name = "GitHub Copilot"
-        mock_assistant3.description = "GitHub's AI coding assistant"
+        mock_assistant3.config.name = "copilot"
+        mock_assistant3.config.display_name = "GitHub Copilot"
+        mock_assistant3.config.description = "GitHub's AI coding assistant"
 
-        mock_ai_defaults.ASSISTANTS = [
+        mock_get_assistants.return_value = [
             mock_assistant1,
             mock_assistant2,
             mock_assistant3,
@@ -314,15 +314,15 @@ class TestSelectAiAssistant:
         assert "copilot" in choices
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("specify_cli.utils.ui_helpers.AI_DEFAULTS")
-    def test_select_ai_assistant_empty_list(self, mock_ai_defaults, mock_ui_class):
+    @patch("specify_cli.utils.ui_helpers.get_all_assistants")
+    def test_select_ai_assistant_empty_list(self, mock_get_assistants, mock_ui_class):
         """Test handling empty AI assistants list."""
         # Setup mocks
         mock_ui = Mock()
         mock_ui_class.return_value = mock_ui
         mock_ui.select.return_value = None
 
-        mock_ai_defaults.ASSISTANTS = []
+        mock_get_assistants.return_value = []
 
         # Call function
         result = select_ai_assistant()
@@ -336,9 +336,9 @@ class TestSelectAiAssistant:
         assert choices == {}
 
     @patch("specify_cli.utils.ui_helpers.InteractiveUI")
-    @patch("specify_cli.utils.ui_helpers.AI_DEFAULTS")
+    @patch("specify_cli.utils.ui_helpers.get_all_assistants")
     def test_select_ai_assistant_default_selection(
-        self, mock_ai_defaults, mock_ui_class
+        self, mock_get_assistants, mock_ui_class
     ):
         """Test that default selection works correctly."""
         # Setup mocks
@@ -348,16 +348,16 @@ class TestSelectAiAssistant:
 
         # Mock AI assistants
         mock_assistant1 = Mock()
-        mock_assistant1.name = "claude"
-        mock_assistant1.display_name = "Claude"
-        mock_assistant1.description = "Anthropic's AI assistant"
+        mock_assistant1.config.name = "claude"
+        mock_assistant1.config.display_name = "Claude"
+        mock_assistant1.config.description = "Anthropic's AI assistant"
 
         mock_assistant2 = Mock()
-        mock_assistant2.name = "gemini"
-        mock_assistant2.display_name = "Gemini"
-        mock_assistant2.description = "Google's AI assistant"
+        mock_assistant2.config.name = "gemini"
+        mock_assistant2.config.display_name = "Gemini"
+        mock_assistant2.config.description = "Google's AI assistant"
 
-        mock_ai_defaults.ASSISTANTS = [mock_assistant1, mock_assistant2]
+        mock_get_assistants.return_value = [mock_assistant1, mock_assistant2]
 
         # Call function
         select_ai_assistant()

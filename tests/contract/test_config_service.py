@@ -36,7 +36,7 @@ class TestConfigServiceContract:
                 ],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=None,
                 template_cache_enabled=True,
                 template_variables={"author": "test-user", "team": "dev-team"},
@@ -299,7 +299,7 @@ class TestConfigServiceIntegration:
                 patterns=["task/{task-name}", "feature/{feature-name}"],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=None,
                 template_cache_enabled=True,
                 template_variables={"workflow": "test"},

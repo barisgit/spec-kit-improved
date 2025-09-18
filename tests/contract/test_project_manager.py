@@ -30,7 +30,7 @@ class TestProjectManagerContract:
         """Create basic project initialization options"""
         return ProjectInitOptions(
             project_name="test-project",
-            ai_assistant="claude",
+            ai_assistants=["claude"],
             use_current_dir=False,
             skip_git=False,
             ignore_agent_tools=False,
@@ -42,7 +42,7 @@ class TestProjectManagerContract:
         """Create options for current directory initialization"""
         return ProjectInitOptions(
             project_name=None,
-            ai_assistant="claude",
+            ai_assistants=["claude"],
             use_current_dir=True,
             skip_git=True,
             ignore_agent_tools=True,
@@ -282,21 +282,19 @@ class TestProjectManagerIntegration:
 
             # Test project name validation
             is_valid, error = project_manager.validate_project_name("integration-test")
-            if not is_valid:
-                pytest.skip(f"Project name validation failed: {error}")
+            assert is_valid
 
             # Test directory validation
             project_path = tmp_path / "integration-test"
             is_valid, error = project_manager.validate_project_directory(
                 project_path, False
             )
-            if not is_valid:
-                pytest.skip(f"Directory validation failed: {error}")
+            assert is_valid
 
             # Initialize project
             options = ProjectInitOptions(
                 project_name="integration-test",
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=False,
                 skip_git=True,  # Skip git to avoid external dependencies
                 ignore_agent_tools=True,
@@ -339,7 +337,7 @@ class TestProjectManagerIntegration:
             # Initialize in current directory
             options = ProjectInitOptions(
                 project_name=None,  # No name when using current dir
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=True,
                 skip_git=True,
                 ignore_agent_tools=True,
