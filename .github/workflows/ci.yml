@@ -90,11 +90,21 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'pnpm'
-        cache-dependency-path: docs/pnpm-lock.yaml
 
-    - name: Enable Corepack
-      run: corepack enable
+    - name: Install pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: pnpm-${{ hashFiles('docs/pnpm-lock.yaml') }}
+        restore-keys: pnpm-
+
+    - name: Configure pnpm store path
+      run: pnpm config set store-dir ~/.pnpm-store
 
     - name: Install docs dependencies
       working-directory: docs
