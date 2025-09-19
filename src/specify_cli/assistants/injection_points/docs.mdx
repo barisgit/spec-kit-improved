@@ -1,0 +1,354 @@
+---
+title: Injection Point Architecture
+description: Type-safe, centralized approach to template variable management across AI assistants with comprehensive metadata and validation
+---
+
+# Injection Point Architecture
+
+The injection point system provides a type-safe, centralized approach to template variable management across AI assistants. It eliminates hardcoded strings and provides comprehensive metadata for each injection point.
+
+## Design Principles
+
+### No Duplication
+All injection point metadata is defined in one place (`InjectionPointRegistry`) with:
+- Name (template variable name)
+- Description (for IDE help and documentation)
+- Requirement level (required vs optional)
+
+### Type Safety
+- **Enum-like syntax**: `InjectionPoint.COMMAND_PREFIX` provides IDE autocomplete
+- **Metadata access**: `InjectionPoint.COMMAND_PREFIX.description` for help text
+- **Type checking**: Full [pyrefly](https://pyrefly.org) compatibility with proper type annotations
+
+### Centralized Management
+- Single source of truth for all injection points
+- Automatic computation of required/optional sets
+- Comprehensive validation and error reporting
+
+## Core Components
+
+### InjectionPointMeta
+
+Individual injection point with embedded metadata:
+
+```python
+class InjectionPointMeta:
+    def __init__(self, name: str, description: str, required: bool = False):
+        self.name = name                    # Template variable name
+        self.description = description      # Human-readable description
+        self.required = required           # Whether assistants must provide this
+
+    @property
+    def value(self) -> str:
+        return self.name                   # For enum-like compatibility
+
+    def __str__(self) -> str:
+        return self.name                   # For template usage
+```
+
+### InjectionPointRegistry
+
+Centralized registry with all injection points defined as class attributes:
+
+```python
+class InjectionPointRegistry:
+    # Required injection points
+    COMMAND_PREFIX = InjectionPointMeta(
+        name="assistant_command_prefix",
+        description="Command prefix for the AI assistant (e.g., 'claude ', 'cursor ')",
+        required=True
+    )
+
+    SETUP_INSTRUCTIONS = InjectionPointMeta(
+        name="assistant_setup_instructions",
+        description="Step-by-step setup instructions for the AI assistant",
+        required=True
+    )
+
+    # Optional injection points
+    REVIEW_COMMAND = InjectionPointMeta(
+        name="assistant_review_command",
+        description="Command used to trigger code review functionality",
+        required=False
+    )
+
+    # ... other injection points
+```
+
+### InjectionPoint Interface
+
+Provides familiar enum-like syntax while maintaining metadata access:
+
+```python
+# Usage examples
+point = InjectionPoint.COMMAND_PREFIX
+print(point.name)         # "assistant_command_prefix"
+print(point.description)  # "Command prefix for the AI assistant..."
+print(point.required)     # True
+print(str(point))         # "assistant_command_prefix" (for templates)
+```
+
+## Available Injection Points
+
+### Required Injection Points
+
+Every AI assistant must provide values for these injection points:
+
+#### COMMAND_PREFIX
+- **Name**: `assistant_command_prefix`
+- **Description**: Command prefix for the AI assistant (e.g., 'claude ', 'cursor ')
+- **Usage**: CLI command examples and documentation
+- **Example Values**:
+  - Claude: `"claude "`
+  - Copilot: `"gh copilot "`
+  - Cursor: `"cursor "`
+
+#### SETUP_INSTRUCTIONS
+- **Name**: `assistant_setup_instructions`
+- **Description**: Step-by-step setup instructions for getting the AI assistant ready
+- **Usage**: Generated documentation and help text
+- **Example**: `"Install Claude Code CLI, run 'claude auth' to authenticate"`
+
+#### CONTEXT_FILE_PATH
+- **Name**: `assistant_context_file_path`
+- **Description**: Path to the main context file for the AI assistant
+- **Usage**: Template generation and file references
+- **Example Values**:
+  - Claude: `"CLAUDE.md"`
+  - Copilot: `".github/copilot-instructions.md"`
+  - Cursor: `".cursorrules"`
+
+### Optional Injection Points
+
+AI assistants may provide these for enhanced functionality:
+
+#### CONTEXT_FILE_DESCRIPTION
+- **Name**: `assistant_context_file_description`
+- **Description**: Brief description of the context file format and purpose
+- **Usage**: Documentation and comments
+- **Example**: `", CLAUDE.md for Claude Code"`
+
+#### MEMORY_CONFIGURATION
+- **Name**: `assistant_memory_configuration`
+- **Description**: How the assistant manages project memory and context
+- **Usage**: Constitution templates and memory files
+- **Example**: `"Spec-driven development workflow with Claude Code integration"`
+
+#### REVIEW_COMMAND
+- **Name**: `assistant_review_command`
+- **Description**: Specific command used to trigger code review functionality
+- **Usage**: Documentation and workflow descriptions
+- **Example Values**:
+  - Claude: `"/review (within Claude Code REPL)"`
+  - Copilot: `"gh copilot suggest"`
+
+#### DOCUMENTATION_URL
+- **Name**: `assistant_documentation_url`
+- **Description**: Official documentation URL for the AI assistant
+- **Usage**: Help text and reference links
+- **Example**: `"https://docs.anthropic.com/en/docs/claude-code"`
+
+#### WORKFLOW_INTEGRATION
+- **Name**: `assistant_workflow_integration`
+- **Description**: How the assistant integrates with development workflows
+- **Usage**: Documentation and CI/CD setup guides
+- **Example**: `"GitHub Actions integration with Claude Code for automated code review"`
+
+#### CUSTOM_COMMANDS
+- **Name**: `assistant_custom_commands`
+- **Description**: Custom or specialized commands available with the assistant
+- **Usage**: Command reference documentation
+- **Example**: `"claude (interactive REPL), claude \"query\" (start with prompt)"`
+
+#### CONTEXT_FRONTMATTER
+- **Name**: `assistant_context_frontmatter`
+- **Description**: YAML frontmatter or metadata for context files
+- **Usage**: Context file templates
+- **Example**: `'description: "Claude Code context file for this project"'`
+
+#### IMPORT_SYNTAX
+- **Name**: `assistant_import_syntax`
+- **Description**: Syntax used to import external files within the assistant's context
+- **Usage**: Context file templates and documentation
+- **Example Values**:
+  - Claude: `"Use @path/to/file.ext syntax to import files with relative paths"`
+  - Cursor: `"Use @file:path/to/file.ext syntax for file imports"`
+
+#### BEST_PRACTICES
+- **Name**: `assistant_best_practices`
+- **Description**: Recommended best practices for optimal results
+- **Usage**: Documentation and usage guides
+- **Example**: `"Use descriptive prompts, break complex tasks into steps"`
+
+#### TROUBLESHOOTING
+- **Name**: `assistant_troubleshooting`
+- **Description**: Common troubleshooting steps and solutions
+- **Usage**: Help documentation and error guides
+- **Example**: `"Check Claude Code status with claude --version, restart authentication"`
+
+#### LIMITATIONS
+- **Name**: `assistant_limitations`
+- **Description**: Known limitations or constraints of the assistant
+- **Usage**: Documentation and user expectations
+- **Example**: `"Claude Code works best with well-structured projects"`
+
+#### FILE_EXTENSIONS
+- **Name**: `assistant_file_extensions`
+- **Description**: File extensions and formats the assistant works best with
+- **Usage**: File organization and project setup
+- **Example**: `".md, .py, .js, .ts, .json, .yaml, .toml (prefers markdown for documentation)"`
+
+## Usage Patterns
+
+### Template Usage
+
+```jinja2
+<!-- Using injection points in templates -->
+## Setup Instructions
+
+{{ assistant_setup_instructions }}
+
+## Commands
+
+Main command: {{ assistant_command_prefix }}help
+Review command: {{ assistant_review_command }}
+
+## Documentation
+
+For more information, see: {{ assistant_documentation_url }}
+```
+
+### Assistant Implementation
+
+```python
+from specify_cli.assistants import InjectionPoint, InjectionValues
+
+class MyAssistantProvider(AssistantProvider):
+    def get_injection_values(self) -> InjectionValues:
+        return {
+            # Required injection points
+            InjectionPoint.COMMAND_PREFIX: "myai ",
+            InjectionPoint.SETUP_INSTRUCTIONS: "Install myai CLI and authenticate",
+            InjectionPoint.CONTEXT_FILE_PATH: ".myai/context.md",
+
+            # Optional injection points
+            InjectionPoint.REVIEW_COMMAND: "myai review",
+            InjectionPoint.DOCUMENTATION_URL: "https://docs.myai.com",
+            InjectionPoint.CUSTOM_COMMANDS: "myai chat, myai analyze, myai generate",
+        }
+```
+
+### Validation
+
+```python
+from specify_cli.assistants.constants import validate_injection_values
+
+# Validate injection point values
+injection_values = assistant.get_injection_values()
+errors = validate_injection_values(injection_values)
+
+if errors:
+    print("Validation errors:", errors)
+else:
+    print("All injection points valid")
+```
+
+## Extending the System
+
+### Adding New Injection Points
+
+1. **Define in Registry**: Add new `InjectionPointMeta` to `InjectionPointRegistry`
+2. **Set Requirement Level**: Choose required=True for points all assistants must provide
+3. **Update Providers**: Have relevant assistants provide values for the new point
+4. **Update Templates**: Use the new injection point in relevant templates
+
+```python
+# In injection_points.py
+class InjectionPointRegistry:
+    # ... existing injection points ...
+
+    NEW_FEATURE = InjectionPointMeta(
+        name="assistant_new_feature",
+        description="Description of the new injection point functionality",
+        required=False  # Start as optional, make required later if needed
+    )
+```
+
+### Validation Rules
+
+The system enforces several validation rules:
+
+- **Naming Convention**: All injection point names must start with `assistant_`
+- **Required Points**: All assistants must provide values for required injection points
+- **Non-Empty Values**: Injection point values cannot be empty or only whitespace
+- **Length Limits**: Values are limited to 1000 characters to prevent template bloat
+- **Type Safety**: All injection points must be `InjectionPointMeta` instances
+
+### Backward Compatibility
+
+The system maintains backward compatibility through:
+
+- **Alias Support**: `InjectionPointNames = InjectionPoint` for old code
+- **Function Exports**: Helper functions for getting injection point sets
+- **Type Aliases**: `InjectionValues` type alias for dictionary types
+
+## Best Practices
+
+### For Injection Point Design
+1. **Clear Names**: Use descriptive names that indicate purpose
+2. **Consistent Descriptions**: Provide clear, actionable descriptions
+3. **Appropriate Requirement Level**: Only mark as required if truly essential
+4. **Reasonable Length**: Keep values concise but informative
+
+### for Assistant Implementation
+1. **Provide All Required**: Always provide values for all required injection points
+2. **Enhance with Optional**: Use optional injection points to provide better UX
+3. **Consistent Values**: Ensure values are consistent with assistant behavior
+4. **Validation**: Validate injection point values in setup validation
+
+### For Template Usage
+1. **Check Availability**: Use conditional blocks for optional injection points
+2. **Provide Fallbacks**: Have sensible defaults for optional points
+3. **Context Awareness**: Consider the template context when using injection values
+4. **Documentation**: Document any custom injection point usage patterns
+
+## Migration Guide
+
+### From Hardcoded Values
+
+**Before:**
+```python
+if ai_assistant == "claude":
+    command_prefix = "claude "
+    setup_text = "Install Claude Code CLI..."
+elif ai_assistant == "copilot":
+    command_prefix = "gh copilot "
+    setup_text = "Install GitHub CLI and Copilot extension..."
+```
+
+**After:**
+```python
+assistant = get_assistant(ai_assistant)
+if assistant:
+    injections = assistant.get_injection_values()
+    command_prefix = injections[InjectionPoint.COMMAND_PREFIX]
+    setup_text = injections[InjectionPoint.SETUP_INSTRUCTIONS]
+```
+
+### Template Updates
+
+**Before:**
+```jinja2
+{% if ai_assistant == "claude" %}
+Run: claude help
+{% elif ai_assistant == "copilot" %}
+Run: gh copilot help
+{% endif %}
+```
+
+**After:**
+```jinja2
+Run: {{ assistant_command_prefix }}help
+```
+
+This approach eliminates conditional logic in templates and makes them more maintainable and extensible.

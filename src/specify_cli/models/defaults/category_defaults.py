@@ -98,6 +98,14 @@ class CategoryDefaults:
                 is_ai_specific=False,
                 description="Runtime template files for project use",
             ),
+            CategoryMapping(
+                name="context",
+                source="context",
+                target_pattern="{ai_dir}",
+                render_templates=True,
+                is_ai_specific=True,
+                description="AI assistant context files (CLAUDE.md, main.mdc, etc.)",
+            ),
         ]
     )
 

@@ -113,7 +113,7 @@ class TestConfigurationPersistence:
         ]
 
         template_config = TemplateConfig()
-        template_config.ai_assistant = "claude"
+        template_config.ai_assistants = ["claude"]
         template_config.custom_templates_dir = Path("./custom_templates")
         template_config.template_cache_enabled = True
         template_config.template_variables = {
@@ -171,7 +171,7 @@ class TestConfigurationPersistence:
         # Check template configuration
         assert "template_settings" in config_data["project"]
         template_config = config_data["project"]["template_settings"]
-        assert template_config["ai_assistant"] == "claude"
+        assert template_config["ai_assistants"] == ["claude"]
         assert template_config["custom_templates_dir"] == "custom_templates"
         assert template_config["template_cache_enabled"] is True
 
@@ -216,8 +216,8 @@ class TestConfigurationPersistence:
 
         # Verify template config
         assert (
-            loaded_config.template_settings.ai_assistant
-            == sample_enhanced_config.template_settings.ai_assistant
+            loaded_config.template_settings.ai_assistants
+            == sample_enhanced_config.template_settings.ai_assistants
         )
         assert (
             loaded_config.template_settings.custom_templates_dir
@@ -259,7 +259,7 @@ class TestConfigurationPersistence:
         assert "feature/{feature-name}" in loaded_config.branch_naming.patterns
 
         # Check template defaults
-        assert loaded_config.template_settings.ai_assistant == "claude"
+        assert loaded_config.template_settings.ai_assistants == ["claude"]
         assert loaded_config.template_settings.template_cache_enabled is True
         assert isinstance(loaded_config.template_settings.template_variables, dict)
 
@@ -314,7 +314,7 @@ class TestConfigurationPersistence:
 
         # Create initial configuration
         initial_config = ProjectConfig.create_default("test-project")
-        initial_config.template_settings.ai_assistant = "claude"
+        initial_config.template_settings.ai_assistants = ["claude"]
         initial_config.branch_naming.default_pattern = "feature/{feature-name}"
 
         # Save initial configuration
@@ -324,13 +324,13 @@ class TestConfigurationPersistence:
         # Verify configuration was saved
         loaded_config = config_service.load_project_config(temp_project_dir)
         assert loaded_config is not None
-        assert loaded_config.template_settings.ai_assistant == "claude"
+        assert loaded_config.template_settings.ai_assistants == ["claude"]
         assert loaded_config.branch_naming.default_pattern == "feature/{feature-name}"
 
         # Simulate init command execution by calling project manager directly
         options = ProjectInitOptions(
             project_name="test-project",
-            ai_assistant="claude",
+            ai_assistants=["claude"],
             use_current_dir=True,
             skip_git=True,  # Skip git for testing
         )
@@ -351,7 +351,7 @@ class TestConfigurationPersistence:
         # Verify configuration still exists and is unchanged after failed init attempt
         final_config = config_service.load_project_config(temp_project_dir)
         assert final_config is not None
-        assert final_config.template_settings.ai_assistant == "claude"
+        assert final_config.template_settings.ai_assistants == ["claude"]
         assert final_config.branch_naming.default_pattern == "feature/{feature-name}"
 
         # Verify the config file still exists

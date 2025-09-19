@@ -313,7 +313,7 @@ class TestCrossPlatformCompatibility:
         ):
             options = ProjectInitOptions(
                 project_name="cross-platform-test",
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 use_current_dir=True,  # This will be overridden by the mock
                 skip_git=True,  # Skip git for testing
             )
@@ -448,7 +448,7 @@ class TestCrossPlatformCompatibility:
         sample_config = ProjectConfig(
             name="cross-platform-config-test",
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=temp_project_dir / "templates",
                 template_variables={"platform": "cross-platform"},
             ),

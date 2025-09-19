@@ -1,0 +1,294 @@
+---
+title: AI Assistant Architecture
+description: Type-safe, modular architecture for integrating multiple AI assistants (Claude, Copilot, Cursor, Gemini) with consistent template injection and validation
+---
+
+# AI Assistant Architecture
+
+The SpecifyX AI assistant system provides a type-safe, modular architecture for integrating multiple AI assistants (Claude, Copilot, Cursor, Gemini) with consistent template injection and validation.
+
+## Architecture Overview
+
+The system is built around several key components:
+
+- **Assistant Provider Interface**: Abstract base class defining the contract all assistants must implement
+- **Injection Point System**: Type-safe template variable injection with metadata
+- **Assistant Registry**: Centralized management of assistant instances
+- **Pydantic Data Models**: Runtime validation and type safety for all configurations
+- **Assistant Management Service**: High-level operations for managing assistant configurations
+
+## Core Components
+
+### Assistant Provider Interface
+
+```python
+from specify_cli.assistants import AssistantProvider
+
+class MyAssistant(AssistantProvider):
+    @property
+    def config(self) -> AssistantConfig:
+        # Return immutable configuration
+
+    def get_injection_values(self) -> InjectionValues:
+        # Return template injection point values
+
+    def validate_setup(self) -> ValidationResult:
+        # Validate assistant setup and dependencies
+
+    def get_setup_instructions(self) -> List[str]:
+        # Return step-by-step setup instructions
+
+    @property
+    def imports_supported(self) -> bool:
+        # Whether this assistant supports file imports
+
+    def format_import(self, current_dir: Path, target_file: Path) -> str:
+        # Format file import syntax for this assistant
+```
+
+### Type-Safe Configuration
+
+```python
+from specify_cli.assistants.types import AssistantConfig
+
+config = AssistantConfig(
+    name="claude",  # Must match pattern: ^[a-z][a-z0-9_-]*$
+    display_name="Claude Code",
+    description="Anthropic's Claude Code AI assistant",
+    base_directory=".claude",  # Must start with '.'
+    context_file=ContextFileConfig(
+        file="CLAUDE.md",
+        file_format=FileFormat.MARKDOWN
+    ),
+    command_files=TemplateConfig(
+        directory=".claude/commands",
+        file_format=FileFormat.MARKDOWN
+    ),
+    agent_files=TemplateConfig(
+        directory=".claude/agents",
+        file_format=FileFormat.MARKDOWN
+    )
+)
+```
+
+### Injection Point System
+
+```python
+from specify_cli.assistants import InjectionPoint
+
+# Required injection points (every assistant must provide)
+required_values = {
+    InjectionPoint.COMMAND_PREFIX: "claude ",
+    InjectionPoint.SETUP_INSTRUCTIONS: "Install Claude Code CLI...",
+    InjectionPoint.CONTEXT_FILE_PATH: "CLAUDE.md"
+}
+
+# Optional injection points (enhances functionality)
+optional_values = {
+    InjectionPoint.REVIEW_COMMAND: "/review",
+    InjectionPoint.DOCUMENTATION_URL: "https://docs.anthropic.com/en/docs/claude-code",
+    InjectionPoint.CUSTOM_COMMANDS: "claude (interactive REPL), claude \"query\"",
+    # ... other optional points
+}
+```
+
+## Assistant Registry Usage
+
+```python
+from specify_cli.assistants import registry, get_assistant
+
+# Get a specific assistant
+claude = get_assistant("claude")
+if claude:
+    config = claude.config
+    injections = claude.get_injection_values()
+
+# Get all registered assistants
+all_assistants = registry.get_all_assistants()
+
+# Validate all assistants
+results = registry.validate_all()
+for name, result in results.items():
+    if not result.is_valid:
+        print(f"{name} has errors: {result.errors}")
+```
+
+## Extension Points
+
+### Adding New Assistants
+
+1. **Create Provider Class**: Implement `AssistantProvider` interface
+2. **Define Configuration**: Use `AssistantConfig` with proper validation
+3. **Implement Injection Values**: Provide all required and relevant optional injection points
+4. **Add Validation**: Implement setup validation logic
+5. **Register**: Add to `registry.py` for automatic registration
+
+```python
+# Example: Adding a new assistant
+from specify_cli.assistants import AssistantProvider, AssistantConfig, InjectionPoint
+
+class MyAssistantProvider(AssistantProvider):
+    def __init__(self):
+        self._config = AssistantConfig(
+            name="myassistant",
+            display_name="My AI Assistant",
+            description="Custom AI assistant integration",
+            base_directory=".myassistant",
+            # ... other configuration
+        )
+
+    def get_injection_values(self) -> InjectionValues:
+        return {
+            InjectionPoint.COMMAND_PREFIX: "myai ",
+            InjectionPoint.SETUP_INSTRUCTIONS: "Install myai CLI...",
+            InjectionPoint.CONTEXT_FILE_PATH: self._config.context_file.file,
+            # ... other injection points
+        }
+
+    # ... implement other abstract methods
+```
+
+### Adding New Injection Points
+
+1. **Define in InjectionPointRegistry**: Add new `InjectionPointMeta` with name, description, and requirement level
+2. **Update Constants**: The system automatically computes required/optional sets
+3. **Update Providers**: Have relevant assistants provide values for new injection points
+
+```python
+# In injection_points.py
+NEW_FEATURE = InjectionPointMeta(
+    name="assistant_new_feature",
+    description="Description of the new injection point functionality",
+    required=False  # Set to True if all assistants must provide this
+)
+```
+
+## Validation and Type Safety
+
+The system provides comprehensive validation at multiple levels:
+
+### Configuration Validation
+- **Pydantic Models**: Runtime validation of all data structures
+- **Path Validation**: Ensures all paths are under base directory
+- **Name Patterns**: Enforces naming conventions for assistant names
+- **File Format Validation**: Ensures consistent file formats
+
+### Setup Validation
+- **Dependency Checks**: Validates required tools and dependencies
+- **Authentication Status**: Checks API keys and authentication
+- **File System Validation**: Verifies path accessibility and permissions
+- **Injection Point Completeness**: Ensures all required injection points are provided
+
+### Runtime Type Safety
+- **Abstract Base Classes**: Enforces implementation of all required methods
+- **Type Annotations**: Full type coverage with [pyrefly](https://pyrefly.org) compatibility
+- **Immutable Configurations**: Prevents modification after creation
+- **Validated Assignments**: Runtime validation on all property assignments
+
+## Best Practices
+
+### For Assistant Implementations
+1. **Use Immutable Configurations**: Make `AssistantConfig` instances frozen
+2. **Comprehensive Validation**: Implement thorough setup validation
+3. **Clear Error Messages**: Provide actionable error messages in validation results
+4. **Graceful Degradation**: Handle missing optional dependencies gracefully
+5. **Consistent Naming**: Follow naming conventions for all identifiers
+
+### For Template Integration
+1. **Required Points Only**: Only use injection points that are genuinely required
+2. **Fallback Values**: Provide sensible defaults for optional injection points
+3. **Context Awareness**: Consider the template context when using injection values
+4. **Documentation**: Document any custom injection point usage
+
+### For Extension Development
+1. **Interface First**: Design the interface before implementing
+2. **Validation Early**: Implement validation logic before business logic
+3. **Test Coverage**: Provide comprehensive test coverage for new assistants
+4. **Documentation**: Update documentation when adding new features
+5. **Backward Compatibility**: Maintain compatibility when extending interfaces
+
+## Migration Guide
+
+### From Hardcoded Configurations
+The new system replaces hardcoded assistant configurations with a type-safe, extensible approach:
+
+**Before:**
+```python
+# Hardcoded configuration in various files
+if ai_assistant == "claude":
+    command_prefix = "claude "
+    setup_instructions = "Install Claude Code..."
+    # ... scattered throughout codebase
+```
+
+**After:**
+```python
+# Centralized, type-safe configuration
+assistant = get_assistant("claude")
+if assistant:
+    injections = assistant.get_injection_values()
+    command_prefix = injections[InjectionPoint.COMMAND_PREFIX]
+```
+
+### Template Updates
+Templates now use injection points instead of hardcoded values:
+
+**Before:**
+```jinja2
+{% if ai_assistant == "claude" %}
+Command: claude help
+{% elif ai_assistant == "copilot" %}
+Command: gh copilot help
+{% endif %}
+```
+
+**After:**
+```jinja2
+Command: {{ assistant_command_prefix }}help
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Assistant Not Found**
+```python
+assistant = get_assistant("myassistant")
+if not assistant:
+    print("Assistant not registered - check registry.py")
+```
+
+**Validation Failures**
+```python
+result = assistant.validate_setup()
+if not result.is_valid:
+    print("Setup issues:", result.errors)
+    print("Warnings:", result.warnings)
+```
+
+**Missing Injection Points**
+```python
+injections = assistant.get_injection_values()
+required_points = get_required_injection_points()
+missing = [p for p in required_points if p not in injections]
+if missing:
+    print(f"Missing required injection points: {missing}")
+```
+
+### Debug Information
+
+```python
+from specify_cli.assistants import list_assistant_names, validate_all
+
+# List all registered assistants
+print("Registered assistants:", list_assistant_names())
+
+# Validate all assistants
+results = validate_all()
+for name, result in results.items():
+    print(f"{name}: {'✓' if result.is_valid else '✗'}")
+    if result.errors:
+        print(f"  Errors: {result.errors}")
+    if result.warnings:
+        print(f"  Warnings: {result.warnings}")
+```

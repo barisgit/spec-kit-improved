@@ -39,6 +39,19 @@ describe('FileDiscovery', () => {
       expect(Array.isArray(files)).toBe(true);
     });
 
+    it('should discover assistant documentation files', async () => {
+      const patterns: PathPattern[] = [
+        {
+          pattern: '../src/specify_cli/assistants/*/docs.{md,mdx}',
+          type: 'assistant',
+          outputSubdir: 'reference/assistants'
+        }
+      ];
+
+      const files = await fileDiscovery.discoverFiles(patterns);
+      expect(Array.isArray(files)).toBe(true);
+    });
+
     it('should discover guide documentation files', async () => {
       const patterns: PathPattern[] = [
         {
@@ -64,6 +77,19 @@ describe('FileDiscovery', () => {
       const files = await fileDiscovery.discoverFiles(patterns);
       expect(files).toEqual([]);
     });
+
+    it('should discover architecture documentation files', async () => {
+      const patterns: PathPattern[] = [
+        {
+          pattern: '../architecture/*.mdx',
+          type: 'architecture',
+          outputSubdir: 'architecture'
+        }
+      ];
+
+      const files = await fileDiscovery.discoverFiles(patterns);
+      expect(Array.isArray(files)).toBe(true);
+    });
   });
 
   describe('getFileType', () => {
@@ -79,9 +105,19 @@ describe('FileDiscovery', () => {
         outputSubdir: 'reference/api'
       },
       {
+        pattern: '../src/specify_cli/assistants/*/docs.{md,mdx}',
+        type: 'assistant',
+        outputSubdir: 'reference/assistants'
+      },
+      {
         pattern: '../src/specify_cli/guides/*.{md,mdx}',
         type: 'guide',
         outputSubdir: 'guides'
+      },
+      {
+        pattern: '../architecture/*.mdx',
+        type: 'architecture',
+        outputSubdir: 'architecture'
       }
     ];
 
@@ -101,12 +137,28 @@ describe('FileDiscovery', () => {
       expect(type).toBe('service');
     });
 
+    it('should identify assistant files', () => {
+      const type = fileDiscovery.getFileType(
+        '../src/specify_cli/assistants/claude/docs.mdx',
+        patterns
+      );
+      expect(type).toBe('assistant');
+    });
+
     it('should identify guide files', () => {
       const type = fileDiscovery.getFileType(
         '../src/specify_cli/guides/getting-started.mdx',
         patterns
       );
       expect(type).toBe('guide');
+    });
+
+    it('should identify architecture files', () => {
+      const type = fileDiscovery.getFileType(
+        '../architecture/system-overview.mdx',
+        patterns
+      );
+      expect(type).toBe('architecture');
     });
 
     it('should return null for non-matching files', () => {
@@ -135,12 +187,28 @@ describe('FileDiscovery', () => {
       expect(name).toBe('template_service');
     });
 
+    it('should extract assistant name from path', () => {
+      const name = fileDiscovery.extractName(
+        '../src/specify_cli/assistants/claude/docs.mdx',
+        'assistant'
+      );
+      expect(name).toBe('claude');
+    });
+
     it('should extract guide name from path', () => {
       const name = fileDiscovery.extractName(
         '../src/specify_cli/guides/getting-started.mdx',
         'guide'
       );
       expect(name).toBe('getting-started');
+    });
+
+    it('should extract architecture name from path', () => {
+      const name = fileDiscovery.extractName(
+        '../architecture/system-overview.mdx',
+        'architecture'
+      );
+      expect(name).toBe('system-overview');
     });
   });
 });

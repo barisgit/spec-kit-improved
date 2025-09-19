@@ -1,6 +1,8 @@
 ---
 name: plan
 description: "Plan how to implement the specified feature. This is the second step in the Spec-Driven Development lifecycle."
+ai_assistant: "{{ ai_assistant }}"
+command_prefix: "{{ assistant_command_prefix if assistant_command_prefix else '' }}"
 ---
 
 Plan how to implement the specified feature.
@@ -49,28 +51,19 @@ Given the implementation details provided as an argument, do this:
 
 Use absolute paths with the repository root for all file operations to avoid path issues.
 
-{% if ai_assistant == 'claude' -%}
+{% if assistant_workflow_integration -%}
 
-**Claude Code Integration:**
-- Use `/plan` command after creating a specification
-- `specifyx run` provides reliable cross-platform script execution
-- Templates are stored in `.specify/templates/` for user customization
-{% elif ai_assistant == 'gemini' -%}
+**{{ ai_assistant | title }} Integration:**
+{{ assistant_workflow_integration }}
+{% endif %}
 
-**Gemini Integration:**
-- Use this command after specification is complete
-- `specifyx run` command replaces bash dependencies
-- All templates use Jinja2 for consistent variable substitution
-{% elif ai_assistant == 'copilot' -%}
+{% if assistant_custom_commands -%}
 
-**GitHub Copilot Integration:**
-- Execute planning after specification phase
-- `specifyx run` workflow ensures IDE compatibility
-- Templates support project-specific configuration
-{% else -%}
+**Available Commands:**
+{{ assistant_custom_commands }}
+{% endif %}
 
-**Generic AI Assistant:**
-- Execute planning phase after creating specifications
-- Cross-platform `specifyx run` implementation
-- Customizable templates in `.specify/templates/`
-{% endif -%}
+{% if assistant_command_prefix -%}
+
+**Command Prefix:** `{{ assistant_command_prefix }}`
+{% endif %}

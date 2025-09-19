@@ -80,3 +80,40 @@ jobs:
     - name: Check for unused imports
       run: |
         uv run ruff check --select F401 .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: pnpm-${{ hashFiles('docs/pnpm-lock.yaml') }}
+        restore-keys: pnpm-
+
+    - name: Configure pnpm store path
+      run: pnpm config set store-dir ~/.pnpm-store
+
+    - name: Install docs dependencies
+      working-directory: docs
+      run: pnpm install --frozen-lockfile
+
+    - name: Sync documentation sources
+      working-directory: docs
+      run: pnpm run sync
+
+    - name: Run docs tests
+      working-directory: docs
+      run: pnpm test

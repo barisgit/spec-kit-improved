@@ -20,9 +20,19 @@ describe('SyncService', () => {
         outputSubdir: 'reference/api'
       },
       {
+        pattern: '../src/specify_cli/assistants/*/docs.{md,mdx}',
+        type: 'assistant',
+        outputSubdir: 'reference/assistants'
+      },
+      {
         pattern: '../src/specify_cli/guides/*.{md,mdx}',
         type: 'guide',
         outputSubdir: 'guides'
+      },
+      {
+        pattern: '../architecture/*.mdx',
+        type: 'architecture',
+        outputSubdir: 'architecture'
       }
     ],
     outputDir: 'src/content/docs',

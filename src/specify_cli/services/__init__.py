@@ -1,4 +1,5 @@
 # Services package
+from .assistant_management_service import AssistantManagementService
 from .config_service import ConfigService, TomlConfigService
 from .download_service import DownloadService, HttpxDownloadService
 from .git_service import CommandLineGitService, GitService
@@ -11,6 +12,7 @@ from .script_execution_service import (
 from .template_service import JinjaTemplateService, TemplateService
 
 __all__ = [
+    "AssistantManagementService",
     "ConfigService",
     "TomlConfigService",
     "GitService",

@@ -1,0 +1,281 @@
+---
+title: "refresh-templates Command"
+description: "Update project templates from various sources with diff preview and selective updating"
+---
+
+# refresh-templates Command
+
+The `refresh-templates` command updates your project's templates from various sources including GitHub repositories, ZIP files, local directories, or built-in templates. It provides comprehensive diff visualization and selective file updating capabilities.
+
+## Overview
+
+This command helps keep your SpecifyX project templates current with the latest improvements, bug fixes, and new features. It supports multiple template sources and provides detailed comparison tools to help you understand what changes before applying them.
+
+## Basic Usage
+
+```bash
+# Update from built-in templates
+specifyx refresh-templates
+
+# Update from GitHub repository
+specifyx refresh-templates --source "https://github.com/owner/repo"
+
+# Update from local directory
+specifyx refresh-templates --source "/path/to/templates"
+
+# Update from ZIP file (local or URL)
+specifyx refresh-templates --source "https://example.com/templates.zip"
+specifyx refresh-templates --source "/path/to/templates.zip"
+```
+
+## Template Sources
+
+### Built-in Templates (Default)
+Uses the latest templates embedded in the SpecifyX CLI package:
+```bash
+specifyx refresh-templates
+```
+
+### GitHub Repository
+Downloads templates from a GitHub repository:
+```bash
+# Public repository
+specifyx refresh-templates --source "https://github.com/barisgit/spec-kit-improved"
+
+# Specific branch or tag
+specifyx refresh-templates --source "https://github.com/owner/repo/tree/develop"
+```
+
+### ZIP Archives
+Downloads and extracts templates from ZIP files:
+```bash
+# Remote ZIP file
+specifyx refresh-templates --source "https://example.com/templates.zip"
+
+# Local ZIP file
+specifyx refresh-templates --source "./templates.zip"
+```
+
+### Local Directory
+Uses templates from a local filesystem path:
+```bash
+specifyx refresh-templates --source "/path/to/local/templates"
+```
+
+## Preview and Analysis Options
+
+### Verbosity Levels
+Control the amount of information displayed:
+
+```bash
+# Basic summary only
+specifyx refresh-templates
+
+# Detailed summary (-v)
+specifyx refresh-templates -v
+
+# Show file diffs (-vv)
+specifyx refresh-templates -vv
+
+# Debug information (-vvv)
+specifyx refresh-templates -vvv
+```
+
+### Dry Run Mode
+Preview changes without applying them:
+```bash
+# See what would change
+specifyx refresh-templates --dry-run
+
+# Detailed preview with diffs
+specifyx refresh-templates --dry-run -vv
+```
+
+### Show Skipped Files
+Display files that would be automatically skipped:
+```bash
+specifyx refresh-templates --show-skipped
+```
+
+## Selective Update Options
+
+### Per-File Selection
+Interactively choose which files to update:
+```bash
+# Select individual files to update
+specifyx refresh-templates --per-file
+```
+
+This mode shows you each changed file and allows you to:
+- **Accept** - Apply the change
+- **Skip** - Leave the file unchanged
+- **View diff** - See detailed differences
+- **Quit** - Exit without further changes
+
+### Skip Confirmation
+Apply all changes automatically:
+```bash
+# Update all files without prompting
+specifyx refresh-templates --yes
+
+# Cannot be used with --per-file
+specifyx refresh-templates --per-file --yes  # Error
+```
+
+## Understanding Template Changes
+
+### Change Types
+The command identifies three types of changes:
+
+| Change Type | Description | Action |
+|-------------|-------------|---------|
+| **Added** | New template files | Creates new files |
+| **Modified** | Changed template content | Updates existing files |
+| **Deleted** | Removed template files | Deletes obsolete files |
+
+### Status Indicators
+- `✓ Configured` - File exists and matches template
+- `⚠️ Modified` - File exists but differs from template
+- `✗ Missing` - Template file doesn't exist in project
+- `🔒 Skipped` - File automatically skipped (user modifications detected)
+
+### Diff Visualization
+With `-vv` verbosity, see unified diffs showing exactly what changed:
+
+```diff
+Modified: .specify/scripts/plan.py
+--- a/.specify/scripts/plan.py
++++ b/.specify/scripts/plan.py
+@@ -15,6 +15,9 @@
+     parser.add_argument("--verbose", "-v", action="store_true")
+     parser.add_argument("--output", "-o", help="Output format")
+
++    # New feature: AI assistant integration
++    parser.add_argument("--ai", help="AI assistant to use")
++
+     return parser.parse_args()
+```
+
+## File Skipping Logic
+
+The command automatically skips certain files to prevent overwriting important customizations:
+
+### Always Skipped
+- Project-specific configuration files
+- User-modified templates with significant changes
+- Files outside the `.specify/` directory structure
+
+### Smart Detection
+- Compares file modification times
+- Analyzes diff complexity to detect heavy customization
+- Preserves files with user-specific content
+
+### Override Skipping
+Use interactive mode to manually handle skipped files:
+```bash
+specifyx refresh-templates --per-file --show-skipped
+```
+
+## Error Handling
+
+### Template Source Validation
+- Verifies GitHub repository accessibility
+- Validates ZIP file format and contents
+- Checks local directory and file permissions
+- Provides clear error messages for network issues
+
+### Project Validation
+- Ensures you're in a SpecifyX project directory
+- Checks for `.specify/` directory structure
+- Validates existing template structure
+
+### Rendering Failures
+- Handles template rendering errors gracefully
+- Provides specific error locations and causes
+- Continues processing other files when possible
+
+## Examples
+
+### Basic Template Update
+```bash
+# Update with preview
+specifyx refresh-templates --dry-run -v
+
+# Apply updates
+specifyx refresh-templates --yes
+```
+
+### Custom Source Update
+```bash
+# From your organization's template repository
+specifyx refresh-templates --source "https://github.com/myorg/templates"
+
+# From development branch
+specifyx refresh-templates --source "https://github.com/owner/repo/tree/develop"
+
+# From local modifications
+specifyx refresh-templates --source "../my-custom-templates"
+```
+
+### Interactive Review
+```bash
+# Review each change individually
+specifyx refresh-templates --per-file -v
+
+# See all diffs before deciding
+specifyx refresh-templates --dry-run -vv
+```
+
+### Advanced Usage
+```bash
+# Full verbose dry run with skipped files
+specifyx refresh-templates --dry-run -vvv --show-skipped
+
+# Update from ZIP with per-file selection
+specifyx refresh-templates --source "templates.zip" --per-file
+
+# Force update with detailed logging
+specifyx refresh-templates --yes -vv
+```
+
+## Integration with Development Workflow
+
+### Before Major Updates
+1. Run with `--dry-run -vv` to preview changes
+2. Review diffs for any conflicts with customizations
+3. Use `--per-file` mode for careful selection
+4. Backup important customizations if needed
+
+### After Updates
+1. Run `specifyx check` to verify project integrity
+2. Test template rendering with your project data
+3. Update any broken customizations
+4. Commit changes to version control
+
+## Troubleshooting
+
+**"Not a SpecifyX project" error**:
+- Ensure you're in a project directory with `.specify/` folder
+- Run `specifyx init` if this is a new project
+
+**Network errors downloading templates**:
+- Check internet connectivity
+- Verify GitHub repository URL and accessibility
+- Use `--source` with local fallback if remote fails
+
+**Template rendering errors**:
+- Check that source templates are valid Jinja2 templates
+- Verify project configuration in `.specify/config.toml`
+- Use `-vvv` for detailed error information
+
+**Permission denied errors**:
+- Ensure write permissions in project directory
+- Check that template files are not read-only
+- Run with appropriate user permissions
+
+## See Also
+
+- [Template Service API](/docs/reference/api/template_service)
+- [init Command](/docs/reference/cli/init) - Initial project setup
+- [add-ai Command](/docs/reference/cli/add_ai) - Adding AI assistants
+- [check Command](/docs/reference/cli/check) - Project validation

@@ -167,6 +167,7 @@ class InteractiveMenu:
         default: Optional[List[str]] = None,
         min_selections: int = 0,
         max_selections: Optional[int] = None,
+        header: Optional[str] = None,
     ) -> List[str]:
         """Multi-selection interface with arrow keys.
 
@@ -176,6 +177,7 @@ class InteractiveMenu:
             default: Default selected choices
             min_selections: Minimum number of selections required
             max_selections: Maximum number of selections allowed
+            header: Optional header text to display above choices
 
         Returns:
             List of selected option keys/values
@@ -212,23 +214,36 @@ class InteractiveMenu:
             table.add_column(style="white", justify="left", width=3)
             table.add_column(justify="left")
 
+            # Add header if provided
+            if header:
+                table.add_row("", "", header)
+                table.add_row("", "", "")
+
             for i, key in enumerate(option_keys):
                 display_text = (
                     option_dict[key] if isinstance(options, dict) else options[i]
                 )
 
                 cursor = "▶" if i == selected_index else " "
-                checkbox = "[x]" if key in selected_items else "[ ]"
+                checkbox = "●" if key in selected_items else "○"
 
                 style = "bright_cyan" if i == selected_index else "white"
+                checkbox_styles = (("white", "bright_green"), ("cyan", "dim green"))
+                checkbox_style = checkbox_styles[i == selected_index][
+                    key in selected_items
+                ]
 
-                table.add_row(cursor, checkbox, f"[{style}]{display_text}[/{style}]")
+                table.add_row(
+                    cursor,
+                    f"[{checkbox_style}]{checkbox}[/{checkbox_style}]",
+                    f"[{style}]{display_text}[/{style}]",
+                )
 
             table.add_row("", "", "")
             table.add_row(
                 "",
                 "",
-                "[dim]Use ↑/↓ to navigate, Space to toggle, Enter to confirm, Esc to cancel[/dim]",
+                "[dim]Use ↑/↓ to navigate, Space to toggle, a to toggle all, Enter to confirm, Esc to cancel[/dim]",
             )
 
             return Panel(
@@ -263,6 +278,19 @@ class InteractiveMenu:
                                     or len(selected_items) < max_selections
                                 ):
                                     selected_items.add(current_key)
+                        elif key == "a":
+                            if len(selected_items) == len(option_keys):
+                                selected_items.clear()
+                            else:
+                                if max_selections is None:
+                                    selected_items = set(option_keys)
+                                else:
+                                    for option_key in option_keys:
+                                        if option_key in selected_items:
+                                            continue
+                                        if len(selected_items) >= max_selections:
+                                            break
+                                        selected_items.add(option_key)
                         elif key == "enter":
                             if len(selected_items) >= min_selections:
                                 break

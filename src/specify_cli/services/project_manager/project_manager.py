@@ -93,7 +93,9 @@ class ProjectManager:
 
     def initialize_project(self, options: ProjectInitOptions) -> ProjectInitResult:
         """Initialize project with dynamic template rendering"""
-        logging.info(f"Initializing project with AI: {options.ai_assistant}")
+        logging.info(
+            f"Initializing project with AI assistants: {', '.join(options.ai_assistants)}"
+        )
         completed_steps: List[ProjectInitStep] = []
         warnings: List[str] = []
 
@@ -116,7 +118,10 @@ class ProjectManager:
                 completed_steps.append(ProjectInitStep.DIRECTORY_CREATION)
 
             # Create basic structure
-            self._create_basic_structure(project_path, options.ai_assistant)
+            primary_assistant = (
+                options.ai_assistants[0] if options.ai_assistants else "claude"
+            )
+            self._create_basic_structure(project_path, primary_assistant)
             completed_steps.append(ProjectInitStep.STRUCTURE_SETUP)
 
             # Initialize git if needed
@@ -128,20 +133,25 @@ class ProjectManager:
             if self._config_service.save_project_config(project_path, config):
                 completed_steps.append(ProjectInitStep.CONFIG_SAVE)
 
-            # Render templates dynamically using full TemplateContext
-            context = TemplateContext(
-                project_name=options.project_name or project_path.name,
-                ai_assistant=options.ai_assistant,
-                project_path=project_path,
-                branch_naming_config=options.branch_naming_config
-                or BranchNamingConfig(),
-            )
+            # Render templates for each AI assistant
+            for ai_assistant in options.ai_assistants:
+                context = TemplateContext(
+                    project_name=options.project_name or project_path.name,
+                    ai_assistant=ai_assistant,
+                    project_path=project_path,
+                    branch_naming_config=options.branch_naming_config
+                    or BranchNamingConfig(),
+                )
 
-            render_result = self._render_all_templates(context)
-            if render_result.success:
+                render_result = self._render_all_templates(context)
+                if not render_result.success:
+                    warnings.extend(
+                        [f"{ai_assistant}: {error}" for error in render_result.errors]
+                    )
+
+            # Mark template rendering as complete if we processed at least one assistant
+            if options.ai_assistants:
                 completed_steps.append(ProjectInitStep.TEMPLATE_RENDER)
-            else:
-                warnings.extend(render_result.errors)
 
             # Create initial branch if git enabled
             if not options.skip_git and self._git_service.is_git_repository(
@@ -267,7 +277,7 @@ class ProjectManager:
         return ProjectConfig(
             name=options.project_name or project_path.name,
             branch_naming=branch_naming,
-            template_settings=TemplateConfig(ai_assistant=options.ai_assistant),
+            template_settings=TemplateConfig(ai_assistants=options.ai_assistants),
         )
 
     def _create_initial_branch(
@@ -388,7 +398,7 @@ class ProjectManager:
 
             return {
                 "name": config.name,
-                "ai_assistant": config.template_settings.ai_assistant,
+                "ai_assistant": config.template_settings.primary_assistant,
                 "branch_naming": config.branch_naming.to_dict(),
                 "template_settings": config.template_settings.to_dict(),
                 "path": str(project_path),

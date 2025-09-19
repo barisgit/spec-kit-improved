@@ -5,19 +5,20 @@ These models define the structure for project and global configurations,
 supporting TOML serialization and validation.
 """
 
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PosixPath, WindowsPath
 from typing import Any, Dict, List, Optional
 
 from .defaults import BRANCH_DEFAULTS
 
 
-def _get_default_ai_assistant() -> str:
-    """Get default AI assistant from PATH_DEFAULTS"""
+def _get_default_ai_assistants() -> List[str]:
+    """Get default AI assistants list from PATH_DEFAULTS"""
     from .defaults.path_defaults import PATH_DEFAULTS
 
-    return PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    return [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
 
 
 def _get_default_config_directory() -> str:
@@ -75,7 +76,7 @@ class BranchNamingConfig:
 class TemplateConfig:
     """Configuration for template engine settings"""
 
-    ai_assistant: str = field(default_factory=lambda: _get_default_ai_assistant())
+    ai_assistants: List[str] = field(default_factory=_get_default_ai_assistants)
     config_directory: str = field(
         default_factory=lambda: _get_default_config_directory()
     )
@@ -86,7 +87,7 @@ class TemplateConfig:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for TOML serialization"""
         result: Dict[str, Any] = {
-            "ai_assistant": self.ai_assistant,
+            "ai_assistants": self.ai_assistants,
             "config_directory": self.config_directory,
             "template_cache_enabled": self.template_cache_enabled,
         }
@@ -100,15 +101,53 @@ class TemplateConfig:
 
         return result
 
+    def add_assistant(self, assistant_name: str) -> None:
+        """Add an AI assistant to the list if not already present."""
+        if assistant_name not in self.ai_assistants:
+            self.ai_assistants.append(assistant_name)
+
+    def remove_assistant(self, assistant_name: str) -> bool:
+        """Remove an AI assistant from the list.
+
+        Returns:
+            True if assistant was removed, False if not found
+        """
+        try:
+            self.ai_assistants.remove(assistant_name)
+            return True
+        except ValueError:
+            return False
+
+    def has_assistant(self, assistant_name: str) -> bool:
+        """Check if an AI assistant is in the list."""
+        return assistant_name in self.ai_assistants
+
+    @property
+    def primary_assistant(self) -> str:
+        """Get the primary (first) AI assistant."""
+        return self.ai_assistants[0] if self.ai_assistants else "claude"
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TemplateConfig":
         """Create instance from dictionary (TOML deserialization)"""
         custom_templates_dir = None
         if "custom_templates_dir" in data and data["custom_templates_dir"]:
-            custom_templates_dir = Path(data["custom_templates_dir"])
+            raw_dir = data["custom_templates_dir"]
+            custom_templates_dir = ensure_system_path(raw_dir)
+
+        # Handle backward compatibility: convert old ai_assistant to ai_assistants
+        ai_assistants = data.get("ai_assistants")
+        if ai_assistants is None:
+            # Fallback to old format
+            old_ai_assistant = data.get("ai_assistant", "claude")
+            ai_assistants = (
+                [old_ai_assistant]
+                if isinstance(old_ai_assistant, str)
+                else old_ai_assistant
+            )
 
         return cls(
-            ai_assistant=data.get("ai_assistant", "claude"),
+            ai_assistants=ai_assistants,
             config_directory=data.get("config_directory", ".specify"),
             custom_templates_dir=custom_templates_dir,
             template_cache_enabled=data.get("template_cache_enabled", True),
@@ -178,3 +217,17 @@ class ProjectConfig:
             branch_naming=BranchNamingConfig(),
             template_settings=TemplateConfig(),
         )
+
+
+_SYSTEM_PATH_CLS = WindowsPath if os.name == "nt" else PosixPath
+
+
+def ensure_system_path(value: Any) -> Path:
+    """Coerce a raw path-like value into a Path using the host system class."""
+    if isinstance(value, Path):
+        return value
+
+    try:
+        return Path(value)
+    except NotImplementedError:
+        return _SYSTEM_PATH_CLS(str(value))

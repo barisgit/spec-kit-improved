@@ -220,7 +220,7 @@ class HttpxDownloadService(DownloadService):
             return False
 
     def download_github_release_template(
-        self, ai_assistant: str, destination_path: Path
+        self, destination_path: Path
     ) -> Tuple[bool, Dict]:
         """Download template from spec-kit GitHub releases.
 
@@ -249,7 +249,6 @@ class HttpxDownloadService(DownloadService):
             # Look for specifyx-templates or spec-kit-template patterns
             patterns = [
                 "specifyx-templates",  # New SpecifyX format
-                f"spec-kit-template-{ai_assistant}",  # Legacy per-AI format (fallback)
                 "spec-kit-template",  # Generic format
             ]
 
@@ -370,53 +369,92 @@ class HttpxDownloadService(DownloadService):
             return False
 
     def _extract_zip(self, zip_path: Path, destination_path: Path) -> bool:
-        """Extract a ZIP archive."""
+        """Extract a ZIP archive with path traversal safeguards."""
         try:
+            destination_path.mkdir(parents=True, exist_ok=True)
+            root = destination_path.resolve()
+
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(destination_path)
+                for member in zip_ref.infolist():
+                    # Skip directory entries handled implicitly when creating parent dirs
+                    if member.is_dir():
+                        target_dir = (destination_path / member.filename).resolve()
+                        if not target_dir.is_relative_to(root):
+                            raise ValueError(
+                                f"Unsafe ZIP member path: {member.filename}"
+                            )
+                        target_dir.mkdir(parents=True, exist_ok=True)
+                        continue
 
-                # Handle GitHub-style ZIP with single root directory
-                extracted_items = list(destination_path.iterdir())
-                if len(extracted_items) == 1 and extracted_items[0].is_dir():
-                    # Flatten nested directory structure
-                    nested_dir = extracted_items[0]
-                    temp_dir = destination_path.parent / f"{destination_path.name}_temp"
+                    target_path = (destination_path / member.filename).resolve()
+                    if not target_path.is_relative_to(root):
+                        raise ValueError(f"Unsafe ZIP member path: {member.filename}")
 
-                    # Move nested content to temp location
-                    shutil.move(str(nested_dir), str(temp_dir))
-                    # Remove empty destination
-                    destination_path.rmdir()
-                    # Move temp to final destination
-                    shutil.move(str(temp_dir), str(destination_path))
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
 
+                    with (
+                        zip_ref.open(member, "r") as src,
+                        open(target_path, "wb") as dst,
+                    ):
+                        shutil.copyfileobj(src, dst, length=1024 * 1024)
+
+            self._flatten_single_root(destination_path)
             return True
 
-        except (zipfile.BadZipFile, OSError) as e:
+        except (zipfile.BadZipFile, OSError, ValueError) as e:
             self.console.print(f"[red]Error extracting ZIP:[/red] {e}")
             return False
 
     def _extract_tar(self, tar_path: Path, destination_path: Path) -> bool:
-        """Extract a TAR archive."""
+        """Extract a TAR archive with path traversal safeguards."""
         try:
+            destination_path.mkdir(parents=True, exist_ok=True)
+            root = destination_path.resolve()
+
             with tarfile.open(tar_path, "r:*") as tar_ref:
-                tar_ref.extractall(destination_path)
+                for member in tar_ref.getmembers():
+                    if member.issym() or member.islnk():
+                        # Skip symbolic links to avoid unexpected writes
+                        continue
 
-                # Handle single root directory (similar to ZIP)
-                extracted_items = list(destination_path.iterdir())
-                if len(extracted_items) == 1 and extracted_items[0].is_dir():
-                    # Flatten nested directory structure
-                    nested_dir = extracted_items[0]
-                    temp_dir = destination_path.parent / f"{destination_path.name}_temp"
+                    member_path = (destination_path / member.name).resolve()
+                    if not member_path.is_relative_to(root):
+                        raise ValueError(f"Unsafe TAR member path: {member.name}")
 
-                    shutil.move(str(nested_dir), str(temp_dir))
-                    destination_path.rmdir()
-                    shutil.move(str(temp_dir), str(destination_path))
+                    if member.isdir():
+                        member_path.mkdir(parents=True, exist_ok=True)
+                        continue
 
+                    member_path.parent.mkdir(parents=True, exist_ok=True)
+                    extracted = tar_ref.extractfile(member)
+                    if extracted is None:
+                        continue
+                    with extracted, open(member_path, "wb") as dst:
+                        shutil.copyfileobj(extracted, dst, length=1024 * 1024)
+
+            self._flatten_single_root(destination_path)
             return True
 
-        except (tarfile.TarError, OSError) as e:
+        except (tarfile.TarError, OSError, ValueError) as e:
             self.console.print(f"[red]Error extracting TAR:[/red] {e}")
             return False
+
+    def _flatten_single_root(self, extraction_dir: Path) -> None:
+        """Flatten archives that contain a single nested root directory."""
+        try:
+            extracted_items = list(extraction_dir.iterdir())
+        except FileNotFoundError:
+            return
+
+        if len(extracted_items) != 1 or not extracted_items[0].is_dir():
+            return
+
+        nested_dir = extracted_items[0]
+        temp_dir = extraction_dir.parent / f"{extraction_dir.name}_temp"
+
+        shutil.move(str(nested_dir), str(temp_dir))
+        extraction_dir.rmdir()
+        shutil.move(str(temp_dir), str(extraction_dir))
 
     def validate_template_package(
         self, template_path: Path
@@ -484,11 +522,12 @@ class HttpxDownloadService(DownloadService):
         self, repo_url: str, template_name: str, destination_path: Path
     ) -> bool:
         """Download a specific template from a repository."""
+        _ = template_name
         try:
             # For spec-kit, use the release-based download
             if "spec-kit" in repo_url.lower():
                 success, metadata = self.download_github_release_template(
-                    template_name, destination_path.parent
+                    destination_path.parent
                 )
                 if success and metadata:
                     # The download method saves to destination_path.parent, so we need to move/extract

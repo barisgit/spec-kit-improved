@@ -206,7 +206,7 @@ template_cache_enabled = true
                 ],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=None,
                 template_cache_enabled=True,
                 template_variables={},
@@ -306,7 +306,7 @@ template_cache_enabled = true
                 patterns=["feature/{feature-name}", "team/{team-name}/{task}"],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=None,
                 template_cache_enabled=True,
                 template_variables={

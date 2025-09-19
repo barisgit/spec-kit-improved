@@ -234,7 +234,6 @@ def check(
         raise typer.Exit(1)
 
     try:
-        ScriptHelpers()
         echo_debug("Starting prerequisites check", debug)
 
         # Run the main check
@@ -292,7 +291,7 @@ def check(
         else:
             echo_error(f"Unexpected error: {str(e)}")
         echo_debug(f"Exception details: {type(e).__name__}: {e}", debug)
-        raise typer.Exit(1) from e
+        raise typer.Exit(1) from None
 
 
 if __name__ == "__main__":

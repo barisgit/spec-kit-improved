@@ -1,12 +1,13 @@
 """Project management commands using services and enhanced UI."""
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.panel import Panel
 
-from specify_cli.models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
+from specify_cli.assistants import get_all_assistants, list_assistant_names
+from specify_cli.models.defaults import BRANCH_DEFAULTS
 from specify_cli.models.project import ProjectInitOptions
 from specify_cli.services import (
     CommandLineGitService,
@@ -15,7 +16,7 @@ from specify_cli.services import (
 from specify_cli.services.project_manager import ProjectManager
 from specify_cli.utils.ui import StepTracker
 from specify_cli.utils.ui_helpers import (
-    select_ai_assistant,
+    multiselect_ai_assistants,
     select_branch_naming_pattern,
 )
 
@@ -36,10 +37,10 @@ def init_command(
     project_name: Optional[str] = typer.Argument(
         None, help="Name for your new project directory (optional if using --here)"
     ),
-    ai_assistant: Optional[str] = typer.Option(
+    ai_assistants: Optional[str] = typer.Option(
         None,
         "--ai",
-        help=f"AI assistant to use: {', '.join([assistant.name for assistant in AI_DEFAULTS.ASSISTANTS])} (interactive if not specified)",
+        help=f"AI assistant(s) to use (comma-separated): {', '.join(list_assistant_names())} (interactive multiselect if not specified)",
     ),
     branch_pattern: Optional[str] = typer.Option(
         None,
@@ -143,23 +144,34 @@ def init_command(
         )
     )
 
-    # Interactive AI assistant selection if not specified
-    if ai_assistant is None:
+    # Parse and validate AI assistants
+    selected_assistants: List[str] = []
+
+    if ai_assistants is None:
         if yes:
             # Use default AI assistant when --yes flag is used
-            ai_assistant = AI_DEFAULTS.ASSISTANTS[0].name  # First assistant as default
+            assistants = get_all_assistants()
+            selected_assistants = (
+                [assistants[0].config.name] if assistants else ["claude"]
+            )
         else:
             try:
-                ai_assistant = select_ai_assistant()
+                selected_assistants = multiselect_ai_assistants()
             except KeyboardInterrupt:
                 console.print("[yellow]Setup cancelled[/yellow]")
                 raise typer.Exit(0) from None
+    else:
+        # Parse comma-separated list
+        selected_assistants = [name.strip() for name in ai_assistants.split(",")]
 
-    # Validate AI assistant choice using AI_DEFAULTS
-    valid_assistants = [assistant.name for assistant in AI_DEFAULTS.ASSISTANTS]
-    if ai_assistant not in valid_assistants:
+    # Validate AI assistant choices using registry
+    valid_assistants = list_assistant_names()
+    invalid_assistants = [
+        ai for ai in selected_assistants if ai not in valid_assistants
+    ]
+    if invalid_assistants:
         console.print(
-            f"[red]Error:[/red] Invalid AI assistant '{ai_assistant}'. Choose from: {', '.join(valid_assistants)}"
+            f"[red]Error:[/red] Invalid AI assistant(s): {', '.join(invalid_assistants)}. Choose from: {', '.join(valid_assistants)}"
         )
         raise typer.Exit(1)
 
@@ -228,7 +240,7 @@ def init_command(
             # Build options for project initialization
             options = ProjectInitOptions(
                 project_name=project_name if not here else None,
-                ai_assistant=ai_assistant,
+                ai_assistants=selected_assistants,
                 use_current_dir=here,
                 skip_git=False,
                 branch_pattern=branch_pattern,
@@ -236,7 +248,8 @@ def init_command(
                 force=force,
             )
             tracker.complete_step(
-                "validate", f"AI: {ai_assistant}, Pattern: {branch_pattern}"
+                "validate",
+                f"AI: {', '.join(selected_assistants)}, Pattern: {branch_pattern}",
             )
 
             tracker.add_step("initialize", "Initialize project structure")
@@ -321,9 +334,7 @@ def init_command(
                     with tempfile.TemporaryDirectory() as temp_dir:
                         temp_path = Path(temp_dir)
                         success, metadata = (
-                            download_service.download_github_release_template(
-                                ai_assistant, temp_path
-                            )
+                            download_service.download_github_release_template(temp_path)
                         )
 
                         if success and metadata:
@@ -347,7 +358,7 @@ def init_command(
                                 template_result = template_service.render_templates(
                                     templates_path=extract_path,
                                     destination_path=project_path,
-                                    ai_assistant=ai_assistant,
+                                    ai_assistants=selected_assistants,
                                     project_name=project_name or project_path.name,
                                     branch_pattern=branch_pattern,
                                 )
@@ -511,16 +522,16 @@ def init_command(
             step_num = 2
 
         # Add AI-specific guidance
-        if ai_assistant == "claude":
+        if "claude" in selected_assistants:
             steps_lines.append(
                 f"{step_num}. Open in VS Code and use / commands with Claude Code"
             )
             steps_lines.append("   • Type / in any file to see available commands")
             steps_lines.append("   • Use /specify to create specifications")
-        elif ai_assistant == "gemini":
+        if "gemini" in selected_assistants:
             steps_lines.append(f"{step_num}. Use Gemini CLI for development")
             steps_lines.append("   • Run gemini /specify for specifications")
-        elif ai_assistant == "copilot":
+        if "copilot" in selected_assistants:
             steps_lines.append(f"{step_num}. Use GitHub Copilot in your IDE")
             steps_lines.append("   • Use /specify, /plan, /tasks commands")
 

@@ -136,7 +136,7 @@ environment = "development"
 
             # Verify template settings
             assert isinstance(config.template_settings, TemplateConfig)
-            assert config.template_settings.ai_assistant == "claude"
+            assert config.template_settings.primary_assistant == "claude"
             assert (
                 str(config.template_settings.custom_templates_dir) == "custom_templates"
             )
@@ -184,7 +184,7 @@ environment = "development"
 
                 if global_config is not None:  # Implementation may return None
                     assert isinstance(global_config, ProjectConfig)
-                    assert global_config.template_settings.ai_assistant == "claude"
+                    assert global_config.template_settings.primary_assistant == "claude"
                     assert (
                         global_config.template_settings.template_variables["author"]
                         == "Global Test User"
@@ -341,7 +341,7 @@ environment = "development"
                 ],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="claude",
+                ai_assistants=["claude"],
                 custom_templates_dir=Path("./templates"),
                 template_cache_enabled=True,
                 template_variables={
@@ -381,7 +381,7 @@ environment = "development"
                 patterns=["modified/{name}"],
             ),
             template_settings=TemplateConfig(
-                ai_assistant="gemini",
+                ai_assistants=["gemini"],
                 custom_templates_dir=None,
                 template_cache_enabled=False,
                 template_variables={"modified": "true"},
@@ -395,7 +395,7 @@ environment = "development"
         modified_loaded = config_service.load_project_config(project_dir)
         assert modified_loaded is not None
         assert modified_loaded.name == "modified-test"
-        assert modified_loaded.template_settings.ai_assistant == "gemini"
+        assert modified_loaded.template_settings.primary_assistant == "gemini"
 
         # Restore from backup
         restore_result = config_service.restore_config(project_dir, backup_path)

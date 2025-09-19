@@ -1,9 +1,11 @@
 """UI helper functions for interactive project initialization."""
 
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from specify_cli.assistants import get_all_assistants
 from specify_cli.models.config import BranchNamingConfig
-from specify_cli.models.defaults import AI_DEFAULTS, BRANCH_DEFAULTS
+from specify_cli.models.defaults import BRANCH_DEFAULTS
 
 from .ui.interactive_ui import InteractiveUI
 
@@ -69,18 +71,24 @@ def select_ai_assistant() -> str:
     Interactive selection of AI assistant.
 
     Returns:
-        str: The selected AI assistant ("claude", "gemini", or "copilot")
+        str: The selected AI assistant name
 
     Raises:
         KeyboardInterrupt: If user cancels selection
     """
     ui = InteractiveUI()
 
-    # Use configurable AI assistant choices from AI_DEFAULTS
+    # Use the new assistant registry
+    assistants = get_all_assistants()
+
+    # Create choices dict from registry
     ai_choices = {
-        assistant.name: f"{assistant.display_name} ({assistant.description})"
-        for assistant in AI_DEFAULTS.ASSISTANTS
+        assistant.config.name: f"{assistant.config.display_name} ({assistant.config.description})"
+        for assistant in assistants
     }
+
+    # Get default (first assistant name)
+    default_assistant = assistants[0].config.name if assistants else "claude"
 
     # Create header text for panel content only
     header_text = (
@@ -92,7 +100,126 @@ def select_ai_assistant() -> str:
         return ui.select(
             "Choose your AI assistant:",
             choices=ai_choices,
-            default="claude",
+            default=default_assistant,
+            header=header_text,
+        )
+    except KeyboardInterrupt:
+        # Re-raise to allow caller to handle cancellation
+        raise
+
+
+def select_ai_assistant_for_add(project_path: Path) -> str:
+    """
+    Interactive selection of AI assistant for add-ai command.
+    Shows status indicators for already configured assistants.
+
+    Args:
+        project_path: Path to the project directory
+
+    Returns:
+        str: The selected AI assistant name
+
+    Raises:
+        KeyboardInterrupt: If user cancels selection
+    """
+    from specify_cli.services.assistant_management_service.assistant_management_service import (
+        AssistantManagementService,
+    )
+    from specify_cli.services.project_manager import ProjectManager
+
+    ui = InteractiveUI()
+
+    # Create assistant management service for status checking
+    project_manager = ProjectManager()
+    assistant_service = AssistantManagementService(project_manager)
+
+    # Use the new assistant registry
+    assistants = get_all_assistants()
+
+    # Create choices dict with status indicators
+    ai_choices = {}
+    available_assistants = []
+
+    for assistant in assistants:
+        status = assistant_service.check_assistant_status(
+            project_path, assistant.config.name
+        )
+
+        if status == "configured":
+            # Dim already configured assistants
+            display_text = (
+                f"[dim]{assistant.config.display_name} (already configured)[/dim]"
+            )
+            # Still add to choices but make it less appealing
+            ai_choices[assistant.config.name] = display_text
+        else:
+            # Show available assistants normally
+            status_text = (
+                "⚠️  partially configured" if status == "partial" else "not configured"
+            )
+            display_text = f"{assistant.config.display_name} ({status_text})"
+            ai_choices[assistant.config.name] = display_text
+            available_assistants.append(assistant.config.name)
+
+    # Default to first available (non-configured) assistant
+    default_assistant = (
+        available_assistants[0] if available_assistants else assistants[0].config.name
+    )
+
+    # Create header text
+    header_text = (
+        "Select an AI assistant to add to your project.\n\n"
+        "[dim]Already configured assistants are shown dimmed.[/dim]"
+    )
+
+    try:
+        return ui.select(
+            "Choose AI assistant to add:",
+            choices=ai_choices,
+            default=default_assistant,
+            header=header_text,
+        )
+    except KeyboardInterrupt:
+        # Re-raise to allow caller to handle cancellation
+        raise
+
+
+def multiselect_ai_assistants() -> list[str]:
+    """
+    Interactive multi-selection of AI assistants for init command.
+
+    Returns:
+        list[str]: List of selected AI assistant names
+
+    Raises:
+        KeyboardInterrupt: If user cancels selection
+    """
+    ui = InteractiveUI()
+
+    # Use the new assistant registry
+    assistants = get_all_assistants()
+
+    # Create choices dict from registry
+    ai_choices = {
+        assistant.config.name: f"{assistant.config.display_name} ({assistant.config.description})"
+        for assistant in assistants
+    }
+
+    # Default to first assistant selected
+    default_selection = [assistants[0].config.name] if assistants else []
+
+    # Create header text
+    header_text = (
+        "Select one or more AI assistants for your project.\n\n"
+        "[dim]You can always add more assistants later with 'specify add-ai'.[/dim]"
+    )
+
+    try:
+        return ui.multiselect(
+            "Choose AI assistants:",
+            choices=ai_choices,
+            default=default_selection,
+            min_selections=1,  # Require at least one assistant
             header=header_text,
         )
     except KeyboardInterrupt:

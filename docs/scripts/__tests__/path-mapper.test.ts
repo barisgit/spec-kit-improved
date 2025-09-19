@@ -27,11 +27,25 @@ describe('PathMapper', () => {
       expect(dest).toBe(path.join(outputDir, 'docs/reference/api/template_service.md'));
     });
 
+    it('should map assistant paths correctly', () => {
+        const source = '../src/specify_cli/assistants/claude/docs.mdx';
+        const dest = mapper.mapPath(source, 'assistant', outputDir);
+
+        expect(dest).toBe(path.join(outputDir, 'docs/reference/assistants/claude.mdx'));
+    });
+
     it('should map guide paths correctly', () => {
       const source = '../src/specify_cli/guides/getting-started.mdx';
       const dest = mapper.mapPath(source, 'guide', outputDir);
       
       expect(dest).toBe(path.join(outputDir, 'docs/guides/getting-started.mdx'));
+    });
+
+    it('should map architecture paths correctly', () => {
+      const source = '../architecture/system-overview.mdx';
+      const dest = mapper.mapPath(source, 'architecture', outputDir);
+
+      expect(dest).toBe(path.join(outputDir, 'docs/architecture/system-overview.mdx'));
     });
 
     it('should preserve file extensions', () => {
@@ -64,8 +78,16 @@ describe('PathMapper', () => {
       expect(mapper.getOutputSubdir('service')).toBe('docs/reference/api');
     });
 
+    it('should return correct output subdirectory for assistants', () => {
+      expect(mapper.getOutputSubdir('assistant')).toBe('docs/reference/assistants');
+    });
+
     it('should return correct output subdirectory for guides', () => {
       expect(mapper.getOutputSubdir('guide')).toBe('docs/guides');
+    });
+
+    it('should return correct output subdirectory for architecture', () => {
+      expect(mapper.getOutputSubdir('architecture')).toBe('docs/architecture');
     });
 
     it('should throw for unknown type', () => {

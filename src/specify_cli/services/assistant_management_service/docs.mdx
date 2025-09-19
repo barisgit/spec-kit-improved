@@ -1,0 +1,310 @@
+---
+title: Assistant Management Service
+description: Service for managing AI assistant configurations, status checking, and file creation
+category: service
+tags: [ai-assistant, registry, injection-points, configuration, multi-assistant]
+---
+
+# Assistant Management Service
+
+The Assistant Management Service provides comprehensive management capabilities for AI assistant configurations within SpecifyX projects. It enables status checking, file creation, and validation of assistant setups using the registry pattern with injection points.
+
+## Overview
+
+The service acts as a high-level orchestrator for AI assistant operations, combining:
+- **Assistant Registry Integration**: Leverages the centralized assistant registry for discovery and configuration
+- **Status Management**: Provides detailed status checking for assistant configurations
+- **File Operations**: Creates and manages assistant-specific project files
+- **Rich Console Output**: User-friendly status displays and informational tables
+
+## Key Features
+
+### Multi-Assistant Status Management
+- **Configuration Validation**: Checks if assistants are properly configured in projects
+- **Partial Setup Detection**: Identifies incomplete assistant configurations
+- **Rich Status Display**: Color-coded tables showing assistant availability and setup status
+- **Cross-Platform Compatibility**: Handles file system permissions and OS differences gracefully
+
+### Assistant File Creation
+- **Template Integration**: Uses existing template system for consistent file generation
+- **Force Overwrite Support**: Optional overwriting of existing assistant files
+- **Incremental Setup**: Adds assistants to existing projects without affecting other configurations
+- **Error Recovery**: Graceful handling of file creation failures with detailed error reporting
+
+### Injection Point Management
+- **Information Display**: Shows available injection points and their descriptions
+- **Assistant-Specific Values**: Displays actual injection values for specific assistants
+- **Educational Tools**: Helps users understand the injection point system
+- **Validation Support**: Ensures injection points are properly implemented
+
+## Core Classes
+
+### AssistantManagementService
+
+The main service class providing assistant management capabilities:
+
+```python
+class AssistantManagementService:
+    def __init__(
+        self,
+        project_manager: ProjectManager,
+        config_service: Optional[TomlConfigService] = None,
+        console: Optional[Console] = None,
+    ) -> None
+```
+
+## Status Management
+
+### Assistant Status Checking
+
+The service provides three status levels for assistant configurations:
+
+| Status | Description | Visual Indicator |
+|--------|-------------|------------------|
+| `configured` | Fully set up with all required files | ✓ Configured (green) |
+| `partial` | Some files missing or incomplete | ⚠️ Partially configured (yellow) |
+| `missing` | Not configured or files don't exist | ✗ Not configured (red) |
+
+### Status Check Implementation
+
+```python
+def check_assistant_status(self, project_path: Path, assistant_name: str) -> str:
+    """Check if an assistant is already configured in the project.
+
+    Validates:
+    - Base directory existence
+    - Context file presence
+    - Commands directory structure
+    - File permissions and accessibility
+    """
+```
+
+The status check validates key components:
+1. **Base Directory**: Assistant's root directory exists
+2. **Context File**: Main context file is present and accessible
+3. **Commands Directory**: Command files directory is properly structured
+4. **File Permissions**: All files have proper read/write permissions
+
+## File Creation System
+
+### Assistant File Generation
+
+The service creates assistant files by integrating with the existing template system:
+
+```python
+def create_assistant_files(
+    self, project_path: Path, assistant_name: str, force: bool = False
+) -> bool:
+    """Create AI assistant files using the project manager.
+
+    Features:
+    - Uses existing template rendering system
+    - Updates project configuration automatically
+    - Handles existing project integration
+    - Provides detailed error reporting
+    """
+```
+
+### Template Integration Flow
+
+1. **Configuration Update**: Adds assistant to existing project configuration
+2. **Context Creation**: Generates `TemplateContext` with assistant-specific values
+3. **Template Rendering**: Uses `ProjectManager._render_all_templates()` for consistency
+4. **Validation**: Ensures all files are created successfully
+5. **Error Handling**: Provides detailed feedback on any failures
+
+## Rich Console Integration
+
+### Status Display Tables
+
+The service provides formatted status tables showing all available assistants:
+
+```python
+def show_assistant_status(self, project_path: Path) -> None:
+    """Show the status of all available assistants.
+
+    Displays:
+    - Assistant identifier name
+    - Human-readable display name
+    - Current configuration status
+    - Base directory location
+    """
+```
+
+### Injection Point Information
+
+Educational displays help users understand the injection point system:
+
+```python
+def show_injection_points_info(self) -> None:
+    """Show information about injection points and their descriptions.
+
+    Displays:
+    - Required injection points with descriptions
+    - Optional injection points with use cases
+    - Formatted reference documentation
+    """
+```
+
+## Usage Examples
+
+### Basic Status Checking
+
+```python
+from specify_cli.services.assistant_management_service import AssistantManagementService
+from specify_cli.services.project_manager import ProjectManager
+
+# Initialize service
+project_manager = ProjectManager()
+service = AssistantManagementService(project_manager)
+
+# Check status of all assistants
+project_path = Path("/path/to/project")
+service.show_assistant_status(project_path)
+
+# Check specific assistant
+status = service.check_assistant_status(project_path, "claude")
+print(f"Claude status: {status}")  # "configured", "partial", or "missing"
+```
+
+### Adding Assistant to Existing Project
+
+```python
+# Add new assistant to existing project
+success = service.create_assistant_files(
+    project_path=Path("/path/to/existing/project"),
+    assistant_name="gemini",
+    force=False  # Don't overwrite existing files
+)
+
+if success:
+    print("Gemini assistant added successfully!")
+else:
+    print("Failed to add assistant - check console for details")
+```
+
+### Injection Point Exploration
+
+```python
+# Show available injection points
+service.show_injection_points_info()
+
+# Show values for specific assistant
+service.show_assistant_injection_values("claude")
+```
+
+## Architecture Integration
+
+### Registry Pattern Integration
+
+The service leverages the assistant registry for all operations:
+
+```python
+from specify_cli.assistants import get_all_assistants, get_assistant
+
+# Automatic discovery of all registered assistants
+assistants = get_all_assistants()
+
+# Type-safe assistant retrieval
+assistant = get_assistant("claude")
+injection_values = assistant.get_injection_values()
+```
+
+### Service Dependencies
+
+The service integrates with core SpecifyX services:
+
+- **ProjectManager**: Template rendering and file operations
+- **TomlConfigService**: Project configuration management
+- **Assistant Registry**: Assistant discovery and configuration
+- **Rich Console**: User interface and status display
+
+### Error Handling Strategy
+
+The service implements comprehensive error handling:
+
+1. **File System Errors**: Graceful handling of permission issues and missing directories
+2. **Configuration Errors**: Validation of project configurations before file creation
+3. **Template Errors**: Detailed reporting of template rendering failures
+4. **Assistant Registry Errors**: Fallback behavior for unknown or malformed assistants
+
+## Configuration Management
+
+### Project Config Integration
+
+The service automatically updates project configurations when adding assistants:
+
+```python
+# Load existing config
+project_config = self.config_service.load_project_config(project_path)
+
+# Add new assistant
+project_config.template_settings.add_assistant(assistant_name)
+
+# Save updated config
+self.config_service.save_project_config(project_path, project_config)
+```
+
+### Multi-Assistant Support
+
+The service supports projects with multiple AI assistants:
+- **Non-conflicting**: Each assistant has separate directory structure
+- **Shared Configuration**: Common project settings are shared across assistants
+- **Independent Updates**: Assistants can be added/updated without affecting others
+
+## Performance Considerations
+
+### Optimizations
+
+- **Lazy Loading**: Assistant configurations loaded only when needed
+- **Status Caching**: File system checks cached during batch operations
+- **Template Reuse**: Leverages existing template caching in `JinjaTemplateService`
+- **Bulk Operations**: Efficient handling of multiple assistant operations
+
+### Resource Usage
+
+- **Memory**: < 2MB additional overhead for service instance
+- **File I/O**: Optimized for batch file creation with minimal disk operations
+- **Network**: No network dependencies for core operations
+
+## Testing Support
+
+### Mock-Friendly Design
+
+The service supports comprehensive testing through dependency injection:
+
+```python
+# Test-friendly initialization
+mock_project_manager = Mock(spec=ProjectManager)
+mock_config_service = Mock(spec=TomlConfigService)
+mock_console = Mock(spec=Console)
+
+service = AssistantManagementService(
+    project_manager=mock_project_manager,
+    config_service=mock_config_service,
+    console=mock_console,
+)
+```
+
+### Test Scenarios
+
+- **Status Validation**: Verify correct status detection for various project states
+- **File Creation**: Test file generation with different assistant configurations
+- **Error Scenarios**: Validate error handling for file system and configuration issues
+- **Integration**: End-to-end testing with real project configurations
+
+## Future Enhancements
+
+### Planned Features
+
+- **Assistant Migration**: Tools for migrating between different assistant configurations
+- **Bulk Operations**: Commands for managing multiple assistants simultaneously
+- **Configuration Validation**: Advanced validation rules for assistant setups
+- **Template Customization**: Support for assistant-specific template overrides
+
+### Extensibility Points
+
+- **Custom Validators**: Plugin system for custom status validation rules
+- **Assistant Providers**: Support for external assistant registry sources
+- **File Operations**: Extensible file creation strategies for different project types
+- **Output Formatters**: Pluggable status display formats (JSON, XML, etc.)

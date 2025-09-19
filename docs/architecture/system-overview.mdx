@@ -1,0 +1,78 @@
+---
+title: System Overview
+description: High-level architecture overview of SpecifyX services and workflows
+sidebar_position: 1
+---
+
+# SpecifyX System Architecture
+
+This document provides a consolidated architecture reference for SpecifyX. It
+summarizes how services, templates, and tooling interact so that new
+contributors have a single entry point when extending the platform.
+
+## Service-Oriented Design
+
+SpecifyX is composed of focused services that expose clear contracts. Each
+service owns a single responsibility and can be tested independently.
+
+```
+src/specify_cli/services/
+├── assistant_management_service/
+├── config_service/
+├── template_service/
+├── project_manager/
+├── download_service/
+├── git_service/
+├── memory_service/
+└── update_service/
+```
+
+Key principles:
+
+- **Type-safe contracts** using abstract base classes and Pydantic models.
+- **Dependency injection** so callers can swap implementations in tests or
+  extended workflows.
+- **Cross-platform awareness** – file permissions, paths, and subprocesses are
+  normalized through utility helpers.
+
+## Template Pipeline
+
+Jinja2 templates are rendered through the `TemplateService`, which merges
+project context, assistant-specific injection values, and generated metadata.
+
+```
+TemplateContext -> JinjaTemplateService -> rendered project files
+```
+
+Highlights:
+
+- Injection points expose assistant-specific behavior without forked templates.
+- Template folder mappings describe how rendered assets are written to the
+  project tree.
+- Memory imports and context scripts are refreshed automatically after renders.
+
+## Documentation Sync
+
+The docs pipeline mirrors project documentation from code, specs, and
+architecture references into the Docusaurus site. See the `docs/scripts`
+tooling for the full synchronization workflow, which now includes an explicit
+`architecture` documentation type.
+
+## Cross-Platform Considerations
+
+- Paths are converted with `ensure_system_path` helpers before any filesystem
+  operations run.
+- Permission helpers set executable bits only on platforms that support them
+  and simulate success when mocked in tests.
+- Windows-safe fallbacks are provided for archive extraction and CLI scripts.
+
+## Extensibility Checklist
+
+1. Define new service interfaces and implementations under
+   `src/specify_cli/services`.
+2. Add documentation to the architecture reference to describe new flows.
+3. Update templates with injection points rather than assistant-specific logic.
+4. Expand tests – contract, integration, and unit – to capture new behavior.
+
+Use this page as the authoritative guide when planning significant structural
+changes to the CLI internals.

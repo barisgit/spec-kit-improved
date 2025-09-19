@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .config import BranchNamingConfig
+from .config import BranchNamingConfig, ensure_system_path
 from .defaults import PATH_DEFAULTS
 
 
@@ -128,9 +128,21 @@ class TemplateContext:
         # Note: AI assistant validation is permissive to allow unknown assistants
         # Templates handle fallback behavior through conditional logic
 
-        # Validate paths are absolute if project_path is set
-        if self.project_path and not self.project_path.is_absolute():
-            raise ValueError("project_path must be absolute")
+        # Normalize project_path to an absolute path when provided
+        if self.project_path:
+            project_path_obj = ensure_system_path(self.project_path)
+
+            if not project_path_obj.is_absolute():
+                base = ensure_system_path(Path.cwd())
+                project_path_obj = ensure_system_path(base.joinpath(project_path_obj))
+
+            # Resolve without requiring actual existence to preserve mocked paths
+            from contextlib import suppress
+
+            with suppress(Exception):
+                project_path_obj = project_path_obj.resolve(strict=False)
+
+            self.project_path = project_path_obj
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for Jinja2 template rendering"""
@@ -302,8 +314,8 @@ class ProjectInitOptions:
     """Options for project initialization"""
 
     project_name: Optional[str] = None
-    ai_assistant: str = field(
-        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+    ai_assistants: List[str] = field(
+        default_factory=lambda: [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
     )
     use_current_dir: bool = False
     skip_git: bool = False
@@ -312,6 +324,12 @@ class ProjectInitOptions:
     branch_pattern: Optional[str] = None
     branch_naming_config: Optional[BranchNamingConfig] = None
     force: bool = False
+
+    def __post_init__(self):
+        """Validate and set defaults for project initialization options."""
+        # If ai_assistants is explicitly empty, provide default
+        if not self.ai_assistants:
+            self.ai_assistants = [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
 
 
 @dataclass

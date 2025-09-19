@@ -25,28 +25,28 @@ all: lint format-check test coverage ## Run lint, format-check, tests, and cover
 
 ci: ## Run full CI pipeline locally using act
 	@echo "Running full CI pipeline locally..."
-	act -j test
+	act -j test --container-architecture linux/amd64
 
 ci-fast: ## Run fast CI using pre-built containers
 	@echo "Running fast CI with pre-built containers..."
-	act -j test --use-gitignore --artifact-server-path /tmp/artifacts
+	act -j test --use-gitignore --artifact-server-path /tmp/artifacts --container-architecture linux/amd64
 
 ci-ubuntu: ## Run CI tests on Ubuntu environment  
 	@echo "Running CI tests on Ubuntu environment..."
-	act -j test --matrix os:ubuntu-latest
+	act -j test --matrix os:ubuntu-latest --container-architecture linux/amd64
 
 ci-ubuntu-311: ## Run CI tests on Ubuntu environment for Python 3.11
 	@echo "Running CI tests on Ubuntu environment for Python 3.11..."
-	act -j test --matrix os:ubuntu-latest --matrix python-version:3.11
+	act -j test --matrix os:ubuntu-latest --matrix python-version:3.11 --container-architecture linux/amd64
 
 ci-ubuntu-312: ## Run CI tests on Ubuntu environment for Python 3.12
 	@echo "Running CI tests on Ubuntu environment for Python 3.12..."
-	act -j test --matrix os:ubuntu-latest --matrix python-version:3.12
+	act -j test --matrix os:ubuntu-latest --matrix python-version:3.12 --container-architecture linux/amd64
 
 ci-ubuntu-313: ## Run CI tests on Ubuntu environment for Python 3.13
 	@echo "Running CI tests on Ubuntu environment for Python 3.13..."
-	act -j test --matrix os:ubuntu-latest --matrix python-version:3.13
+	act -j test --matrix os:ubuntu-latest --matrix python-version:3.13 --container-architecture linux/amd64
 
 ci-macos: ## Run CI tests on macOS environment
 	@echo "Running CI tests on macOS environment..."
-	act -j test --matrix os:macos-latest --matrix python-version:3.11
+	act -j test --matrix os:macos-latest --matrix python-version:3.11 --container-architecture linux/amd64

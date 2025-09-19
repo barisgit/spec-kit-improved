@@ -55,8 +55,23 @@ export class FrontmatterProcessor {
       case 'service':
         description = `API documentation for the ${name} service`;
         break;
+      case 'assistant':
+        description = `${title} assistant reference`;
+        break;
       case 'guide':
         description = `${title} guide`;
+        break;
+      case 'about':
+        description = `${title} reference material`;
+        break;
+      case 'contributing':
+        description = `${title} contribution guide`;
+        break;
+      case 'architecture':
+        description = `${title} architecture overview`;
+        break;
+      default:
+        description = `${title}`;
         break;
     }
     

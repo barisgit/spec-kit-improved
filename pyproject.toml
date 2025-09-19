@@ -1,6 +1,6 @@
 [project]
 name = "specifyx"
-version = "0.2.6"
+version = "0.3.0"
 description = "Enhanced spec-driven development CLI with modern architecture and Jinja2 templating"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -32,6 +32,7 @@ dependencies = [
     "tomli-w",
     "packaging",
     "colorlog",
+    "pydantic",
 ]
 
 [project.optional-dependencies]

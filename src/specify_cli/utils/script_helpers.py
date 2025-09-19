@@ -1149,6 +1149,394 @@ class ScriptHelpers:
 
         return wrapper
 
+    def extract_spec_context(self, spec_dir: Path) -> Dict[str, Any]:
+        """
+        Extract comprehensive project context from spec directory files.
+
+        Args:
+            spec_dir: Path to the spec directory
+
+        Returns:
+            Dict containing extracted context information
+        """
+        context_info: Dict[str, Any] = {
+            "feature_name": "",
+            "feature_dir": str(spec_dir),
+            "current_phase": "",
+            "progress": {},
+            "tech_stack": [],
+            "current_tasks": [],
+            "files": [],
+            "file_sizes": {},
+            "summary": "",
+            "spec_tree": "",
+        }
+
+        # Scan available files
+        spec_files = {
+            "spec.md": spec_dir / "spec.md",
+            "plan.md": spec_dir / "plan.md",
+            "tasks.md": spec_dir / "tasks.md",
+            "research.md": spec_dir / "research.md",
+            "data-model.md": spec_dir / "data-model.md",
+            "quickstart.md": spec_dir / "quickstart.md",
+        }
+
+        available_files = []
+        for name, path in spec_files.items():
+            if path.exists():
+                available_files.append(name)
+                context_info["file_sizes"][name] = (
+                    f"{path.stat().st_size // 1024}KB"
+                    if path.stat().st_size > 1024
+                    else f"{path.stat().st_size}B"
+                )
+
+        context_info["files"] = available_files
+
+        # Generate spec tree
+        context_info["spec_tree"] = self._generate_spec_tree(spec_dir)
+
+        # Determine current phase based on available files
+        if "tasks.md" in available_files:
+            context_info["current_phase"] = "Phase 3: Implementation"
+        elif "plan.md" in available_files:
+            context_info["current_phase"] = "Phase 2: Planning Complete"
+        elif "spec.md" in available_files:
+            context_info["current_phase"] = "Phase 1: Specification"
+        else:
+            context_info["current_phase"] = "Phase 0: Setup"
+
+        # Extract from spec.md
+        if spec_files["spec.md"].exists():
+            spec_info = self._extract_from_spec(spec_files["spec.md"])
+            if "feature_name" in spec_info:
+                context_info["feature_name"] = spec_info["feature_name"]
+            if "summary" in spec_info:
+                context_info["summary"] = spec_info["summary"]
+            if "progress" in spec_info:
+                context_info["progress"].update(spec_info["progress"])
+
+        # Extract from plan.md
+        if spec_files["plan.md"].exists():
+            plan_info = self._extract_from_plan(spec_files["plan.md"])
+            if "tech_stack" in plan_info:
+                context_info["tech_stack"].extend(plan_info["tech_stack"])
+            if "progress" in plan_info:
+                context_info["progress"].update(plan_info["progress"])
+
+        # Extract from tasks.md
+        if spec_files["tasks.md"].exists():
+            tasks_info = self._extract_from_tasks(spec_files["tasks.md"])
+            if "current_tasks" in tasks_info:
+                context_info["current_tasks"] = tasks_info["current_tasks"]
+            if "progress" in tasks_info:
+                context_info["progress"].update(tasks_info["progress"])
+
+        return context_info
+
+    def _generate_spec_tree(self, spec_dir: Path) -> str:
+        """Generate a tree structure of the spec directory."""
+        try:
+            result = subprocess.run(
+                ["tree", str(spec_dir), "-a", "-I", ".git"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                # Clean up the tree output
+                lines = result.stdout.strip().split("\n")
+                if len(lines) > 1:
+                    return "\n".join(lines[1:])  # Skip the root directory name
+
+            # Fallback to simple listing if tree is not available
+            return self._simple_directory_listing(spec_dir)
+
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return self._simple_directory_listing(spec_dir)
+
+    def _simple_directory_listing(self, spec_dir: Path) -> str:
+        """Simple fallback directory listing when tree command is not available."""
+        items = []
+        try:
+            for item in sorted(spec_dir.iterdir()):
+                if item.name.startswith("."):
+                    continue
+                if item.is_file():
+                    size = item.stat().st_size
+                    size_str = f"{size // 1024}KB" if size > 1024 else f"{size}B"
+                    items.append(f"├── {item.name} ({size_str})")
+                elif item.is_dir():
+                    items.append(f"├── {item.name}/")
+
+            # Fix last item to use └── instead of ├──
+            if items:
+                items[-1] = items[-1].replace("├──", "└──")
+
+            return "\n".join(items)
+        except Exception:
+            return "└── (unable to read directory)"
+
+    def _extract_from_spec(self, spec_file: Path) -> Dict[str, Any]:
+        """Extract information from spec.md file."""
+        info: Dict[str, Any] = {"progress": {}}
+        try:
+            spec_content = spec_file.read_text()
+
+            # Get feature name
+            feature_match = re.search(r"# Feature Specification:\s*(.+)", spec_content)
+            if feature_match:
+                info["feature_name"] = feature_match.group(1).strip()
+
+            # Get summary from user scenarios or first section
+            summary_patterns = [
+                r"## User Scenarios.*?\n(.*?)(?=##|\Z)",
+                r"## Summary.*?\n(.*?)(?=##|\Z)",
+                r"## Overview.*?\n(.*?)(?=##|\Z)",
+            ]
+            for pattern in summary_patterns:
+                match = re.search(pattern, spec_content, re.DOTALL | re.MULTILINE)
+                if match:
+                    summary = match.group(1).strip()[:150]
+                    summary = re.sub(r"\n+", " ", summary).strip()
+                    if summary and not summary.startswith("["):
+                        info["summary"] = summary + "..."
+                        break
+
+            # Extract progress from spec.md checkboxes
+            completed = len(re.findall(r"- \[x\]", spec_content))
+            checkbox_items = len(re.findall(r"- \[[x ]\]", spec_content))
+            if checkbox_items > 0:
+                info["progress"]["spec"] = f"{completed}/{checkbox_items} items"
+
+        except Exception:
+            pass
+        return info
+
+    def _extract_from_plan(self, plan_file: Path) -> Dict[str, Any]:
+        """Extract information from plan.md file."""
+        info: Dict[str, Any] = {"progress": {}, "tech_stack": []}
+        try:
+            plan_content = plan_file.read_text()
+
+            # Extract tech stack more carefully
+            tech_patterns = [
+                r"Language/Version.*?:\s*(.+)",
+                r"Primary Dependencies.*?:\s*(.+)",
+                r"Storage.*?:\s*(.+)",
+                r"Testing.*?:\s*(.+)",
+                r"Target Platform.*?:\s*(.+)",
+            ]
+
+            for pattern in tech_patterns:
+                matches = re.finditer(pattern, plan_content, re.IGNORECASE)
+                for match in matches:
+                    value = match.group(1).strip()
+                    if (
+                        value
+                        and not value.startswith("[")
+                        and "NEEDS CLARIFICATION" not in value
+                    ):
+                        items = [item.strip() for item in re.split(r"[,;]", value)]
+                        valid_items = [item for item in items if item and len(item) > 2]
+                        info["tech_stack"].extend(valid_items)
+
+            # Keep only first 6 items
+            info["tech_stack"] = info["tech_stack"][:6]
+
+            # Progress from plan - look for checkboxes and checkmarks
+            progress_section = re.search(
+                r"## Progress Tracking.*?(?=##|\Z)", plan_content, re.DOTALL
+            )
+            if progress_section:
+                progress_text = progress_section.group(0)
+                # Count completed checkboxes: - [x]
+                completed = len(re.findall(r"- \[x\]", progress_text))
+                # Count all checkbox items: - [ ] or - [x] patterns
+                checkbox_items = len(re.findall(r"- \[[x ]\]", progress_text))
+                # Count bullet points if no checkboxes
+                bullet_items = len(re.findall(r"[-\*]\s+(?![\[\(])", progress_text))
+
+                total_items = checkbox_items if checkbox_items > 0 else bullet_items
+                if total_items > 0:
+                    info["progress"]["planning"] = f"{completed}/{total_items} items"
+
+        except Exception:
+            pass
+        return info
+
+    def _extract_from_tasks(self, tasks_file: Path) -> Dict[str, Any]:
+        """Extract information from tasks.md file."""
+        info: Dict[str, Any] = {"progress": {}, "current_tasks": []}
+        try:
+            tasks_content = tasks_file.read_text()
+
+            # Parse task checkboxes: - [ ] or - [x]
+            task_pattern = r"- \[([ x])\] (.+?)(?=\n|$)"
+            task_matches = re.findall(task_pattern, tasks_content)
+
+            if task_matches:
+                completed_tasks = [
+                    task for status, task in task_matches if status == "x"
+                ]
+                pending_tasks = [task for status, task in task_matches if status == " "]
+
+                info["progress"]["tasks"] = (
+                    f"{len(completed_tasks)}/{len(task_matches)} completed"
+                )
+
+                # Find first unchecked task and next 1-2 tasks
+                if pending_tasks:
+                    # Clean task descriptions (remove task IDs for readability)
+                    clean_tasks = []
+                    for task in pending_tasks[:3]:
+                        # Remove T001, T002 prefixes and [P] markers
+                        clean_task = re.sub(r"^T\d+\s*(\[P\])?\s*", "", task).strip()
+                        clean_tasks.append(clean_task)
+                    info["current_tasks"] = clean_tasks
+
+        except Exception:
+            pass
+        return info
+
+    def build_context_sections(
+        self, context_info: Dict[str, Any], supports_imports: bool
+    ) -> Tuple[List[str], str]:
+        """
+        Build enhanced context sections with file counts, spec tree, and helpful reminders.
+
+        Args:
+            context_info: Extracted context information
+            supports_imports: Whether the assistant supports file imports
+
+        Returns:
+            Tuple of (sections_list, helpful_reminders)
+        """
+        sections = []
+
+        if context_info.get("current_phase"):
+            sections.append(f"**Phase**: {context_info['current_phase']}")
+
+        if context_info.get("feature_name"):
+            sections.append(f"**Feature**: {context_info['feature_name']}")
+
+        if context_info.get("summary"):
+            sections.append(f"**Goal**: {context_info['summary']}")
+
+        # Enhanced progress tracking with separate spec, plan, tasks tracking
+        if context_info.get("progress"):
+            progress_dict = context_info["progress"]
+            if "spec" in progress_dict:
+                sections.append(f"**Spec Progress**: {progress_dict['spec']}")
+            if "planning" in progress_dict:
+                sections.append(f"**Plan Progress**: {progress_dict['planning']}")
+            if "tasks" in progress_dict:
+                sections.append(f"**Task Progress**: {progress_dict['tasks']}")
+
+        # File counts section
+        if context_info.get("files"):
+            file_counts = []
+            if "spec.md" in context_info["files"]:
+                size = context_info.get("file_sizes", {}).get("spec.md", "")
+                file_counts.append(f"spec.md ({size})" if size else "spec.md")
+            if "plan.md" in context_info["files"]:
+                size = context_info.get("file_sizes", {}).get("plan.md", "")
+                file_counts.append(f"plan.md ({size})" if size else "plan.md")
+            if "tasks.md" in context_info["files"]:
+                size = context_info.get("file_sizes", {}).get("tasks.md", "")
+                file_counts.append(f"tasks.md ({size})" if size else "tasks.md")
+
+            sections.append(f"**Files**: {', '.join(file_counts)}")
+
+        # Current tasks
+        if context_info.get("current_tasks"):
+            tasks = context_info["current_tasks"][:2]  # Next 2 tasks
+            task_list = "; ".join(
+                [task.split(" ", 1)[1] if " " in task else task for task in tasks]
+            )
+            sections.append(f"**Next Tasks**: {task_list}")
+
+        # Tech stack
+        if context_info.get("tech_stack"):
+            tech_items = context_info["tech_stack"][:6]  # Keep concise
+            sections.append(f"**Tech**: {', '.join(tech_items)}")
+
+        # Spec tree structure
+        if context_info.get("spec_tree"):
+            sections.append(
+                f"**Spec Structure**:\n```\n{context_info['spec_tree']}\n```"
+            )
+
+        # File references (imports for Claude/Cursor, paths for others)
+        if context_info.get("files"):
+            spec_dir = Path(context_info["feature_dir"])
+            file_lines = []
+            key_files = ["spec.md", "plan.md", "tasks.md", "data-model.md"]
+
+            for file_name in key_files:
+                if file_name in context_info["files"]:
+                    file_path = spec_dir / file_name
+
+                    if supports_imports:
+                        # Use @import syntax for Claude/Cursor
+                        try:
+                            repo_root = self.get_repo_root()
+                            rel_path = file_path.relative_to(repo_root)
+                            file_lines.append(f"@{rel_path}")
+                        except ValueError:
+                            file_lines.append(f"@{file_path}")
+                    else:
+                        # Use plain paths for Copilot/Gemini
+                        try:
+                            repo_root = self.get_repo_root()
+                            rel_path = file_path.relative_to(repo_root)
+                            file_lines.append(str(rel_path))
+                        except ValueError:
+                            file_lines.append(str(file_path))
+
+            if file_lines and len(file_lines) <= 4:  # Only if manageable
+                label = "Spec Files" if supports_imports else "Spec Paths"
+                sections.append(f"**{label}**: {', '.join(file_lines)}")
+
+        # Generate helpful reminders
+        reminders = self._generate_helpful_reminders(context_info)
+
+        return sections, reminders
+
+    def _generate_helpful_reminders(self, context_info: Dict[str, Any]) -> str:
+        """Generate helpful reminders based on current project state."""
+        reminders = []
+
+        # Task completion reminders
+        if context_info.get("current_tasks"):
+            reminders.append(
+                "**Remember**: Mark tasks as done by changing `- [ ]` to `- [x]` in tasks.md"
+            )
+
+        # Phase-specific reminders
+        current_phase = context_info.get("current_phase", "")
+        if "Implementation" in current_phase:
+            reminders.append(
+                "**TDD Reminder**: Write tests first, ensure they fail, then implement (Red-Green-Refactor)"
+            )
+
+        if context_info.get("progress", {}).get("tasks"):
+            progress = context_info["progress"]["tasks"]
+            if progress and not progress.startswith("0/"):
+                reminders.append(
+                    "**Progress Tip**: Update plan.md checkboxes as you complete implementation phases"
+                )
+
+        # File-specific reminders
+        files = context_info.get("files", [])
+        if "tasks.md" in files and "plan.md" in files:
+            reminders.append(
+                "**Workflow**: tasks.md contains specific todos, plan.md tracks overall phases"
+            )
+
+        return "\n".join(reminders) if reminders else ""
+
 
 # Typer utility functions for script helpers
 def echo_info(message: str, quiet: bool = False, json_mode: bool = False) -> None:

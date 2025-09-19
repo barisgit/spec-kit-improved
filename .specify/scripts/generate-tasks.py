@@ -256,10 +256,9 @@ def generate(
 
         if not feature_dir or error_msg:
             if json_mode:
-                print(json.dumps({"error": error_msg}))
+                print(json.dumps({"error": error_msg or "Unknown error"}))
             else:
-                error_msg = error_msg or "No feature directory found"
-                echo_error(error_msg)
+                echo_error(error_msg or "Unknown error")
                 echo_info("Run 'specifyx run setup-plan setup' first", quiet)
             raise typer.Exit(1)
 
@@ -283,8 +282,9 @@ def generate(
             if json_mode:
                 print(json.dumps({"error": error_msg}))
             else:
-                echo_error(error_msg)
-                echo_info("Use the /plan command in Claude Code first", quiet)
+                final_error_msg = error_msg or "No feature directory found"
+                echo_error(final_error_msg)
+                echo_info("Use the /plan command in your AI assistant first", quiet)
             raise typer.Exit(1)
 
         echo_debug(f"Available documents: {analysis['available_docs']}", debug)
@@ -337,7 +337,7 @@ def generate(
         else:
             echo_error(error_msg)
         echo_debug(f"Exception details: {type(e).__name__}: {e}", debug)
-        raise typer.Exit(1) from e
+        raise typer.Exit(1) from None
 
 
 if __name__ == "__main__":
