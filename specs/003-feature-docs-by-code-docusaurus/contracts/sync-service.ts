@@ -7,7 +7,14 @@
 // Core Data Types
 // ============================================================================
 
-export type DocumentationType = 'command' | 'service' | 'guide';
+export type DocumentationType =
+  | 'command'
+  | 'service'
+  | 'assistant'
+  | 'guide'
+  | 'about'
+  | 'contributing'
+  | 'architecture';
 
 export interface FrontmatterData {
   title: string;

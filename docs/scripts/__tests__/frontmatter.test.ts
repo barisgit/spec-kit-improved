@@ -126,11 +126,25 @@ title: Old Title
       expect(frontmatter.description).toContain('template_service');
     });
 
+    it('should generate default frontmatter for assistants', () => {
+      const frontmatter = processor.generateDefault('claude', 'assistant');
+
+      expect(frontmatter.title).toBe('Claude');
+      expect(frontmatter.description).toContain('assistant');
+    });
+
     it('should generate default frontmatter for guides', () => {
       const frontmatter = processor.generateDefault('getting-started', 'guide');
       
       expect(frontmatter.title).toBeTruthy();
       expect(frontmatter.description).toBeTruthy();
+    });
+
+    it('should generate default frontmatter for architecture docs', () => {
+      const frontmatter = processor.generateDefault('system-overview', 'architecture');
+
+      expect(frontmatter.title).toBe('System Overview');
+      expect(frontmatter.description).toContain('architecture');
     });
 
     it('should handle hyphenated names', () => {

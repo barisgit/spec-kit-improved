@@ -58,14 +58,17 @@ export class PathMapper {
     switch (type) {
       case 'command':
       case 'service':
+      case 'assistant':
         // For commands and services, use parent directory name
         return basename(dir);
         
       case 'guide':
       case 'about':
-        // For guides and about pages, use filename without extension
+      case 'contributing':
+      case 'architecture':
+        // Use filename without extension for content-style docs
         return basename(file, extname(file));
-        
+
       default:
         return basename(file, extname(file));
     }

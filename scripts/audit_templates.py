@@ -47,13 +47,19 @@ from specify_cli.services.template_service import JinjaTemplateService
 class TemplateAuditor:
     """Main class for template auditing and comparison."""
 
-    def __init__(self, output_dir: Path = Path("audit/templates")):
+    def __init__(
+        self,
+        output_dir: Path = Path("audit/templates"),
+        *,
+        clean_output: bool = False,
+    ):
         """Initialize the auditor with output directory."""
         self.output_dir = output_dir
         self.console = Console()
         self.template_service = JinjaTemplateService()
         self.audit_results: Dict[str, Dict[str, str]] = {}
         self.errors: List[str] = []
+        self._clean_output = clean_output
 
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -377,8 +383,8 @@ class TemplateAuditor:
             assistants = self.discover_assistants(assistant_names)
             templates = self.discover_templates(template_names)
 
-            # Ensure a clean output directory before starting
-            if self.output_dir.exists():
+            # Optionally clean output directory
+            if self._clean_output and self.output_dir.exists():
                 shutil.rmtree(self.output_dir)
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -515,7 +521,7 @@ Examples:
 
     try:
         # Create auditor and run audit
-        auditor = TemplateAuditor(args.output_dir)
+        auditor = TemplateAuditor(args.output_dir, clean_output=args.clean)
 
         assistant_names = args.assistant if not args.all else None
         template_names = args.template if not args.all else None

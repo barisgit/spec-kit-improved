@@ -1481,11 +1481,7 @@ class ScriptHelpers:
                     if supports_imports:
                         # Use @import syntax for Claude/Cursor
                         try:
-                            repo_root = (
-                                spec_dir.parent.parent
-                                if spec_dir.name.startswith(("specs", "features"))
-                                else spec_dir.parent
-                            )
+                            repo_root = self.get_repo_root()
                             rel_path = file_path.relative_to(repo_root)
                             file_lines.append(f"@{rel_path}")
                         except ValueError:
@@ -1493,11 +1489,7 @@ class ScriptHelpers:
                     else:
                         # Use plain paths for Copilot/Gemini
                         try:
-                            repo_root = (
-                                spec_dir.parent.parent
-                                if spec_dir.name.startswith(("specs", "features"))
-                                else spec_dir.parent
-                            )
+                            repo_root = self.get_repo_root()
                             rel_path = file_path.relative_to(repo_root)
                             file_lines.append(str(rel_path))
                         except ValueError:

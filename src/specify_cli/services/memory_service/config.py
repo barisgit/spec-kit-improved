@@ -7,6 +7,8 @@ configurations with defaults and validation.
 
 from pathlib import Path
 
+import tomli_w
+
 from .types import MemoryCategory, MemoryFilePattern, MemoryImportConfig
 
 
@@ -101,7 +103,7 @@ class MemoryConfigManager:
             max_files=10,
         )
 
-    def save_config(self, _config: MemoryImportConfig) -> bool:
+    def save_config(self, config: MemoryImportConfig) -> bool:
         """
         Save memory import configuration to file.
 
@@ -111,8 +113,14 @@ class MemoryConfigManager:
         Returns:
             True if saved successfully
         """
-        # TODO: Implement TOML saving when needed
-        return True
+        try:
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            data = {"memory": config.model_dump()}
+            with self.config_path.open("wb") as config_file:
+                tomli_w.dump(data, config_file)
+            return True
+        except (OSError, ValueError):
+            return False
 
     def config_exists(self) -> bool:
         """
@@ -130,5 +138,8 @@ class MemoryConfigManager:
         Returns:
             True if created successfully
         """
-        # TODO: Implement TOML creation when needed
-        return True
+        if self.config_exists():
+            return True
+
+        default_config = self.get_default_config()
+        return self.save_config(default_config)

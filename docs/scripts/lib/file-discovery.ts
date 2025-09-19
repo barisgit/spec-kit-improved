@@ -58,13 +58,17 @@ export class FileDiscovery {
     switch (type) {
       case 'command':
       case 'service':
+      case 'assistant':
         // For commands and services, use parent directory name
         return basename(dir);
-        
+
       case 'guide':
-        // For guides, use filename without extension
+      case 'about':
+      case 'contributing':
+      case 'architecture':
+        // Use filename without extension for content-style docs
         return basename(file, extname(file));
-        
+
       default:
         return basename(file, extname(file));
     }

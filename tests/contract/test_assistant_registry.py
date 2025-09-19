@@ -225,24 +225,24 @@ class TestAssistantRegistryABCContract:
         # Use the imported registry directly
 
         # Test list_assistant_names performance
-        start_time = time.time()
+        start_time = time.perf_counter()
         for _ in range(100):
             registry.list_assistant_names()
-        end_time = time.time()
+        end_time = time.perf_counter()
 
         avg_time = (end_time - start_time) / 100
-        # Should be very fast (under 1ms per call)
-        assert avg_time < 0.001, f"list_assistant_names too slow: {avg_time:.3f}s"
+        # Should remain efficient (<5ms per call on shared CI runners)
+        assert avg_time < 0.005, f"list_assistant_names too slow: {avg_time:.6f}s"
 
         # Test get_assistant performance
         if len(registry.list_assistant_names()) > 0:
             first_assistant = registry.list_assistant_names()[0]
 
-            start_time = time.time()
+            start_time = time.perf_counter()
             for _ in range(100):
                 registry.get_assistant(first_assistant)
-            end_time = time.time()
+            end_time = time.perf_counter()
 
             avg_time = (end_time - start_time) / 100
-            # Should be very fast (under 1ms per call)
-            assert avg_time < 0.001, f"get_assistant too slow: {avg_time:.3f}s"
+            # Should remain efficient (<5ms per call on shared CI runners)
+            assert avg_time < 0.005, f"get_assistant too slow: {avg_time:.6f}s"

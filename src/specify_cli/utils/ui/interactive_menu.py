@@ -280,9 +280,17 @@ class InteractiveMenu:
                                     selected_items.add(current_key)
                         elif key == "a":
                             if len(selected_items) == len(option_keys):
-                                selected_items = set()
+                                selected_items.clear()
                             else:
-                                selected_items = set(option_keys)
+                                if max_selections is None:
+                                    selected_items = set(option_keys)
+                                else:
+                                    for option_key in option_keys:
+                                        if option_key in selected_items:
+                                            continue
+                                        if len(selected_items) >= max_selections:
+                                            break
+                                        selected_items.add(option_key)
                         elif key == "enter":
                             if len(selected_items) >= min_selections:
                                 break

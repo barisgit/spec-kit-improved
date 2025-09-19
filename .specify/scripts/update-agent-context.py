@@ -165,36 +165,29 @@ def main(
         # Find current feature directory and plan
         helpers = ScriptHelpers()
 
-        # Find spec directory with any spec files
+        # Try to detect the spec directory using helpers (handles multiple workflows)
+        spec_dir = helpers.find_feature_directory_for_workflow()
+
+        # Fallbacks when workflow heuristics can't determine the directory
         cwd = Path.cwd()
-        spec_dir = None
-
-        # Check if we're in a spec directory
-        if (cwd / "spec.md").exists() or (cwd / "plan.md").exists():
+        if not spec_dir and ((cwd / "spec.md").exists() or (cwd / "plan.md").exists()):
             spec_dir = cwd
-        else:
-            # Look for most recent spec directory
-            spec_dirs = []
-            for pattern in ["specs/*/", "features/*/", "*/specs/"]:
-                spec_dirs.extend(cwd.glob(pattern))
 
-            # Filter to directories with spec files and find most recent
-            valid_dirs = []
-            for d in spec_dirs:
-                if any((d / f).exists() for f in ["spec.md", "plan.md", "tasks.md"]):
-                    # Get the most recently modified spec file
-                    spec_files = [
-                        f
-                        for f in [d / "spec.md", d / "plan.md", d / "tasks.md"]
-                        if f.exists()
-                    ]
-                    if spec_files:
-                        recent_time = max(f.stat().st_mtime for f in spec_files)
-                        valid_dirs.append((d, recent_time))
-
-            if valid_dirs:
-                # Use most recently modified spec directory
-                spec_dir = max(valid_dirs, key=lambda x: x[1])[0]
+        if not spec_dir:
+            repo_root = helpers.get_repo_root()
+            specs_root = repo_root / "specs"
+            if specs_root.exists():
+                spec_dirs = [
+                    d
+                    for d in specs_root.iterdir()
+                    if d.is_dir()
+                    and any(
+                        (d / f).exists() for f in ["spec.md", "plan.md", "tasks.md"]
+                    )
+                ]
+                if spec_dirs:
+                    spec_dirs.sort(key=lambda d: d.name)
+                    spec_dir = spec_dirs[-1]
 
         if not spec_dir:
             if json_output:

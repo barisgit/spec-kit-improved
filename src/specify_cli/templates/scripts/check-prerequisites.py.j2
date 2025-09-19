@@ -253,11 +253,27 @@ def check(
             if contracts_dir.exists():
                 for contract_file in contracts_dir.glob("*.json"):
                     try:
-                        with open(contract_file, "r") as f:
+                        max_size = 10 * 1024 * 1024  # 10MB safety limit
+                        if contract_file.stat().st_size > max_size:
+                            success = False
+                            result = {
+                                "error": (
+                                    f"Contract file {contract_file} exceeds size limit"
+                                )
+                            }
+                            break
+
+                        with open(contract_file, "r", encoding="utf-8") as f:
                             json.load(f)
                     except json.JSONDecodeError as e:
                         success = False
                         result = {"error": f"Invalid JSON in {contract_file}: {e}"}
+                        break
+                    except (OSError, MemoryError) as e:
+                        success = False
+                        result = {
+                            "error": f"Failed to read {contract_file}: {e}"
+                        }
                         break
 
         # Output results

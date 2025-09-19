@@ -72,6 +72,12 @@ const config: Config = {
           label: 'Docs',
         },
         {
+          type: 'doc',
+          docId: 'architecture/index',
+          position: 'left',
+          label: 'Architecture',
+        },
+        {
           type: 'docSidebar',
           sidebarId: 'referenceSidebar',
           position: 'left',

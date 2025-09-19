@@ -80,3 +80,30 @@ jobs:
     - name: Check for unused imports
       run: |
         uv run ruff check --select F401 .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: docs/pnpm-lock.yaml
+
+    - name: Enable Corepack
+      run: corepack enable
+
+    - name: Install docs dependencies
+      working-directory: docs
+      run: pnpm install --frozen-lockfile
+
+    - name: Sync documentation sources
+      working-directory: docs
+      run: pnpm run sync
+
+    - name: Run docs tests
+      working-directory: docs
+      run: pnpm test

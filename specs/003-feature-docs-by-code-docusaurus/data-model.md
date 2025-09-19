@@ -8,7 +8,7 @@ Represents a single documentation file in the system.
 **Fields**:
 - `sourcePath`: string - Absolute path to the source .mdx/.md file
 - `destPath`: string - Absolute path to the destination in docs site
-- `type`: 'command' | 'service' | 'guide' - Documentation category
+- `type`: 'command' | 'service' | 'guide' | 'about' | 'contributing' | 'architecture' - Documentation category
 - `name`: string - Extracted name (command/service/guide identifier)
 - `frontmatter`: FrontmatterData - Parsed or generated frontmatter
 - `content`: string - Raw markdown/MDX content
@@ -54,7 +54,11 @@ Configuration for the synchronization process.
   sourcePatterns: [
     { pattern: 'src/specify_cli/commands/*/docs.{md,mdx}', type: 'command' },
     { pattern: 'src/specify_cli/services/*/docs.{md,mdx}', type: 'service' },
-    { pattern: 'src/specify_cli/guides/*.{md,mdx}', type: 'guide' }
+    { pattern: 'src/specify_cli/assistants/*/docs.{md,mdx}', type: 'assistant' },
+    { pattern: 'src/specify_cli/guides/*.{md,mdx}', type: 'guide' },
+    { pattern: 'src/specify_cli/about/*.{md,mdx}', type: 'about' },
+    { pattern: 'src/specify_cli/contributing/*.{md,mdx}', type: 'contributing' },
+    { pattern: 'architecture/**/*.mdx', type: 'architecture' }
   ],
   outputDir: 'docs/docs',
   watch: false,
@@ -69,13 +73,17 @@ Defines a pattern for discovering documentation files.
 
 **Fields**:
 - `pattern`: string - Glob pattern for matching files
-- `type`: 'command' | 'service' | 'guide' - Documentation type
+- `type`: 'command' | 'service' | 'guide' | 'about' | 'contributing' | 'architecture' - Documentation type
 - `outputSubdir`: string - Subdirectory in output (e.g., 'reference/cli')
 
 **Mapping Rules**:
-- command → reference/cli/
-- service → reference/api/
-- guide → guides/
+- command → docs/reference/cli/
+- service → docs/reference/api/
+- assistant → docs/reference/assistants/
+- guide → docs/guides/
+- about → docs/about/
+- contributing → docs/contributing/
+- architecture → docs/architecture/
 
 ### SyncResult
 Result of a synchronization operation.

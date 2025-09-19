@@ -86,6 +86,12 @@ const SYNC_CONFIG: SyncConfig = {
       source: 'src/specify_cli/contributing/*.{md,mdx}',
       outputDir: 'docs/contributing',
       naming: 'filename'
+    },
+
+    {
+      source: 'architecture/**/*.mdx',
+      outputDir: 'docs/architecture',
+      naming: 'filename'
     }
   ],
   outputBase: resolve(__dirname, '..'),

@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .config import BranchNamingConfig
+from .config import BranchNamingConfig, ensure_system_path
 from .defaults import PATH_DEFAULTS
 
 
@@ -128,9 +128,21 @@ class TemplateContext:
         # Note: AI assistant validation is permissive to allow unknown assistants
         # Templates handle fallback behavior through conditional logic
 
-        # Validate paths are absolute if project_path is set
-        if self.project_path and not self.project_path.is_absolute():
-            raise ValueError("project_path must be absolute")
+        # Normalize project_path to an absolute path when provided
+        if self.project_path:
+            project_path_obj = ensure_system_path(self.project_path)
+
+            if not project_path_obj.is_absolute():
+                base = ensure_system_path(Path.cwd())
+                project_path_obj = ensure_system_path(base.joinpath(project_path_obj))
+
+            # Resolve without requiring actual existence to preserve mocked paths
+            from contextlib import suppress
+
+            with suppress(Exception):
+                project_path_obj = project_path_obj.resolve(strict=False)
+
+            self.project_path = project_path_obj
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for Jinja2 template rendering"""
