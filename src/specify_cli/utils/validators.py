@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Union
 
 from rich.console import Console
 
-from specify_cli.models.defaults import AI_DEFAULTS
+from specify_cli.assistants import list_assistant_names
 
 
 class ValidationError(Exception):
@@ -167,8 +167,8 @@ class Validators:
         Raises:
             ValidationError: If invalid with reason
         """
-        # Use configurable AI assistant list from AI_DEFAULTS
-        valid_assistants = [assistant.name for assistant in AI_DEFAULTS.ASSISTANTS]
+        # Use dynamic AI assistant list from registry
+        valid_assistants = list_assistant_names()
         if assistant not in valid_assistants:
             raise ValidationError(
                 f"Invalid AI assistant '{assistant}'. "

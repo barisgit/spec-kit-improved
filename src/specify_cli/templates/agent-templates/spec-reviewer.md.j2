@@ -1,0 +1,401 @@
+# Specification Review Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Reviewer**: Specification Reviewer Agent
+**Generated**: {{ timestamp }}
+**Review Scope**: {{ scope | default("Full specification") }}
+
+## Specification Quality Assessment
+
+### Overall Quality Score
+**Rating**: {{ quality_score | default("N/A") }}/10
+**Status**: {{ overall_status | default("PENDING") }}
+**Completeness**: {{ completeness_percentage | default("N/A") }}%
+
+### Specification Structure
+{% if structure_analysis %}
+- **Executive Summary**: {{ structure_analysis.executive_summary | ternary("Present", "Missing") }}
+- **User Stories**: {{ structure_analysis.user_stories_count | default(0) }} defined
+- **Acceptance Criteria**: {{ structure_analysis.acceptance_criteria | ternary("Complete", "Incomplete") }}
+- **Technical Requirements**: {{ structure_analysis.technical_requirements | ternary("Defined", "Missing") }}
+- **Non-Functional Requirements**: {{ structure_analysis.nfr_count | default(0) }} specified
+- **Dependencies**: {{ structure_analysis.dependencies_mapped | ternary("Mapped", "Not Mapped") }}
+{% else %}
+- Executive Summary: Not analyzed
+- User Stories: Not analyzed
+- Acceptance Criteria: Not analyzed
+- Technical Requirements: Not analyzed
+- Non-Functional Requirements: Not analyzed
+- Dependencies: Not analyzed
+{% endif %}
+
+### Critical Specification Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() }}: {{ issue.title }}
+**Section**: {{ issue.section | default("General") }}
+**Issue**: {{ issue.description }}
+**Impact**: {{ issue.impact_on_implementation }}
+
+{% if issue.current_text %}
+**Current Text**:
+```
+{{ issue.current_text }}
+```
+{% endif %}
+
+**Recommended Fix**: {{ issue.recommendation }}
+**Urgency**: {{ issue.urgency_level }}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical specification issues found
+{% endif %}
+
+## Requirements Analysis
+
+### Functional Requirements
+{% if functional_requirements %}
+**Total Requirements**: {{ functional_requirements.total_count }}
+**Well-Defined**: {{ functional_requirements.well_defined_count }}
+**Ambiguous**: {{ functional_requirements.ambiguous_count }}
+**Missing**: {{ functional_requirements.missing_count }}
+
+{% if functional_requirements.ambiguous_items %}
+#### Ambiguous Requirements
+{% for req in functional_requirements.ambiguous_items %}
+- **{{ req.id }}**: {{ req.description }}
+  - **Ambiguity**: {{ req.ambiguity_reason }}
+  - **Clarification Needed**: {{ req.clarification_required }}
+  - **Impact**: {{ req.implementation_risk }}
+{% endfor %}
+{% endif %}
+
+{% if functional_requirements.missing_items %}
+#### Missing Requirements
+{% for missing in functional_requirements.missing_items %}
+- **Area**: {{ missing.functional_area }}
+  - **Description**: {{ missing.what_is_missing }}
+  - **Priority**: {{ missing.priority }}
+  - **User Impact**: {{ missing.user_impact }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Non-Functional Requirements
+{% if non_functional_requirements %}
+{% for nfr_category, requirements in non_functional_requirements.items() %}
+#### {{ nfr_category.title() }}
+{% for req in requirements %}
+- **{{ req.name }}**: {{ req.specification }}
+  - **Measurable**: {{ req.is_measurable | ternary("Yes", "No") }}
+  - **Testable**: {{ req.is_testable | ternary("Yes", "No") }}
+  - **Priority**: {{ req.priority }}
+  {% if not req.is_measurable %}
+  - **Issue**: Requirement needs quantifiable metrics
+  {% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
+⚠️  Non-functional requirements not adequately specified
+{% endif %}
+
+### User Stories Analysis
+{% if user_stories %}
+**Total User Stories**: {{ user_stories.total_count }}
+**Complete Stories**: {{ user_stories.complete_count }}
+**Quality Score**: {{ user_stories.quality_score }}/10
+
+{% if user_stories.issues %}
+#### User Story Issues
+{% for issue in user_stories.issues %}
+- **Story {{ issue.story_id }}**: {{ issue.title }}
+  - **Problem**: {{ issue.issue_description }}
+  - **Fix**: {{ issue.recommended_improvement }}
+  - **Format Issue**: {{ issue.format_compliance | ternary("No", "Yes") }}
+{% endfor %}
+{% endif %}
+
+{% if user_stories.missing_elements %}
+#### Missing Story Elements
+{% for missing in user_stories.missing_elements %}
+- **{{ missing.story_id }}**: Missing {{ missing.missing_component }}
+  - **Impact**: {{ missing.impact_on_development }}
+  - **Suggestion**: {{ missing.addition_suggestion }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Acceptance Criteria Review
+{% if acceptance_criteria %}
+**Coverage**: {{ acceptance_criteria.coverage_percentage }}%
+**Testability**: {{ acceptance_criteria.testability_score }}/10
+**Clarity**: {{ acceptance_criteria.clarity_score }}/10
+
+{% if acceptance_criteria.issues %}
+#### Acceptance Criteria Issues
+{% for issue in acceptance_criteria.issues %}
+- **Criterion**: {{ issue.criterion_text }}
+  - **Problem**: {{ issue.issue_type }}
+  - **Why Problematic**: {{ issue.explanation }}
+  - **Suggested Fix**: {{ issue.improvement_suggestion }}
+{% endfor %}
+{% endif %}
+
+{% if acceptance_criteria.missing_scenarios %}
+#### Missing Test Scenarios
+{% for scenario in acceptance_criteria.missing_scenarios %}
+- **Feature Area**: {{ scenario.feature_area }}
+  - **Missing Scenario**: {{ scenario.scenario_description }}
+  - **Risk**: {{ scenario.risk_if_not_tested }}
+  - **Priority**: {{ scenario.priority }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Technical Feasibility
+
+### Implementation Complexity
+{% if complexity_analysis %}
+- **Overall Complexity**: {{ complexity_analysis.overall_rating }}/10
+- **Technical Risk**: {{ complexity_analysis.technical_risk_level }}
+- **Effort Estimate**: {{ complexity_analysis.effort_estimate }}
+- **Team Skill Match**: {{ complexity_analysis.skill_match_percentage }}%
+
+{% if complexity_analysis.risk_factors %}
+#### Technical Risk Factors
+{% for risk in complexity_analysis.risk_factors %}
+- **{{ risk.category }}**: {{ risk.description }}
+  - **Impact**: {{ risk.potential_impact }}
+  - **Mitigation**: {{ risk.mitigation_strategy }}
+  - **Probability**: {{ risk.probability }}%
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Architecture Alignment
+{% if architecture_alignment %}
+- **System Architecture**: {{ architecture_alignment.system_fit_score }}/10
+- **Design Patterns**: {{ architecture_alignment.pattern_compliance | ternary("Compliant", "Non-compliant") }}
+- **Technology Stack**: {{ architecture_alignment.tech_stack_fit | ternary("Compatible", "Conflicts") }}
+- **Scalability**: {{ architecture_alignment.scalability_score }}/10
+
+{% if architecture_alignment.conflicts %}
+#### Architecture Conflicts
+{% for conflict in architecture_alignment.conflicts %}
+- **Conflict**: {{ conflict.description }}
+  - **Component**: {{ conflict.affected_component }}
+  - **Resolution**: {{ conflict.resolution_approach }}
+  - **Effort**: {{ conflict.resolution_effort }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Dependency Analysis
+{% if dependencies %}
+#### External Dependencies
+{% for dep in dependencies.external %}
+- **{{ dep.name }}**: {{ dep.type }}
+  - **Availability**: {{ dep.availability_status }}
+  - **Version Compatibility**: {{ dep.version_compatibility }}
+  - **Risk Level**: {{ dep.risk_assessment }}
+  - **Alternative**: {{ dep.alternative_options | default("None identified") }}
+{% endfor %}
+
+#### Internal Dependencies
+{% for dep in dependencies.internal %}
+- **{{ dep.component }}**: {{ dep.relationship_type }}
+  - **Readiness**: {{ dep.readiness_status }}
+  - **Owner**: {{ dep.owner_team }}
+  - **Impact**: {{ dep.impact_if_unavailable }}
+{% endfor %}
+{% endif %}
+
+## Consistency & Completeness
+
+### Cross-Reference Analysis
+{% if cross_references %}
+- **Internal Consistency**: {{ cross_references.consistency_score }}/10
+- **Reference Completeness**: {{ cross_references.completeness_score }}/10
+- **Broken References**: {{ cross_references.broken_references_count }}
+
+{% if cross_references.inconsistencies %}
+#### Consistency Issues
+{% for inconsistency in cross_references.inconsistencies %}
+- **Type**: {{ inconsistency.type }}
+  - **Description**: {{ inconsistency.description }}
+  - **Locations**: {{ inconsistency.conflicting_sections | join(", ") }}
+  - **Resolution**: {{ inconsistency.resolution_recommendation }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Completeness Gaps
+{% if completeness_gaps %}
+{% for gap in completeness_gaps %}
+#### {{ gap.category.title() }} Gaps
+{% for item in gap.missing_items %}
+- **Missing**: {{ item.description }}
+  - **Importance**: {{ item.importance_level }}
+  - **Impact**: {{ item.impact_on_project }}
+  - **Effort to Address**: {{ item.effort_estimate }}
+{% endfor %}
+{% endfor %}
+{% else %}
+✅ No significant completeness gaps identified
+{% endif %}
+
+### Stakeholder Alignment
+{% if stakeholder_alignment %}
+- **Business Alignment**: {{ stakeholder_alignment.business_score }}/10
+- **Technical Alignment**: {{ stakeholder_alignment.technical_score }}/10
+- **User Experience Alignment**: {{ stakeholder_alignment.ux_score }}/10
+
+{% if stakeholder_alignment.conflicts %}
+#### Stakeholder Conflicts
+{% for conflict in stakeholder_alignment.conflicts %}
+- **Conflict Area**: {{ conflict.area }}
+  - **Stakeholders**: {{ conflict.conflicting_parties | join(" vs ") }}
+  - **Issue**: {{ conflict.description }}
+  - **Resolution Path**: {{ conflict.resolution_strategy }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Quality & Maintainability
+
+### Documentation Quality
+{% if documentation_quality %}
+- **Clarity Score**: {{ documentation_quality.clarity_score }}/10
+- **Completeness Score**: {{ documentation_quality.completeness_score }}/10
+- **Maintainability Score**: {{ documentation_quality.maintainability_score }}/10
+- **Readability Level**: {{ documentation_quality.readability_level }}
+
+{% if documentation_quality.issues %}
+#### Documentation Issues
+{% for issue in documentation_quality.issues %}
+- **Issue**: {{ issue.type }}
+  - **Section**: {{ issue.section }}
+  - **Description**: {{ issue.description }}
+  - **Improvement**: {{ issue.suggested_improvement }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Testability Assessment
+{% if testability %}
+- **Overall Testability**: {{ testability.overall_score }}/10
+- **Unit Test Coverage Potential**: {{ testability.unit_test_score }}/10
+- **Integration Test Feasibility**: {{ testability.integration_test_score }}/10
+- **E2E Test Complexity**: {{ testability.e2e_test_complexity }}
+
+{% if testability.challenges %}
+#### Testing Challenges
+{% for challenge in testability.challenges %}
+- **Challenge**: {{ challenge.description }}
+  - **Component**: {{ challenge.affected_component }}
+  - **Complexity**: {{ challenge.complexity_level }}
+  - **Workaround**: {{ challenge.testing_workaround }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **Category**: {{ rec.category }}
+  - **Impact**: {{ rec.expected_impact }}
+  - **Effort**: {{ rec.estimated_effort }}
+  - **Dependencies**: {{ rec.dependencies | default("None") }}
+  - **Risk if Ignored**: {{ rec.risk_if_ignored }}
+{% endfor %}
+{% else %}
+✅ No high priority recommendations
+{% endif %}
+
+### Specification Improvements
+{% if spec_improvements %}
+{% for improvement in spec_improvements %}
+- [ ] {{ improvement.description }}
+  - **Section**: {{ improvement.target_section }}
+  - **Type**: {{ improvement.improvement_type }}
+  - **Benefit**: {{ improvement.expected_benefit }}
+  - **Implementation**: {{ improvement.how_to_implement }}
+{% endfor %}
+{% else %}
+✅ Specification quality meets standards
+{% endif %}
+
+### Risk Mitigation
+{% if risk_mitigations %}
+{% for mitigation in risk_mitigations %}
+- [ ] {{ mitigation.action }}
+  - **Risk Addressed**: {{ mitigation.risk_description }}
+  - **Mitigation Strategy**: {{ mitigation.strategy_type }}
+  - **Success Criteria**: {{ mitigation.success_criteria }}
+  - **Timeline**: {{ mitigation.implementation_timeline }}
+{% endfor %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions Required
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("Product Owner") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+   - **Success Criteria**: {{ action.success_criteria }}
+{% endfor %}
+{% else %}
+1. Review and address critical specification issues
+2. Clarify ambiguous requirements
+3. Complete missing sections
+4. Validate with stakeholders
+{% endif %}
+
+### Stakeholder Review
+{% if stakeholder_review %}
+{% for review in stakeholder_review %}
+- [ ] {{ review.stakeholder_group }}: {{ review.review_focus }}
+  - **Timeline**: {{ review.timeline }}
+  - **Method**: {{ review.review_method }}
+  - **Deliverable**: {{ review.expected_outcome }}
+{% endfor %}
+{% endif %}
+
+### Approval Gates
+- [ ] Technical feasibility confirmed
+- [ ] Business requirements validated
+- [ ] Stakeholder sign-off obtained
+- [ ] Implementation plan approved
+- [ ] Resource allocation confirmed
+
+## Review Metadata
+
+**Review Duration**: {{ review_duration | default("N/A") }}
+**Specification Size**: {{ spec_word_count | default("N/A") }} words
+**Requirements Count**: {{ total_requirements | default("N/A") }}
+**Review Type**: {{ review_type | default("Comprehensive Review") }}
+
+{% if reviewer_notes %}
+### Reviewer Notes
+{{ reviewer_notes }}
+{% endif %}
+
+{% if previous_reviews %}
+### Previous Review Comparison
+{% for prev_review in previous_reviews %}
+- **{{ prev_review.date }}**: Quality improved from {{ prev_review.previous_score }}/10 to {{ quality_score }}/10
+  - **Key Changes**: {{ prev_review.key_improvements }}
+{% endfor %}
+{% endif %}
+
+---
+*Generated by SpecifyX Specification Reviewer Agent v{{ agent_version | default("1.0.0") }}*

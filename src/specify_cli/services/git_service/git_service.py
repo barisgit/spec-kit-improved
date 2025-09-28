@@ -104,7 +104,7 @@ class CommandLineGitService(GitService):
                             "git",
                             "commit",
                             "-m",
-                            "Initial commit from SpecifyX template",
+                            "Initial commit from SpecifyX template",  # TODO: Make initial commit message configurable via template config or constants
                         ],
                         cwd=project_path,
                         check=True,
@@ -278,7 +278,12 @@ class CommandLineGitService(GitService):
             if os.name == "nt":  # Windows
                 # On Windows, convert LF to CRLF on checkout, CRLF to LF on commit
                 subprocess.run(
-                    ["git", "config", "core.autocrlf", "true"],
+                    [
+                        "git",
+                        "config",
+                        "core.autocrlf",
+                        "true",
+                    ],  # TODO: Make autocrlf value configurable for different line ending preferences
                     cwd=project_path,
                     check=True,
                     capture_output=True,
@@ -286,7 +291,12 @@ class CommandLineGitService(GitService):
             else:  # Unix-like systems (macOS, Linux)
                 # On Unix, don't convert line endings
                 subprocess.run(
-                    ["git", "config", "core.autocrlf", "false"],
+                    [
+                        "git",
+                        "config",
+                        "core.autocrlf",
+                        "false",
+                    ],  # TODO: Make autocrlf value configurable for different line ending preferences
                     cwd=project_path,
                     check=True,
                     capture_output=True,
@@ -294,7 +304,12 @@ class CommandLineGitService(GitService):
 
             # Set core.safecrlf to warn about line ending issues
             subprocess.run(
-                ["git", "config", "core.safecrlf", "warn"],
+                [
+                    "git",
+                    "config",
+                    "core.safecrlf",
+                    "warn",
+                ],  # TODO: Make safecrlf value configurable via git settings
                 cwd=project_path,
                 check=True,
                 capture_output=True,

@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from rich.console import Console
 
+from specify_cli.core.constants import CONSTANTS
 from specify_cli.models.config import BranchNamingConfig, ProjectConfig, TemplateConfig
-from specify_cli.models.defaults import PATH_DEFAULTS
 from specify_cli.models.project import (
     ProjectInitOptions,
     ProjectInitResult,
@@ -67,17 +67,49 @@ class ProjectManager:
         self._custom_folder_mappings = folder_mappings
 
     def _get_default_folder_mappings(
-        self, ai_assistant: str = "claude"
+        self, ai_assistant: str = "claude", selected_agents: Optional[List[str]] = None
     ) -> List[TemplateFolderMapping]:
         """Get default folder mappings for the specified AI assistant using configuration."""
-        results = PATH_DEFAULTS.get_folder_mappings(ai_assistant)
+        from specify_cli.services.template_registry import TEMPLATE_REGISTRY
+
+        # Get all categories from template registry
+        categories = TEMPLATE_REGISTRY.get_categories()
+        results = []
+
+        for category_info in categories:
+            # Resolve target path using registry
+            target_path = category_info.resolve_target(ai_assistant)
+            if target_path is None:
+                # Skip categories that are disabled for this assistant (e.g., agents for Gemini)
+                continue
+
+            # Create folder mapping result
+            from specify_cli.models.defaults.category_defaults import (
+                FolderMappingResult,
+            )
+
+            result = FolderMappingResult(
+                category=category_info.name,
+                source_path=category_info.source,
+                target_path=target_path,
+                should_render=category_info.render_templates,
+                is_ai_specific=category_info.is_ai_specific,
+            )
+            results.append(result)
 
         mappings: List[TemplateFolderMapping] = []
         for result in results:
+            # Skip agent-prompts category if no agents are selected or specific agents chosen
+            if (
+                result.category == "agent-prompts"
+                and selected_agents is not None
+                and not selected_agents
+            ):  # Empty list means no agents wanted
+                continue
+                # For agent-prompts, we'll handle filtering in the template service
+
             exec_extensions = (
-                PATH_DEFAULTS.EXECUTABLE_EXTENSIONS
-                if result.category == "scripts"
-                else []
+                [".py", ".sh", ".bat", ".ps1"] if result.category == "scripts" else []
             )
 
             mappings.append(
@@ -141,9 +173,10 @@ class ProjectManager:
                     project_path=project_path,
                     branch_naming_config=options.branch_naming_config
                     or BranchNamingConfig(),
+                    selected_agents=options.agents,
                 )
 
-                render_result = self._render_all_templates(context)
+                render_result = self._render_all_templates(context, options.agents)
                 if not render_result.success:
                     warnings.extend(
                         [f"{ai_assistant}: {error}" for error in render_result.errors]
@@ -179,13 +212,16 @@ class ProjectManager:
             )
 
     def _render_all_templates(
-        self, context: TemplateContext, verbose: bool = False
+        self,
+        context: TemplateContext,
+        selected_agents: Optional[List[str]] = None,
+        verbose: bool = False,
     ) -> RenderResult:
         """Render all templates using JinjaTemplateService"""
         # Get folder mappings dynamically based on AI assistant
         folder_mappings = (
             self._custom_folder_mappings
-            or self._get_default_folder_mappings(context.ai_assistant)
+            or self._get_default_folder_mappings(context.ai_assistant, selected_agents)
         )
 
         logging.debug(f"folder_mappings count: {len(folder_mappings)}")
@@ -237,7 +273,31 @@ class ProjectManager:
     def _create_basic_structure(self, project_path: Path, ai_assistant: str) -> None:
         """Create basic project structure"""
         # Get dynamic project structure paths
-        basic_dirs = PATH_DEFAULTS.get_project_structure_paths(ai_assistant)
+        from specify_cli.assistants import get_assistant
+
+        basic_dirs = [
+            CONSTANTS.DIRECTORY.SPECIFY_DIR,
+            CONSTANTS.DIRECTORY.SPECIFY_SCRIPTS_DIR,
+            CONSTANTS.DIRECTORY.SPECIFY_TEMPLATES_DIR,
+            CONSTANTS.DIRECTORY.SPECIFY_MEMORY_DIR,
+        ]
+
+        # Add AI-specific directories based on assistant
+        assistant = get_assistant(ai_assistant)
+        if assistant and assistant.config:
+            # Add base directory
+            basic_dirs.append(assistant.config.base_directory)
+
+            # Add commands directory if it's different from base
+            if (
+                assistant.config.command_files.directory
+                != assistant.config.base_directory
+            ):
+                basic_dirs.append(assistant.config.command_files.directory)
+
+            # Add agents directory if enabled
+            if assistant.config.agent_files:
+                basic_dirs.append(assistant.config.agent_files.directory)
 
         # Create all required directories
         for dir_path in basic_dirs:
@@ -288,9 +348,6 @@ class ProjectManager:
         warnings: List[str],
     ) -> None:
         """Create initial git branch"""
-        # Get default context variables
-        PATH_DEFAULTS.get_default_context_vars(project_path.name)
-
         branch_name = "main"
 
         if self._git_service.create_branch(branch_name, project_path):
