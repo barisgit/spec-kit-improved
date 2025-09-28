@@ -6,12 +6,13 @@ These are NOT user configuration - they are maintainable constants that replace
 hardcoded values throughout the codebase.
 
 Main modules:
-- ai_defaults: AI assistant configurations and directory mappings
-- category_defaults: Template category configurations and folder mappings
-- path_defaults: Template processing, path resolution, and project structure defaults
+- branch_defaults: Branch naming patterns and conventions
+- category_defaults: Template category configurations and folder mappings (deprecated - use TemplateRegistry)
+- path_defaults: Template processing, path resolution, and project structure defaults (deprecated - use TemplateRegistry)
+
+NOTE: ai_defaults has been removed - use the assistant registry instead (specify_cli.assistants)
 """
 
-from .ai_defaults import AI_DEFAULTS, AIAssistant, AIAssistantDefaults
 from .branch_defaults import (
     BRANCH_DEFAULTS,
     BranchNamingDefaults,
@@ -31,9 +32,6 @@ from .path_defaults import (
 )
 
 __all__ = [
-    "AI_DEFAULTS",
-    "AIAssistant",
-    "AIAssistantDefaults",
     "BRANCH_DEFAULTS",
     "BranchNamingDefaults",
     "BranchNamingPattern",

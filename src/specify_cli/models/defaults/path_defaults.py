@@ -17,18 +17,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Final, List, Optional
 
-from .ai_defaults import AI_DEFAULTS
+# Import centralized constants
+from specify_cli.core.constants import CONSTANTS
+
 from .category_defaults import CATEGORY_DEFAULTS, FolderMappingResult
 
-# File permission constants
-EXECUTABLE_PERMISSIONS = 0o755
-REGULAR_FILE_PERMISSIONS = 0o644
+# File permission constants - using centralized constants
+EXECUTABLE_PERMISSIONS = CONSTANTS.FILE.EXECUTABLE_PERMISSIONS
+REGULAR_FILE_PERMISSIONS = CONSTANTS.FILE.REGULAR_FILE_PERMISSIONS
 
-# File extension constants
-TEMPLATE_EXTENSION = ".j2"
-PYTHON_EXTENSION = ".py"
-PYTHON_CACHE_EXTENSION = ".pyc"
-PYTHON_CACHE_DIR = "__pycache__"
+# File extension constants - using centralized constants
+TEMPLATE_EXTENSION = CONSTANTS.FILE.TEMPLATE_J2_EXTENSION
+PYTHON_EXTENSION = CONSTANTS.FILE.PYTHON_EXTENSION
+PYTHON_CACHE_EXTENSION = CONSTANTS.FILE.PYTHON_CACHE_EXTENSION
+PYTHON_CACHE_DIR = CONSTANTS.FILE.PYTHON_CACHE_DIR
 
 
 @dataclass(frozen=True)
@@ -56,8 +58,8 @@ class ProjectContextVars:
 class PathDefaults:
     """Developer defaults for path resolution and folder mappings - packaged with SpecifyX.
 
-    This provides centralized, immutable configuration that works with AI_DEFAULTS
-    to dynamically resolve paths based on the selected AI assistant.
+    This provides centralized, immutable configuration for path resolution
+    and project structure defaults.
     """
 
     # Template root - relative path within the package
@@ -71,6 +73,8 @@ class PathDefaults:
             "memory",
             "runtime_templates",
             "context",
+            "agent-prompts",
+            "agent-templates",
         ]
     )
 
@@ -103,7 +107,7 @@ class PathDefaults:
             date_format="%Y-%m-%d",
             config_directory=".specify",
             spec_type="feature",
-            default_ai_assistant=AI_DEFAULTS.DEFAULT_ASSISTANT,
+            default_ai_assistant="claude",  # Default assistant
         )
     )
 
@@ -158,8 +162,10 @@ class PathDefaults:
         if not ai_assistant:
             ai_assistant = self.PROJECT_DEFAULTS.default_ai_assistant
 
-        # Get the target directory from AI_DEFAULTS
-        target_dir = AI_DEFAULTS.get_target_path_for_category(ai_assistant, category)
+        # Use CATEGORY_DEFAULTS for target path resolution
+        target_dir = CATEGORY_DEFAULTS.resolve_target_for_category(
+            category, ai_assistant
+        )
 
         # Normalize filename (remove .j2 extension)
         filename = self._normalize_filename(template_path.name)
@@ -215,15 +221,20 @@ class PathDefaults:
 
         paths = list(self.BASIC_STRUCTURE)  # Start with basic structure
 
-        # Add AI-specific directories from AI_DEFAULTS
-        assistant = AI_DEFAULTS.get_assistant_by_name(ai_assistant)
-        if assistant:
+        # Add AI-specific directories based on assistant
+        from specify_cli.assistants import get_assistant
+
+        assistant = get_assistant(ai_assistant)
+        if assistant and assistant.config:
             # Add base directory
-            paths.append(assistant.base_directory)
+            paths.append(assistant.config.base_directory)
 
             # Add commands directory if it's different from base
-            if assistant.commands_directory != assistant.base_directory:
-                paths.append(assistant.commands_directory)
+            if (
+                assistant.config.command_files.directory
+                != assistant.config.base_directory
+            ):
+                paths.append(assistant.config.command_files.directory)
         else:
             # Fallback for unknown assistants
             paths.extend(

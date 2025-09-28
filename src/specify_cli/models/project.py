@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .config import BranchNamingConfig, ensure_system_path
-from .defaults import PATH_DEFAULTS
 
 
 @dataclass
@@ -78,7 +77,7 @@ class TemplateContext:
     author_email: str = ""
     creation_date: str = field(
         default_factory=lambda: datetime.now().strftime(
-            PATH_DEFAULTS.PROJECT_DEFAULTS.date_format
+            "%Y-%m-%d"  # Default date format
         )
     )
     creation_year: str = field(default_factory=lambda: str(datetime.now().year))
@@ -89,16 +88,17 @@ class TemplateContext:
 
     # AI assistant configuration (enhanced)
     ai_assistant: str = field(
-        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant
+        default_factory=lambda: "claude"  # Default AI assistant
     )
     ai_context: Dict[str, str] = field(default_factory=dict)
+    selected_agents: List[str] = field(default_factory=list)
 
     # Branch naming configuration (new)
     branch_naming_config: BranchNamingConfig = field(default_factory=BranchNamingConfig)
 
     # Configuration settings (new)
     config_directory: str = field(
-        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory
+        default_factory=lambda: ".specify"  # Default config directory
     )
 
     # Platform information
@@ -112,7 +112,7 @@ class TemplateContext:
     spec_number: str = ""
     spec_title: str = ""
     spec_type: str = field(
-        default_factory=lambda: PATH_DEFAULTS.PROJECT_DEFAULTS.spec_type
+        default_factory=lambda: "feature"  # Default spec type
     )  # feature, bugfix, hotfix, epic
 
     # Backwards compatibility fields for tests
@@ -274,9 +274,9 @@ class TemplateContext:
             project_name=project_name,
             project_description=f"Project: {project_name}",
             author_name="Developer",
-            ai_assistant=PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant,
+            ai_assistant="claude",  # Default AI assistant
             branch_naming_config=BranchNamingConfig(),
-            config_directory=PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory,
+            config_directory=".specify",  # Default config directory
         )
 
 
@@ -315,7 +315,10 @@ class ProjectInitOptions:
 
     project_name: Optional[str] = None
     ai_assistants: List[str] = field(
-        default_factory=lambda: [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
+        default_factory=lambda: ["claude"]  # Default AI assistant list
+    )
+    agents: List[str] = field(
+        default_factory=lambda: ["code-reviewer", "implementer", "test-reviewer"]
     )
     use_current_dir: bool = False
     skip_git: bool = False
@@ -329,7 +332,7 @@ class ProjectInitOptions:
         """Validate and set defaults for project initialization options."""
         # If ai_assistants is explicitly empty, provide default
         if not self.ai_assistants:
-            self.ai_assistants = [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
+            self.ai_assistants = ["claude"]  # Default to claude if empty
 
 
 @dataclass
