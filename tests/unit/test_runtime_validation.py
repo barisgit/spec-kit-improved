@@ -16,7 +16,7 @@ from specify_cli.assistants.types import (
 class TestRuntimeTypeValidation:
     """Test runtime type safety and validation features."""
 
-    def test_assistant_config_runtime_validation(self):
+    def test_assistant_config_runtime_validation(self) -> None:
         """Test that AssistantConfig validates data at runtime."""
         # Valid configuration should work
         valid_config = AssistantConfig(
@@ -59,7 +59,7 @@ class TestRuntimeTypeValidation:
         assert len(error.errors()) > 0
         assert any("name" in str(err) for err in error.errors())
 
-    def test_assistant_config_field_type_validation(self):
+    def test_assistant_config_field_type_validation(self) -> None:
         """Test that field types are validated at runtime."""
         # Invalid base_directory type
         with pytest.raises(ValidationError):
@@ -97,7 +97,7 @@ class TestRuntimeTypeValidation:
                 ),
             )
 
-    def test_assistant_provider_runtime_validation(self):
+    def test_assistant_provider_runtime_validation(self) -> None:
         """Test that assistant providers validate at runtime."""
         # Valid provider should work
         claude_provider = ClaudeProvider()
@@ -110,7 +110,7 @@ class TestRuntimeTypeValidation:
         assert isinstance(config, AssistantConfig)
         assert config.name == "claude"
 
-    def test_injection_values_runtime_validation(self):
+    def test_injection_values_runtime_validation(self) -> None:
         """Test that injection values are validated at runtime."""
         claude_provider = ClaudeProvider()
         injection_values = claude_provider.get_injection_values()
@@ -129,7 +129,7 @@ class TestRuntimeTypeValidation:
             assert isinstance(value, str)
             assert len(value) > 0
 
-    def test_validation_error_messages_are_helpful(self):
+    def test_validation_error_messages_are_helpful(self) -> None:
         """Test that validation errors provide helpful messages."""
         try:
             AssistantConfig(
@@ -154,7 +154,7 @@ class TestRuntimeTypeValidation:
             assert len(error_message) > 0
             assert "name" in error_message.lower()
 
-    def test_immutability_runtime_enforcement(self):
+    def test_immutability_runtime_enforcement(self) -> None:
         """Test that immutability is enforced at runtime."""
         config = AssistantConfig(
             name="claude",
@@ -175,7 +175,7 @@ class TestRuntimeTypeValidation:
         # Verify model is frozen (prevents field modification)
         assert config.model_config.get("frozen", False), "Model should be frozen"
 
-    def test_provider_validation_result_runtime(self):
+    def test_provider_validation_result_runtime(self) -> None:
         """Test that provider validation returns proper results."""
         claude_provider = ClaudeProvider()
         validation_result = claude_provider.validate_setup()
@@ -190,7 +190,7 @@ class TestRuntimeTypeValidation:
         if hasattr(validation_result, "warnings"):
             assert isinstance(validation_result.warnings, list)
 
-    def test_multiple_provider_validation_isolation(self):
+    def test_multiple_provider_validation_isolation(self) -> None:
         """Test that different providers validate independently."""
         claude_provider = ClaudeProvider()
         gemini_provider = GeminiProvider()
@@ -206,7 +206,7 @@ class TestRuntimeTypeValidation:
         assert claude_provider.config != gemini_provider.config
         assert claude_provider.config.name != gemini_provider.config.name
 
-    def test_runtime_validation_performance(self):
+    def test_runtime_validation_performance(self) -> None:
         """Test that runtime validation meets performance targets."""
         import time
 
@@ -239,7 +239,7 @@ class TestRuntimeTypeValidation:
             f"Validation took {avg_time_per_validation:.3f}s, should be under 0.01s"
         )
 
-    def test_validation_with_partial_data(self):
+    def test_validation_with_partial_data(self) -> None:
         """Test validation behavior with minimal required data."""
         # Test with only required fields
         minimal_config = AssistantConfig(
@@ -259,7 +259,7 @@ class TestRuntimeTypeValidation:
         )
         assert minimal_config.name == "claude"
 
-    def test_validation_error_context_preservation(self):
+    def test_validation_error_context_preservation(self) -> None:
         """Test that validation errors preserve context for debugging."""
         try:
             AssistantConfig(

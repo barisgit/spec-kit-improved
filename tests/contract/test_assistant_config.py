@@ -50,6 +50,7 @@ class TestAssistantConfigValidation:
         assert config.context_file.file_format == FileFormat.MARKDOWN
         assert config.command_files.directory == ".claude/commands"
         assert config.command_files.file_format == FileFormat.MARKDOWN
+        assert config.agent_files is not None
         assert config.agent_files.directory == ".claude/agents"
         assert config.agent_files.file_format == FileFormat.MARKDOWN
 

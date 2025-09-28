@@ -49,29 +49,23 @@ pipx install specifyx  # or: pip install specifyx
 
 ## Quick Start
 
-See SpecifyX in action - initialize a new project and start building:
+Get started with SpecifyX in 3 simple steps:
 
 ```bash
-# Create a new project with AI assistant
-specifyx init my-project --ai claude
-cd my-project
+# 1. Install SpecifyX
+uv tool install specifyx
 
-# Or add AI assistants to existing project
-specifyx add-ai claude,copilot
+# 2. Create a new project
+specifyx init my-awesome-project
+cd my-awesome-project
 
-# Check system requirements
-specifyx check
-
-# Traditional workflow (with feature branches)
-specifyx run create-feature "User authentication"
-specifyx run setup-plan setup
-specifyx run generate-tasks
-
-# No-branch workflow (single branch development)
-specifyx run create-feature "User login" --no-branch
-specifyx run setup-plan setup --spec-id 001
-specifyx run generate-tasks --spec-id 001
+# 3. Start building with AI
+# Use /specify command with your AI assistant to create specifications
 ```
+
+**📖 [Complete Quick Start Guide →](https://specifyx.dev/docs/guides/quickstart)**
+
+For detailed instructions, examples, and AI assistant integration, see our comprehensive guide.
 
 <div align="center">
   <p><strong><a href="https://specifyx.dev">Visit specifyx.dev for comprehensive guides and examples</a></strong></p>

@@ -43,20 +43,21 @@ When working on SpecifyX:
 
 ## Documentation Strategy
 
-SpecifyX follows a **docs-by-code** approach where almost all documentation lives alongside the code and is automatically synced to the website:
+SpecifyX uses a hybrid documentation approach with manually maintained guides and auto-generated API reference documentation:
 
-- **Service docs**: Located in `src/specify_cli/services/*/docs.mdx` 
-- **Command docs**: Located in `src/specify_cli/commands/*/docs.mdx`
-- **Guides**: Located in `src/specify_cli/guides/*.mdx`
-- **API reference**: Auto-generated from docstrings and MDX files
+- **User guides**: Located in `docs/docs/guides/` - manually maintained tutorials and how-to guides
+- **Contributing guides**: Located in `docs/docs/contributing/` - manually maintained development guidelines
+- **API reference**: Located in `docs/docs/reference/` - auto-generated from source code using `docs/scripts/generate-metadata.py`
 
-The documentation website automatically includes content from the source tree during build/development. This ensures documentation stays current with code changes and reduces duplication between source and published docs.
+The API reference documentation is automatically generated from Python docstrings, type hints, and code structure. This ensures the reference documentation stays current with code changes without manual maintenance.
 
 **When contributing**:
-- Update MDX files in the source tree, not in `docs/` directory
-- Keep service documentation focused and concise
-- Use docstrings for API documentation
-- The sync process handles publishing to the docs site
+- Edit user guides and contributing docs directly in `docs/docs/` directory
+- Do NOT edit files in `docs/docs/reference/` - these are auto-generated
+- Write comprehensive docstrings in your code - they will appear in the auto-generated API docs
+- Regenerate API docs locally: `cd docs && pnpm dev` or `pnpm generate` (CI auto-syncs during builds)
+- Use `pnpm generate:watch` for continuous regeneration during development
+- Focus on clear, actionable content in both docstrings and manual documentation
 
 ## Resources
 

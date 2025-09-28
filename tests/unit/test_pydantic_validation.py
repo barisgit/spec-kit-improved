@@ -26,7 +26,7 @@ from specify_cli.assistants.types import (
 class TestPydanticValidationBehavior:
     """Test specific Pydantic validation behaviors."""
 
-    def test_field_validation_order(self):
+    def test_field_validation_order(self) -> None:
         """Test that field validations happen in correct order."""
         # Test that regex validation happens before custom validators
         with pytest.raises(ValidationError) as exc_info:
@@ -56,7 +56,7 @@ class TestPydanticValidationBehavior:
             or "string does not match regex" in str(name_errors[0]["msg"]).lower()
         )
 
-    def test_validator_with_missing_dependencies(self):
+    def test_validator_with_missing_dependencies(self) -> None:
         """Test validators when dependent fields are missing."""
         # When base_directory is missing, path validators should not run
         with pytest.raises(ValidationError) as exc_info:
@@ -81,7 +81,7 @@ class TestPydanticValidationBehavior:
         assert len(base_dir_errors) > 0
         assert "missing" in base_dir_errors[0]["type"]
 
-    def test_frozen_model_behavior(self):
+    def test_frozen_model_behavior(self) -> None:
         """Test that frozen=True prevents all modifications."""
         config = AssistantConfig(
             name="claude",
@@ -102,7 +102,7 @@ class TestPydanticValidationBehavior:
         # Verify model is frozen (prevents field modification)
         assert config.model_config.get("frozen", False), "Model should be frozen"
 
-    def test_extra_fields_forbidden_behavior(self):
+    def test_extra_fields_forbidden_behavior(self) -> None:
         """Test extra='forbid' behavior in detail."""
         data = {
             "name": "test",
@@ -126,7 +126,7 @@ class TestPydanticValidationBehavior:
             and "not permitted" in str(extra_errors[0]["msg"]).lower()
         )
 
-    def test_validation_error_details(self):
+    def test_validation_error_details(self) -> None:
         """Test that validation errors provide detailed information."""
         with pytest.raises(ValidationError) as exc_info:
             AssistantConfig(
@@ -160,7 +160,7 @@ class TestPydanticValidationBehavior:
         # The empty strings will trigger validation at the lowest level first
         assert len(error_fields) > 0, "Expected field-level validation errors"
 
-    def test_json_schema_generation(self):
+    def test_json_schema_generation(self) -> None:
         """Test that JSON schema is properly generated."""
         schema = AssistantConfig.model_json_schema()
 
@@ -180,8 +180,16 @@ class TestPydanticValidationBehavior:
         }
         assert set(schema["properties"].keys()) == expected_fields
 
-        # All fields should be required
-        assert set(schema["required"]) == expected_fields
+        # Required fields (agent_files is Optional)
+        required_fields = {
+            "name",
+            "display_name",
+            "description",
+            "base_directory",
+            "context_file",
+            "command_files",
+        }
+        assert set(schema["required"]) == required_fields
 
         # Check specific field constraints
         name_schema = schema["properties"]["name"]
@@ -194,7 +202,7 @@ class TestPydanticValidationBehavior:
 class TestInjectionPointValidation:
     """Test InjectionPoint enum validation and type behavior."""
 
-    def test_injection_point_string_enum_behavior(self):
+    def test_injection_point_string_enum_behavior(self) -> None:
         """Test that InjectionPoint behaves as string enum correctly."""
         point = InjectionPoint.COMMAND_PREFIX
 
@@ -213,7 +221,7 @@ class TestInjectionPointValidation:
         assert point.endswith("_prefix")
         assert "command" in point
 
-    def test_injection_point_enum_membership(self):
+    def test_injection_point_enum_membership(self) -> None:
         """Test enum membership and iteration."""
         # Test iteration
         all_points = list(InjectionPoint.get_members().values())
@@ -227,7 +235,7 @@ class TestInjectionPointValidation:
         assert len(point_set) == 15
         assert InjectionPoint.COMMAND_PREFIX in point_set
 
-    def test_injection_point_comparison(self):
+    def test_injection_point_comparison(self) -> None:
         """Test comparison operations with InjectionPoint."""
         point1 = InjectionPoint.COMMAND_PREFIX
         point2 = InjectionPoint.COMMAND_PREFIX
@@ -242,7 +250,7 @@ class TestInjectionPointValidation:
         assert str(point1) == "assistant_command_prefix"
         assert str(point1) != "assistant_setup_instructions"
 
-    def test_injection_point_constants_validation(self):
+    def test_injection_point_constants_validation(self) -> None:
         """Test that injection point constants are correctly defined."""
         # Check that constants are proper sets
         assert isinstance(REQUIRED_INJECTION_POINTS, set)
@@ -269,7 +277,7 @@ class TestInjectionPointValidation:
             REQUIRED_INJECTION_POINTS.intersection(OPTIONAL_INJECTION_POINTS) == set()
         )
 
-    def test_injection_values_type_alias(self):
+    def test_injection_values_type_alias(self) -> None:
         """Test InjectionValues type alias behavior."""
         # Should be Dict[InjectionPoint, str]
         injection_values: InjectionValues = {
@@ -288,7 +296,7 @@ class TestInjectionPointValidation:
 class TestAssistantConfigEdgeCases:
     """Test edge cases and boundary conditions for AssistantConfig."""
 
-    def test_path_validation_edge_cases(self):
+    def test_path_validation_edge_cases(self) -> None:
         """Test edge cases in path validation."""
         # Test with relative path components
         config = AssistantConfig(
@@ -329,7 +337,7 @@ class TestAssistantConfigEdgeCases:
         )
         assert config.command_files.directory == ".test/commands/"
 
-    def test_unicode_and_special_characters(self):
+    def test_unicode_and_special_characters(self) -> None:
         """Test handling of unicode and special characters."""
         # Unicode in display name and description should work
         config = AssistantConfig(
@@ -368,7 +376,7 @@ class TestAssistantConfigEdgeCases:
                 ),
             )
 
-    def test_path_case_sensitivity(self):
+    def test_path_case_sensitivity(self) -> None:
         """Test path case sensitivity handling."""
         # Case should be preserved (using lowercase to pass validation)
         config = AssistantConfig(
@@ -391,7 +399,7 @@ class TestAssistantConfigEdgeCases:
         assert config.base_directory == ".test"
         assert config.context_file.file == ".test/CONTEXT.md"
 
-    def test_minimum_and_maximum_lengths(self):
+    def test_minimum_and_maximum_lengths(self) -> None:
         """Test exact minimum and maximum length boundaries."""
         # Test minimum lengths (should work)
         config = AssistantConfig(
@@ -434,7 +442,7 @@ class TestAssistantConfigEdgeCases:
         assert len(config.display_name) == 100
         assert len(config.description) == 200
 
-    def test_is_path_managed_edge_cases(self):
+    def test_is_path_managed_edge_cases(self) -> None:
         """Test edge cases for is_path_managed method."""
         config = AssistantConfig(
             name="test",
@@ -474,7 +482,7 @@ class TestAssistantConfigEdgeCases:
             # This behavior may vary by platform
             pass
 
-    def test_get_all_paths_immutability(self):
+    def test_get_all_paths_immutability(self) -> None:
         """Test that get_all_paths returns immutable results."""
         config = AssistantConfig(
             name="test",

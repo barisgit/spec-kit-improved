@@ -12,6 +12,9 @@ format: ## Run Ruff formatter
 format-check: ## Check formatting with Ruff
 	uv run ruff format --check
 
+type-check: ## Run pyrefly type checker
+	uv run pyrefly check
+
 test: ## Run pytest
 	uv run pytest
 
@@ -21,7 +24,7 @@ coverage: ## Run tests with coverage
 pre-commit: ## Run all pre-commit hooks on all files
 	pre-commit run --all-files
 
-all: lint format-check coverage ## Run lint, format-check, and coverage
+all: lint format-check type-check coverage ## Run lint, format-check, type-check, and coverage
 
 ci: ## Run full CI pipeline locally using act
 	@echo "Running full CI pipeline locally..."

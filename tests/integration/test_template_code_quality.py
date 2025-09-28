@@ -19,6 +19,7 @@ import pytest
 from specify_cli.assistants import get_all_assistants
 from specify_cli.models.config import BranchNamingConfig
 from specify_cli.models.project import TemplateContext
+from specify_cli.models.template import GranularTemplate
 from specify_cli.services.template_service import JinjaTemplateService
 
 
@@ -26,12 +27,12 @@ class TestTemplateCodeQuality:
     """Test that all generated template files meet code quality standards."""
 
     @pytest.fixture
-    def template_service(self):
+    def template_service(self) -> JinjaTemplateService:
         """Create a template service for testing."""
         return JinjaTemplateService()
 
     @pytest.fixture
-    def test_contexts(self):
+    def test_contexts(self) -> List[tuple[str, TemplateContext]]:
         """Create test contexts for all AI assistants."""
         contexts = []
         assistants = get_all_assistants()
@@ -56,7 +57,11 @@ class TestTemplateCodeQuality:
 
         return contexts
 
-    def test_all_python_files_are_valid(self, template_service, test_contexts):
+    def test_all_python_files_are_valid(
+        self,
+        template_service: JinjaTemplateService,
+        test_contexts: List[tuple[str, TemplateContext]],
+    ) -> None:
         """Test that all generated Python files are syntactically valid and well-formatted."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -107,7 +112,11 @@ class TestTemplateCodeQuality:
             else:
                 pytest.skip("No Python files generated to validate")
 
-    def test_all_markdown_files_are_valid(self, template_service, test_contexts):
+    def test_all_markdown_files_are_valid(
+        self,
+        template_service: JinjaTemplateService,
+        test_contexts: List[tuple[str, TemplateContext]],
+    ) -> None:
         """Test that all generated Markdown files are well-formed."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -152,7 +161,9 @@ class TestTemplateCodeQuality:
             else:
                 pytest.skip("No Markdown files generated to validate")
 
-    def test_specific_template_quality(self, template_service):
+    def test_specific_template_quality(
+        self, template_service: JinjaTemplateService
+    ) -> None:
         """Test specific templates that are known to generate Python code."""
         python_templates = [
             "scripts/create-feature.py.j2",
@@ -207,9 +218,11 @@ class TestTemplateCodeQuality:
             if generated_files:
                 self._validate_python_files(generated_files)
 
-    def _get_output_path(self, template, assistant_name: str, base_path: Path) -> Path:
+    def _get_output_path(
+        self, template: GranularTemplate, assistant_name: str, base_path: Path
+    ) -> Path:
         """Determine the output path for a rendered template."""
-        template_path = template.template_path
+        template_path = str(template.template_path)
 
         # Remove .j2 extension
         if template_path.endswith(".j2"):
@@ -315,7 +328,7 @@ class TestTemplateCodeQuality:
 class TestSpecificTemplateScenarios:
     """Test specific template scenarios and edge cases."""
 
-    def test_all_ai_assistants_generate_valid_files(self):
+    def test_all_ai_assistants_generate_valid_files(self) -> None:
         """Test that all AI assistants can generate their core files without errors."""
         service = JinjaTemplateService()
         assistants = get_all_assistants()
@@ -353,7 +366,7 @@ class TestSpecificTemplateScenarios:
                     f"No templates were successfully generated for {assistant.config.name}"
                 )
 
-    def test_branch_naming_patterns_work(self):
+    def test_branch_naming_patterns_work(self) -> None:
         """Test that different branch naming patterns work correctly."""
         service = JinjaTemplateService()
 

@@ -10,13 +10,13 @@ from specify_cli.assistants.types import InjectionValues
 class TestInjectionPointEnumValidation:
     """Test enum-based injection point validation features."""
 
-    def test_injection_point_enum_values_are_strings(self):
+    def test_injection_point_enum_values_are_strings(self) -> None:
         """Test that all injection point values are strings."""
         for injection_point in get_all_injection_points():
             assert isinstance(injection_point.name, str)
             assert len(injection_point.name) > 0
 
-    def test_injection_point_enum_names_match_values(self):
+    def test_injection_point_enum_names_match_values(self) -> None:
         """Test that registry attribute names follow consistent naming convention."""
         # Test a few key examples to ensure registry attributes match expected patterns
         assert InjectionPoint.COMMAND_PREFIX.name == "assistant_command_prefix"
@@ -27,7 +27,7 @@ class TestInjectionPointEnumValidation:
         for injection_point in get_all_injection_points():
             assert injection_point.name.startswith("assistant_")
 
-    def test_injection_values_type_validation(self):
+    def test_injection_values_type_validation(self) -> None:
         """Test that InjectionValues type alias enforces string values."""
         # Valid injection values
         valid_values: InjectionValues = {
@@ -46,7 +46,7 @@ class TestInjectionPointEnumValidation:
         for value in valid_values.values():
             assert isinstance(value, str)
 
-    def test_injection_point_membership_validation(self):
+    def test_injection_point_membership_validation(self) -> None:
         """Test membership checks for injection points."""
         # Test valid membership
         assert InjectionPoint.COMMAND_PREFIX in InjectionPoint
@@ -56,7 +56,7 @@ class TestInjectionPointEnumValidation:
         command_prefix_value = InjectionPoint.COMMAND_PREFIX.value
         assert any(ip.value == command_prefix_value for ip in InjectionPoint)
 
-    def test_injection_point_comparison_operations(self):
+    def test_injection_point_comparison_operations(self) -> None:
         """Test comparison operations work correctly."""
         point1 = InjectionPoint.COMMAND_PREFIX
         point2 = InjectionPoint.COMMAND_PREFIX
@@ -72,7 +72,7 @@ class TestInjectionPointEnumValidation:
             point1.value == "assistant_command_prefix"
         )  # Test via .value instead of str()
 
-    def test_injection_point_enum_immutability(self):
+    def test_injection_point_enum_immutability(self) -> None:
         """Test that injection point enums cannot be modified."""
         # The value property is read-only, so attempts to set it should fail
         # This is a design feature to ensure injection points remain immutable
@@ -82,7 +82,7 @@ class TestInjectionPointEnumValidation:
         except AttributeError:
             pass  # Expected behavior
 
-    def test_injection_point_iteration_consistency(self):
+    def test_injection_point_iteration_consistency(self) -> None:
         """Test that iteration over injection points is consistent."""
         points_list1 = list(InjectionPoint)
         points_list2 = list(InjectionPoint)
@@ -90,7 +90,7 @@ class TestInjectionPointEnumValidation:
         assert points_list1 == points_list2
         assert len(points_list1) > 0
 
-    def test_injection_values_dict_key_validation(self):
+    def test_injection_values_dict_key_validation(self) -> None:
         """Test that injection values dictionaries use proper enum keys."""
         # This should work
         valid_dict: InjectionValues = {}
@@ -99,7 +99,7 @@ class TestInjectionPointEnumValidation:
         assert InjectionPoint.COMMAND_PREFIX in valid_dict
         assert valid_dict[InjectionPoint.COMMAND_PREFIX] == "claude "
 
-    def test_injection_point_string_serialization(self):
+    def test_injection_point_string_serialization(self) -> None:
         """Test string serialization and deserialization of injection points."""
         original_point = InjectionPoint.COMMAND_PREFIX
         string_value = str(original_point)
@@ -114,7 +114,7 @@ class TestInjectionPointEnumValidation:
         assert found_point is not None
         assert found_point == original_point
 
-    def test_injection_point_enum_completeness(self):
+    def test_injection_point_enum_completeness(self) -> None:
         """Test that all expected injection points are present."""
         required_points = {
             "assistant_command_prefix",
