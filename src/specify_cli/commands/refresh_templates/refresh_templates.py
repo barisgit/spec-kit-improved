@@ -4,7 +4,7 @@ import difflib
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -12,41 +12,24 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
-from specify_cli.services import (
-    CommandLineGitService,
-    TomlConfigService,
-)
+from specify_cli.services import CommandLineGitService, TomlConfigService
 from specify_cli.services.download_service import HttpxDownloadService
 from specify_cli.services.project_manager import ProjectManager
+from specify_cli.services.template_registry import TEMPLATE_REGISTRY
 from specify_cli.services.template_service import (
-    JinjaTemplateService,
     TemplateChange,
     TemplateChangeType,
     TemplateDiff,
+    get_template_service,
 )
+from specify_cli.utils.ui_helpers import multiselect_agent_types
 
 console = Console()
-
-
-def get_project_manager() -> ProjectManager:
-    """Factory function to create ProjectManager with all dependencies."""
-    config_service = TomlConfigService()
-    git_service = CommandLineGitService()
-
-    return ProjectManager(
-        config_service=config_service,
-        git_service=git_service,
-    )
 
 
 def get_download_service() -> HttpxDownloadService:
     """Factory function to create download service."""
     return HttpxDownloadService(console=console)
-
-
-def get_template_service() -> JinjaTemplateService:
-    """Factory function to create template service."""
-    return JinjaTemplateService()
 
 
 def show_unified_diff(change: "TemplateChange") -> None:
@@ -463,6 +446,11 @@ def refresh_templates_command(
         "-y",
         help="Skip confirmation prompts (not compatible with --per-file)",
     ),
+    agents: Optional[str] = typer.Option(
+        None,
+        "--agents",
+        help="AI agents to include when refreshing (comma-separated): code-reviewer,documentation-reviewer,implementer,spec-reviewer,architecture-reviewer,test-reviewer (interactive multiselect if not specified)",
+    ),
 ) -> None:
     """Refresh project templates from various sources.
 
@@ -479,7 +467,11 @@ def refresh_templates_command(
     which changes to apply. Context files and user data are skipped by default.
     """
     project_path = Path.cwd()
-    project_manager = get_project_manager()
+    config_service = TomlConfigService()
+    git_service = CommandLineGitService()
+    project_manager = ProjectManager(
+        config_service=config_service, git_service=git_service
+    )
     template_service = get_template_service()
 
     # Check if this is a SpecifyX project
@@ -494,6 +486,39 @@ def refresh_templates_command(
     if per_file and yes:
         console.print("[red]Error:[/red] --per-file and --yes cannot be used together")
         raise typer.Exit(1)
+
+    # Parse and validate agent types
+    selected_agents: List[str] = []
+
+    if agents is None:
+        if yes:
+            # Use default agents when --yes flag is used
+            selected_agents = ["code-reviewer", "implementer", "test-reviewer"]
+        else:
+            try:
+                selected_agents = multiselect_agent_types()
+            except KeyboardInterrupt:
+                console.print("[yellow]Template refresh cancelled[/yellow]")
+                raise typer.Exit(0) from None
+    else:
+        # Parse comma-separated list
+        selected_agents = [name.strip() for name in agents.split(",")]
+
+    # Validate agent choices using template registry
+    validation_result = TEMPLATE_REGISTRY.validate_selections(
+        "agent-prompts", selected_agents
+    )
+
+    if not validation_result.is_valid:
+        valid_agents = TEMPLATE_REGISTRY.get_template_names("agent-prompts")
+        console.print(
+            f"[red]Error:[/red] Invalid agent(s): {', '.join(validation_result.invalid_templates)}. Choose from: {', '.join(valid_agents)}"
+        )
+        raise typer.Exit(1)
+
+    if validation_result.has_warnings:
+        for warning in validation_result.warnings:
+            console.print(f"[yellow]Warning:[/yellow] {warning}")
 
     console.print(
         Panel.fit(
@@ -522,7 +547,9 @@ def refresh_templates_command(
             )
             console.print(f"[dim]Debug: Project path: {project_path}[/dim]")
 
-        diff = template_service.compare_templates(project_path, template_dir)
+        diff = template_service.compare_templates(
+            project_path, template_dir, selected_agents
+        )
 
         # Show diff
         show_template_diff(diff, verbosity=verbose, show_skipped=show_skipped)

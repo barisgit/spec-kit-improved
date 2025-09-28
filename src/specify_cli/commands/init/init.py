@@ -9,28 +9,15 @@ from rich.panel import Panel
 from specify_cli.assistants import get_all_assistants, list_assistant_names
 from specify_cli.models.defaults import BRANCH_DEFAULTS
 from specify_cli.models.project import ProjectInitOptions
-from specify_cli.services import (
-    CommandLineGitService,
-    TomlConfigService,
-)
+from specify_cli.services import CommandLineGitService, TomlConfigService
 from specify_cli.services.project_manager import ProjectManager
+from specify_cli.services.template_registry import TEMPLATE_REGISTRY
 from specify_cli.utils.ui import StepTracker
 from specify_cli.utils.ui_helpers import (
+    multiselect_agent_types,
     multiselect_ai_assistants,
     select_branch_naming_pattern,
 )
-
-
-# Initialize services
-def get_project_manager():
-    """Factory function to create ProjectManager with all dependencies."""
-    config_service = TomlConfigService()
-    git_service = CommandLineGitService()
-
-    return ProjectManager(
-        config_service=config_service,
-        git_service=git_service,
-    )
 
 
 def init_command(
@@ -41,6 +28,11 @@ def init_command(
         None,
         "--ai",
         help=f"AI assistant(s) to use (comma-separated): {', '.join(list_assistant_names())} (interactive multiselect if not specified)",
+    ),
+    agents: Optional[str] = typer.Option(
+        None,
+        "--agents",
+        help="AI agents to include (comma-separated): code-reviewer,documentation-reviewer,implementer,spec-reviewer,architecture-reviewer,test-reviewer (interactive multiselect if not specified)",
     ),
     branch_pattern: Optional[str] = typer.Option(
         None,
@@ -107,7 +99,11 @@ def init_command(
 
     # Early check for already initialized directory
     if here and not force:
-        project_manager = get_project_manager()
+        config_service = TomlConfigService()
+        git_service = CommandLineGitService()
+        project_manager = ProjectManager(
+            config_service=config_service, git_service=git_service
+        )
         current_path = Path.cwd()
         if project_manager.is_project_initialized(current_path):
             console.print(
@@ -175,6 +171,39 @@ def init_command(
         )
         raise typer.Exit(1)
 
+    # Parse and validate agent types
+    selected_agents: List[str] = []
+
+    if agents is None:
+        if yes:
+            # Use default agents when --yes flag is used
+            selected_agents = ["code-reviewer", "implementer", "test-reviewer"]
+        else:
+            try:
+                selected_agents = multiselect_agent_types()
+            except KeyboardInterrupt:
+                console.print("[yellow]Setup cancelled[/yellow]")
+                raise typer.Exit(0) from None
+    else:
+        # Parse comma-separated list
+        selected_agents = [name.strip() for name in agents.split(",")]
+
+    # Validate agent choices using template registry
+    validation_result = TEMPLATE_REGISTRY.validate_selections(
+        "agent-prompts", selected_agents
+    )
+
+    if not validation_result.is_valid:
+        valid_agents = TEMPLATE_REGISTRY.get_template_names("agent-prompts")
+        console.print(
+            f"[red]Error:[/red] Invalid agent(s): {', '.join(validation_result.invalid_templates)}. Choose from: {', '.join(valid_agents)}"
+        )
+        raise typer.Exit(1)
+
+    if validation_result.has_warnings:
+        for warning in validation_result.warnings:
+            console.print(f"[yellow]Warning:[/yellow] {warning}")
+
     # Interactive template source selection if not specified via flags
     if not use_remote and remote_repo is None:
         if yes:
@@ -229,7 +258,11 @@ def init_command(
         raise typer.Exit(1)
 
     # Get project manager
-    project_manager = get_project_manager()
+    config_service = TomlConfigService()
+    git_service = CommandLineGitService()
+    project_manager = ProjectManager(
+        config_service=config_service, git_service=git_service
+    )
 
     # Use StepTracker for enhanced progress display
     with StepTracker.create_default("SpecifyX Project Setup") as tracker:
@@ -241,6 +274,7 @@ def init_command(
             options = ProjectInitOptions(
                 project_name=project_name if not here else None,
                 ai_assistants=selected_assistants,
+                agents=selected_agents,
                 use_current_dir=here,
                 skip_git=False,
                 branch_pattern=branch_pattern,

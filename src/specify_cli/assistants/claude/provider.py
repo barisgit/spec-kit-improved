@@ -85,15 +85,21 @@ class ClaudeProvider(AssistantProvider):
     def get_setup_instructions(self) -> List[str]:
         """Return step-by-step setup instructions for Claude."""
         config = self._assistant_config
-        return [
+        instructions = [
             "Install Claude Code CLI from Anthropic",
             "Run 'claude' to start authentication (prompts on first use)",
             "Verify installation with 'claude --version'",
             "Test functionality with 'claude' to start interactive session",
             f"Configure context file at {config.context_file.file} ({config.context_file.file_format.value} format)",
             f"Set up commands directory at {config.command_files.directory} ({config.command_files.file_format.value} format)",
-            f"Create agent files in {config.agent_files.directory} ({config.agent_files.file_format.value} format)",
         ]
+
+        if config.agent_files:
+            instructions.append(
+                f"Create agent files in {config.agent_files.directory} ({config.agent_files.file_format.value} format)"
+            )
+
+        return instructions
 
     @property
     def imports_supported(self) -> bool:

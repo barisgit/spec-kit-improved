@@ -22,17 +22,6 @@ from specify_cli.utils.ui_helpers import select_ai_assistant_for_add
 console = Console()
 
 
-def get_project_manager() -> ProjectManager:
-    """Factory function to create ProjectManager with all dependencies."""
-    config_service = TomlConfigService()
-    git_service = CommandLineGitService()
-
-    return ProjectManager(
-        config_service=config_service,
-        git_service=git_service,
-    )
-
-
 def get_assistant_management_service(
     project_manager: ProjectManager,
 ) -> AssistantManagementService:
@@ -98,7 +87,11 @@ def add_ai_command(
     Use --list to see which assistants are already configured in the current project.
     """
     project_path = Path.cwd()
-    project_manager = get_project_manager()
+    config_service = TomlConfigService()
+    git_service = CommandLineGitService()
+    project_manager = ProjectManager(
+        config_service=config_service, git_service=git_service
+    )
     assistant_service = get_assistant_management_service(project_manager)
 
     # Handle informational options that don't require a SpecifyX project

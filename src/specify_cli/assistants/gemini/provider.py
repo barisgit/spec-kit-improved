@@ -48,9 +48,7 @@ class GeminiProvider(AssistantProvider):
             command_files=TemplateConfig(
                 directory=".gemini/commands", file_format=FileFormat.MARKDOWN
             ),
-            agent_files=TemplateConfig(
-                directory=".gemini/agents", file_format=FileFormat.MARKDOWN
-            ),
+            agent_files=None,
         )
         self._validator = GeminiValidator(self._assistant_config)
 

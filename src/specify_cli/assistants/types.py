@@ -7,7 +7,7 @@ configurations with zero hardcoding and complete type safety using Pydantic.
 
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -95,8 +95,8 @@ class AssistantConfig(BaseModel):
         ..., description="Command files configuration (slash commands to bash scripts)"
     )
 
-    agent_files: TemplateConfig = Field(
-        ..., description="Agent-specific files configuration"
+    agent_files: Optional[TemplateConfig] = Field(
+        None, description="Agent-specific files configuration (None to disable agents)"
     )
 
     @field_validator("display_name")
@@ -149,14 +149,15 @@ class AssistantConfig(BaseModel):
                 f"Commands directory '{self.command_files.directory}' must be under base directory '{self.base_directory}'"
             ) from e
 
-        # Validate agent files directory
-        agent_path = Path(self.agent_files.directory)
-        try:
-            agent_path.relative_to(base_path)
-        except ValueError as e:
-            raise ValueError(
-                f"Agent files directory '{self.agent_files.directory}' must be under base directory '{self.base_directory}'"
-            ) from e
+        # Validate agent files directory (if configured)
+        if self.agent_files:
+            agent_path = Path(self.agent_files.directory)
+            try:
+                agent_path.relative_to(base_path)
+            except ValueError as e:
+                raise ValueError(
+                    f"Agent files directory '{self.agent_files.directory}' must be under base directory '{self.base_directory}'"
+                ) from e
 
         return self
 
@@ -167,12 +168,14 @@ class AssistantConfig(BaseModel):
         Returns:
             Set of all paths for immutable iteration
         """
-        return {
+        paths = {
             self.base_directory,
             self.context_file.file,
             self.command_files.directory,
-            self.agent_files.directory,
         }
+        if self.agent_files:
+            paths.add(self.agent_files.directory)
+        return paths
 
     def is_path_managed(self, path: str) -> bool:
         """
