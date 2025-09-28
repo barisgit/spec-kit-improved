@@ -21,7 +21,7 @@ coverage: ## Run tests with coverage
 pre-commit: ## Run all pre-commit hooks on all files
 	pre-commit run --all-files
 
-all: lint format-check test coverage ## Run lint, format-check, tests, and coverage
+all: lint format-check coverage ## Run lint, format-check, and coverage
 
 ci: ## Run full CI pipeline locally using act
 	@echo "Running full CI pipeline locally..."

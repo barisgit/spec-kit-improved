@@ -1,174 +1,96 @@
-# Tasks: Enhanced Commands and Agent Support System
+# Tasks: Enhanced Commands and Agent Support System (SIMPLIFIED)
 
 **Feature**: Enhanced Commands and Agent Support System (005)
-**Input**: Design documents from `specs/005-feature-enhanced-commands-and-agents/`
-**Prerequisites**: spec.md, plan.md, data-model.md, contracts/
+**Status**: Leveraging Existing Infrastructure - Much Simpler Than Originally Planned!
 
-## Format: `[ID] [P?] Description`
-- **[P]**: Can run in parallel (different files, no dependencies)
-- Include exact file paths in descriptions
+## Analysis Results
+After examining the existing codebase, this feature is **much simpler** than originally planned:
+- ✅ **Slash commands** = Just Jinja2 templates in `templates/commands/` (auto-rendered during init)
+- ✅ **Agent support** = Already exists! Claude provider has `agent_files=TemplateConfig(directory=".claude/agents")`
+- ✅ **Template system** = Robust existing infrastructure with TemplateService
+- ✅ **CLI integration** = Well-established patterns in core/app.py
 
-## Phase 3.1: Setup & Dependencies
-- [ ] T001 Create project structure for new services and commands per plan.md
-- [ ] T002 Add new dependencies to pyproject.toml: enhanced rich features, advanced template processing
-- [ ] T003 [P] Configure new linting rules for agent template validation
-- [ ] T004 [P] Update .gitignore for new .specify/agents/ and .specify/agent-templates/ directories
+## Completed: Phase 3.1 Setup
+- [x] T001 Project structure analysis - excellent existing infrastructure identified
+- [x] T002 Dependencies - no new dependencies needed, rich/jinja2/typer already available
+- [x] T003 Linting - existing ruff configuration sufficient for .j2 templates
+- [x] T004 .gitignore - .specify/ already properly configured
 
-## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+## Phase 3.2: Core Implementation (SIMPLIFIED) ✅ COMPLETED
 
-### Contract Tests (Different Contract Files - Can Run Parallel)
-- [ ] T005 [P] Contract test get-prompt command in tests/contract/test_get_prompt_command.py
-- [ ] T006 [P] Contract test agent template rendering in tests/contract/test_agent_templates.py
-- [ ] T007 [P] Contract test scaffold script generation in tests/contract/test_scaffold_scripts.py
-- [ ] T008 [P] Contract test slash command template generation in tests/contract/test_slash_commands.py
+### Slash Command Templates (Just 3 Jinja2 files - auto-render during init)
+- [x] T005 [P] Create implement.md.j2 slash command template in src/specify_cli/templates/commands/implement.md.j2
+- [x] T006 [P] Create constitution.md.j2 slash command template in src/specify_cli/templates/commands/constitution.md.j2
+- [x] T007 [P] Create guide.md.j2 slash command template in src/specify_cli/templates/commands/guide.md.j2
 
-### Service Tests (Different Service Files - Can Run Parallel)
-- [ ] T009 [P] Service test AgentService in tests/services/test_agent_service.py
-- [ ] T010 [P] Service test PromptService in tests/services/test_prompt_service.py
-- [ ] T011 [P] Service test ImplementService in tests/services/test_implement_service.py
-- [ ] T012 [P] Service test ConstitutionService in tests/services/test_constitution_service.py
+### Agent Prompt Templates (For assistant directories like .claude/agents/ - 6 files)
+- [x] T008 [P] Create code-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/code-reviewer.md.j2
+- [x] T009 [P] Create documentation-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/documentation-reviewer.md.j2
+- [x] T010 [P] Create implementer agent prompt template in src/specify_cli/templates/agent-prompts/implementer.md.j2
+- [x] T011 [P] Create spec-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/spec-reviewer.md.j2
+- [x] T012 [P] Create architecture-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/architecture-reviewer.md.j2
+- [x] T013 [P] Create test-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/test-reviewer.md.j2
 
-### Integration Tests (Complex Workflows)
-- [ ] T013 [P] Integration test full agent workflow (scaffold → populate → read) in tests/integration/test_agent_workflow.py
-- [ ] T014 [P] Integration test implement command execution with task dependencies in tests/integration/test_implement_workflow.py
-- [ ] T015 [P] Integration test constitution command creation and validation in tests/integration/test_constitution_workflow.py
-- [ ] T016 [P] Integration test get-prompt command for all assistant types in tests/integration/test_prompt_generation.py
+### Agent Runtime Templates (For .specify/agent-templates/ - 8 files)
+- [x] T014 [P] Create code-reviewer runtime template in src/specify_cli/templates/agent-templates/code-reviewer.md.j2
+- [x] T015 [P] Create documentation-reviewer runtime template in src/specify_cli/templates/agent-templates/documentation-reviewer.md.j2
+- [x] T016 [P] Create implementer runtime template in src/specify_cli/templates/agent-templates/implementer.md.j2
+- [x] T017 [P] Create spec-reviewer runtime template in src/specify_cli/templates/agent-templates/spec-reviewer.md.j2
+- [x] T018 [P] Create architecture-reviewer runtime template in src/specify_cli/templates/agent-templates/architecture-reviewer.md.j2
+- [x] T019 [P] Create test-reviewer runtime template in src/specify_cli/templates/agent-templates/test-reviewer.md.j2
+- [x] T020 [P] Create generic-agent runtime template in src/specify_cli/templates/agent-templates/generic-agent.md.j2
+- [x] T021 [P] Create context template in src/specify_cli/templates/agent-templates/context.md.j2
 
-## Phase 3.3: Data Models (ONLY after tests are failing)
-- [ ] T017 [P] Implement ImplementationTask model in src/specify_cli/models/implementation_task.py
-- [ ] T018 [P] Implement ProjectConstitution model in src/specify_cli/models/project_constitution.py
-- [ ] T019 [P] Implement AgentTemplate model in src/specify_cli/models/agent_template.py
-- [ ] T020 [P] Implement AgentContext model in src/specify_cli/models/agent_context.py
-- [ ] T021 [P] Implement SystemPromptGuide model in src/specify_cli/models/system_prompt_guide.py
+### Scaffold Script (Main workflow logic)
+- [x] T022 Create scaffold-agent.py script in src/specify_cli/templates/scripts/scaffold-agent.py.j2
 
-## Phase 3.4: Core Services (Dependencies: Data Models Complete)
-- [ ] T022 Implement AgentService in src/specify_cli/services/agent_service/agent_service.py
-- [ ] T023 Implement PromptService in src/specify_cli/services/prompt_service/prompt_service.py
-- [ ] T024 Implement ImplementService in src/specify_cli/services/implement_service/implement_service.py
-- [ ] T025 Implement ConstitutionService in src/specify_cli/services/constitution_service/constitution_service.py
+### Get-Prompt Command (Only real code needed)
+- [x] T023 Create get-prompt command directory src/specify_cli/commands/get_prompt/
+- [x] T024 Implement get-prompt command in src/specify_cli/commands/get_prompt/get_prompt.py
+- [x] T025 Register get-prompt command in src/specify_cli/core/app.py
 
-## Phase 3.5: Commands Implementation (Dependencies: Services Complete)
-- [ ] T026 Implement get-prompt command in src/specify_cli/commands/get_prompt/get_prompt.py
-- [ ] T027 Register get-prompt command in src/specify_cli/core/app.py
-- [ ] T028 [P] Create implement.md.j2 slash command template in src/specify_cli/templates/commands/implement.md.j2
-- [ ] T029 [P] Create constitution.md.j2 slash command template in src/specify_cli/templates/commands/constitution.md.j2
-- [ ] T030 [P] Create guide.md.j2 slash command template in src/specify_cli/templates/commands/guide.md.j2
+### Integration Updates (Leverage existing systems)
+- [x] T026 Update TemplateService folder mappings to include agent-prompts and agent-templates
+- [x] T027 Verify Claude provider agent support works with new templates
 
-## Phase 3.6: Agent Templates System (Dependencies: AgentService Complete)
-- [ ] T031 [P] Create code-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/code-reviewer.md.j2
-- [ ] T032 [P] Create documentation-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/documentation-reviewer.md.j2
-- [ ] T033 [P] Create implementer agent prompt template in src/specify_cli/templates/agent-prompts/implementer.md.j2
-- [ ] T034 [P] Create spec-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/spec-reviewer.md.j2
-- [ ] T035 [P] Create architecture-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/architecture-reviewer.md.j2
-- [ ] T036 [P] Create test-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/test-reviewer.md.j2
+## Phase 3.3: Testing & Validation
+- [ ] T028 [P] Test slash command template rendering during init
+- [ ] T029 [P] Test agent template generation for Claude
+- [ ] T030 [P] Test scaffold-agent.py script functionality
+- [ ] T031 Test get-prompt command for all assistant types
+- [ ] T032 Test complete agent workflow (scaffold → populate → read)
 
-## Phase 3.7: Agent Runtime Templates (Dependencies: Agent Prompt Templates Complete)
-- [ ] T037 [P] Create code-reviewer runtime template in src/specify_cli/templates/agent-templates/code-reviewer.md.j2
-- [ ] T038 [P] Create documentation-reviewer runtime template in src/specify_cli/templates/agent-templates/documentation-reviewer.md.j2
-- [ ] T039 [P] Create implementer runtime template in src/specify_cli/templates/agent-templates/implementer.md.j2
-- [ ] T040 [P] Create spec-reviewer runtime template in src/specify_cli/templates/agent-templates/spec-reviewer.md.j2
-- [ ] T041 [P] Create architecture-reviewer runtime template in src/specify_cli/templates/agent-templates/architecture-reviewer.md.j2
-- [ ] T042 [P] Create test-reviewer runtime template in src/specify_cli/templates/agent-templates/test-reviewer.md.j2
-- [ ] T043 [P] Create generic-agent runtime template in src/specify_cli/templates/agent-templates/generic-agent.md.j2
-- [ ] T044 [P] Create context template in src/specify_cli/templates/agent-templates/context.md.j2
-
-## Phase 3.8: Scaffold Scripts (Dependencies: Runtime Templates Complete)
-- [ ] T045 Create main scaffold-agent.py script in src/specify_cli/templates/scripts/scaffold-agent.py
-- [ ] T046 Create agent interactive selection UI in src/specify_cli/services/agent_service/selection.py
-
-## Phase 3.9: Integration & Configuration (Dependencies: All Templates Complete)
-- [ ] T047 Update AssistantProvider integration for agent support in existing src/specify_cli/assistants/registry.py
-- [ ] T048 Update init command to handle agent template generation in src/specify_cli/commands/init/init.py
-- [ ] T049 Update refresh-templates command for agent templates in src/specify_cli/commands/refresh/refresh.py
-- [ ] T050 Add agent configuration section to default config.toml in src/specify_cli/templates/config/config.toml.j2
-
-## Phase 3.10: Error Handling & Validation
-- [ ] T051 Add task dependency validation in ImplementService task execution
-- [ ] T052 Add template rendering validation for all agent templates
-- [ ] T053 Add error recovery for failed implement command execution
-- [ ] T054 Add constitution conflict detection and resolution
-
-## Phase 3.11: Polish & Documentation
-- [ ] T055 [P] Create comprehensive unit tests for edge cases in tests/unit/
-- [ ] T056 [P] Performance tests for template rendering (<500ms) in tests/performance/test_template_performance.py
-- [ ] T057 [P] Update service documentation in src/specify_cli/services/*/docs.mdx
-- [ ] T058 [P] Update command documentation in src/specify_cli/commands/*/docs.mdx
-- [ ] T059 Run quickstart.md validation scenarios
-- [ ] T060 Remove code duplication and refactor shared utilities
-
-## Dependencies
-**Sequential Dependencies:**
-- Setup (T001-T004) → Tests (T005-T016)
-- Tests (T005-T016) → Models (T017-T021)
-- Models (T017-T021) → Services (T022-T025)
-- Services (T022-T025) → Commands (T026-T030)
-- AgentService (T022) → Agent Templates (T031-T044)
-- Runtime Templates (T037-T044) → Scaffold Scripts (T045-T046)
-- All Templates (T031-T044) → Integration (T047-T050)
-- Integration (T047-T050) → Validation (T051-T054)
-- All Implementation → Polish (T055-T060)
+## Dependencies (Simplified)
+**Sequential:**
+- Setup (T001-T004) → Core Implementation (T005-T027) → Testing (T028-T032)
 
 **Parallel Groups:**
-- Contract Tests: T005-T008 (different contract files)
-- Service Tests: T009-T012 (different service files)
-- Integration Tests: T013-T016 (different workflow files)
-- Data Models: T017-T021 (different model files)
-- Slash Commands: T028-T030 (different template files)
-- Agent Prompt Templates: T031-T036 (different agent files)
-- Agent Runtime Templates: T037-T044 (different template files)
+- **Slash Commands**: T005-T007 (3 different template files)
+- **Agent Prompt Templates**: T008-T013 (6 different template files)
+- **Agent Runtime Templates**: T014-T021 (8 different template files)
+- **Testing**: T028-T032 (different test scenarios)
 
-## Parallel Execution Examples
+## Massive Simplification Notes
+**What we DON'T need** (originally planned but unnecessary):
+- ❌ No separate AgentService, PromptService, ImplementService, ConstitutionService
+- ❌ No data models (ImplementationTask, ProjectConstitution, etc.)
+- ❌ No complex TDD test suites for services that don't exist
+- ❌ No integration layer updates (AssistantProvider already supports agents)
+- ❌ No config.toml updates (existing config sufficient)
 
-### Tests Phase (T005-T016)
-```bash
-# Contract tests - can run all together
-Task: "Contract test get-prompt command in tests/contract/test_get_prompt_command.py"
-Task: "Contract test agent template rendering in tests/contract/test_agent_templates.py"
-Task: "Contract test scaffold script generation in tests/contract/test_scaffold_scripts.py"
-Task: "Contract test slash command template generation in tests/contract/test_slash_commands.py"
+**What we DO need** (actual implementation):
+- ✅ 3 slash command templates (Jinja2 files)
+- ✅ 14 agent templates (6 prompts + 8 runtime templates)
+- ✅ 1 scaffold script (Python with template discovery)
+- ✅ 1 get-prompt command (actual CLI command code)
+- ✅ Small template system integration updates
 
-# Service tests - can run all together
-Task: "Service test AgentService in tests/services/test_agent_service.py"
-Task: "Service test PromptService in tests/services/test_prompt_service.py"
-Task: "Service test ImplementService in tests/services/test_implement_service.py"
-Task: "Service test ConstitutionService in tests/services/test_constitution_service.py"
-```
+**Total**: ~19 template files + 1 Python command + minor integration = **Much simpler than the 60-task original plan!**
 
-### Agent Templates Phase (T031-T036)
-```bash
-# All agent prompt templates - different files, no dependencies
-Task: "Create code-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/code-reviewer.md.j2"
-Task: "Create documentation-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/documentation-reviewer.md.j2"
-Task: "Create implementer agent prompt template in src/specify_cli/templates/agent-prompts/implementer.md.j2"
-Task: "Create spec-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/spec-reviewer.md.j2"
-Task: "Create architecture-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/architecture-reviewer.md.j2"
-Task: "Create test-reviewer agent prompt template in src/specify_cli/templates/agent-prompts/test-reviewer.md.j2"
-```
+## Implementation Strategy
+1. **Create all templates in parallel** (T005-T022) - they're independent Jinja2 files
+2. **Implement get-prompt command** (T023-T025) - standard Typer command
+3. **Update template mappings** (T026-T027) - minor changes to existing system
+4. **Test everything** (T028-T032) - verify templates render and workflow works
 
-## Validation Checklist
-**GATE: Check before marking feature complete**
-
-- [ ] All contract tests have implementation and pass
-- [ ] All data models have corresponding service tests
-- [ ] All tests written before implementation (TDD enforced)
-- [ ] All parallel tasks truly independent (different files)
-- [ ] Each task specifies exact file path
-- [ ] No parallel task modifies same file as another
-- [ ] Agent workflow (scaffold → populate → read) functional
-- [ ] All six agent types properly templated
-- [ ] Assistant integration works for supported assistants
-- [ ] Template rendering performance meets <500ms requirement
-- [ ] All slash commands functional and documented
-- [ ] Error handling comprehensive with recovery guidance
-- [ ] Constitution integration non-conflicting
-- [ ] Cross-platform compatibility maintained
-
-## Implementation Notes
-- Focus on simplicity and reusability over complexity
-- Leverage existing SpecifyX infrastructure (TemplateService, ConfigService, ProjectManager)
-- Each service should be independently testable
-- Agent templates must be valid Jinja2 and render without errors
-- Maintain backward compatibility with existing projects
-- All new commands must integrate with existing CLI structure
-- Follow TDD strictly - no implementation without failing tests first
+The existing SpecifyX infrastructure is so robust that most of this feature "just works" by adding the right template files!
