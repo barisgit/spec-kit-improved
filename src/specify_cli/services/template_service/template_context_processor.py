@@ -13,6 +13,7 @@ import logging
 from typing import Any, Dict
 
 from specify_cli.models.project import TemplateContext
+from specify_cli.utils.security import TemplateSanitizer, TemplateSecurityError
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class TemplateContextProcessor:
 
     def __init__(self):
         """Initialize template context processor."""
-        pass
+        self._sanitizer = TemplateSanitizer()
 
     def prepare_context(self, context: TemplateContext) -> Dict[str, Any]:
         """Prepare context for template rendering.
@@ -51,6 +52,14 @@ class TemplateContextProcessor:
             and context.project_path
         ):
             context_dict = self._add_memory_imports(context_dict, context)
+
+        # Final security validation of the complete context
+        try:
+            context_dict = self._sanitizer.sanitize_context_dict(context_dict)
+        except TemplateSecurityError as e:
+            logger.warning(f"Context sanitization failed: {e}")
+            # Remove potentially dangerous variables but continue
+            context_dict = self._create_safe_fallback_context(context)
 
         return context_dict
 
@@ -151,7 +160,18 @@ class TemplateContextProcessor:
                         if hasattr(injection_point, "name")
                         else str(injection_point)
                     )
-                    context_dict[key_name] = value
+                    # Sanitize injection point values
+                    try:
+                        sanitized_value = self._sanitizer.sanitize_injection_value(
+                            str(value)
+                        )
+                        context_dict[key_name] = sanitized_value
+                    except TemplateSecurityError as e:
+                        logger.warning(
+                            f"Skipping dangerous injection point {key_name}: {e}"
+                        )
+                        # Skip this injection point rather than failing completely
+                        continue
         except Exception as e:
             logger.debug(f"Failed to add assistant injection points: {e}")
 
@@ -190,7 +210,18 @@ class TemplateContextProcessor:
                 )
 
                 if memory_imports:
-                    context_dict["assistant_memory_imports"] = memory_imports
+                    # Sanitize memory imports content
+                    try:
+                        sanitized_imports = self._sanitizer.sanitize_injection_value(
+                            memory_imports
+                        )
+                        context_dict["assistant_memory_imports"] = sanitized_imports
+                    except TemplateSecurityError as e:
+                        logger.warning(f"Memory imports contain dangerous content: {e}")
+                        # Provide safe fallback
+                        context_dict["assistant_memory_imports"] = (
+                            "# Memory imports disabled due to security validation"
+                        )
         except Exception as e:
             logger.debug(f"Failed to add memory imports: {e}")
 
@@ -230,3 +261,30 @@ class TemplateContextProcessor:
             )
 
         return context_dict
+
+    def _create_safe_fallback_context(self, context: TemplateContext) -> Dict[str, Any]:
+        """Create a safe fallback context when sanitization fails.
+
+        Args:
+            context: Original template context
+
+        Returns:
+            Safe minimal context dictionary
+        """
+        safe_context = {
+            "project_name": getattr(context, "project_name", "unknown"),
+            "ai_assistant": getattr(context, "ai_assistant", "unknown"),
+            "creation_date": getattr(context, "creation_date", "unknown"),
+            "author": getattr(context, "author", "unknown"),
+            "security_warning": "Template context was sanitized due to security validation",
+        }
+
+        # Only include safe string values
+        for key, value in safe_context.items():
+            if isinstance(value, str) and len(value) <= 100:
+                try:
+                    safe_context[key] = self._sanitizer.sanitize_injection_value(value)
+                except TemplateSecurityError:
+                    safe_context[key] = "sanitized"
+
+        return safe_context

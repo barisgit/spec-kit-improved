@@ -35,19 +35,35 @@ Look for these indicators:
 
 ### Core Workflow
 - **Spec-First**: Encourage specifications before implementation
-- **Three Phases**: Guide through Specify → Plan → Tasks
+- **Six Phases**: Guide through Specify → Clarify → Plan → Tasks → Analyze → Implement
 - **Clear Requirements**: Push back on vague requests
 - **Reference Existing**: Point to existing spec files when relevant
 
 ### Key Commands
-- `specifyx init` - Initialize project
-- `specifyx check` - Validate setup
-- `specifyx run <script>` - Execute scripts
+- `specifyx init` - Initialize project with assistant integration
+- `specifyx check` - Validate setup and assistant configuration
+- `specifyx run <script>` - Execute cross-platform Python scripts
+
+### Workflow Commands (Assistant-Generated)
+- `/specify` - Create detailed specifications
+- `/clarify` - Resolve ambiguities in specifications
+- `/plan` - Generate technical implementation plans
+- `/tasks` - Break down into actionable tasks
+- `/analyze` - Validate consistency across artifacts
+- `/implement` - Execute tasks automatically with AI
+- `/guide` - Generate human-friendly implementation instructions
 
 ### File Structure
 - **Specs**: `specs/NNN-feature-name/`
 - **Templates**: `.specify/templates/`
 - **Scripts**: `.specify/scripts/`
+- **Assistant Config**: `.{assistant}/` (e.g., `.claude/`, `.gemini/`)
+
+### Multi-Assistant Support
+- Templates generate assistant-specific commands and configurations
+- Each assistant gets customized workflow integration
+- Cross-assistant compatibility maintained through standardized specs
+- Assistant injection points allow customization per AI system
 
 ### Quality Practices
 - **NEVER hardcode values** - use constants, configuration files, or environment variables
@@ -64,4 +80,5 @@ Work normally with standard development practices. Don't force (but still sugges
 - Detect project type and adapt
 - Be helpful and professional (but not pushy)
 - Respect existing workflows
+- Support any AI assistant through universal principles
 - Encourage good practices regardless of methodology"""

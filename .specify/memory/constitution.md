@@ -4,7 +4,7 @@
 ## Core Principles
 
 ### I. Spec-Driven Development
-Every feature starts with a specification; Implementation follows the three-phase lifecycle: Specify → Plan → Tasks; No code without user-approved specifications; Clear acceptance criteria required for all features.
+Every feature starts with a specification; Implementation follows the six-phase lifecycle: Specify → Clarify → Plan → Tasks → Analyze → Implement; No code without user-approved specifications; Clear acceptance criteria required for all features.
 
 ### II. Template-Based Consistency  
 All specifications, plans, and tasks follow standardized templates; Jinja2 templates ensure consistent variable substitution; Project structure maintained across all features; Documentation generated from templates stays current.
@@ -13,7 +13,7 @@ All specifications, plans, and tasks follow standardized templates; Jinja2 templ
 TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced; Integration tests required for new services and API changes; Contract tests validate all external interfaces.
 
 ### IV. AI Assistant Integration
-Claude Code commands (specify, plan, tasks) drive the workflow; Python scripts provide cross-platform reliability; Generated commands integrate seamlessly with Claude's capabilities; All templates support Claude-specific features and syntax.
+AI assistant commands (specify, clarify, plan, tasks, analyze, implement, guide) drive the workflow; Python scripts provide cross-platform reliability; Generated commands integrate seamlessly with any AI assistant's capabilities; All templates support assistant-specific features and syntax.
 
 
 ### V. Cross-Platform Python Implementation

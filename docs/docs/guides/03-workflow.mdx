@@ -10,11 +10,14 @@ This guide covers the complete specification-driven development workflow using S
 
 ## Overview
 
-SpecifyX follows a structured three-phase development process:
+SpecifyX follows a structured six-phase development process with quality gates:
 
 1. **Specify** - Define what to build
-2. **Plan** - Design how to build it  
-3. **Tasks** - Break down into executable tasks
+2. **Clarify** - Resolve ambiguities and missing details
+3. **Plan** - Design how to build it
+4. **Tasks** - Break down into executable tasks
+5. **Analyze** - Validate consistency before implementation
+6. **Implement** - Execute tasks with guidance or automation
 
 ## Phase 1: Specification
 
@@ -46,7 +49,42 @@ Each specification includes:
 - **Include edge cases** and error scenarios
 - **Define success criteria** clearly
 
-## Phase 2: Planning
+## Phase 2: Clarification
+
+The clarification phase resolves ambiguities and missing details before moving to technical planning.
+
+### Interactive Specification Refinement
+
+Use the `/clarify` command to identify and resolve ambiguities:
+
+```bash
+specifyx run check-prerequisites --json --paths-only
+```
+
+This will:
+- Analyze your specification for ambiguous requirements
+- Ask up to 5 targeted clarification questions
+- Update the spec file with your answers
+- Ensure all requirements are testable and unambiguous
+
+### Clarification Areas
+
+The clarification process covers:
+
+- **Functional scope** - Clear boundaries and out-of-scope declarations
+- **Data model** - Entity relationships and validation rules
+- **User experience** - Critical user journeys and error states
+- **Non-functional requirements** - Performance, security, scalability targets
+- **Edge cases** - Error handling and failure scenarios
+
+### Best Practices
+
+- **Answer all clarification questions** before proceeding to planning
+- **Be specific** about measurable criteria
+- **Define edge cases** explicitly
+- **Clarify terminology** to avoid confusion
+
+## Phase 3: Planning
 
 The planning phase translates specifications into technical implementation plans.
 
@@ -72,7 +110,7 @@ This generates:
 - **API Design** - Endpoints and interfaces
 - **Security Considerations** - Authentication, authorization, data protection
 
-## Phase 3: Task Generation
+## Phase 4: Task Generation
 
 The task phase breaks down the implementation plan into actionable development tasks.
 
@@ -98,15 +136,101 @@ Tasks are organized by:
 - **Complexity** - Effort estimation
 - **Testing** - Validation requirements
 
+## Phase 5: Quality Analysis
+
+The analysis phase validates consistency and quality across all artifacts before implementation begins.
+
+### Cross-Artifact Analysis
+
+Use the `/analyze` command to validate your specifications, plans, and tasks:
+
+```bash
+specifyx run check-prerequisites --json --require-tasks --include-tasks
+```
+
+This performs:
+- **Consistency checking** across spec.md, plan.md, and tasks.md
+- **Coverage analysis** ensuring all requirements have corresponding tasks
+- **Constitution compliance** validation against project principles
+- **Ambiguity detection** flagging unclear or underspecified items
+- **Duplication identification** finding redundant requirements
+
+### Quality Gates
+
+The analysis validates:
+
+- **Requirements coverage** - Every requirement maps to implementation tasks
+- **Constitutional alignment** - All plans follow project principles
+- **Terminology consistency** - Same concepts use consistent naming
+- **Dependency validation** - Task ordering respects dependencies
+- **Completeness** - No missing critical components
+
+### Remediation
+
+Before proceeding to implementation:
+- **Resolve CRITICAL issues** - Fix constitution violations and coverage gaps
+- **Address HIGH priority** - Clear ambiguities and conflicts
+- **Document decisions** - Update specs/plans based on analysis findings
+
+## Phase 6: Implementation
+
+The implementation phase executes the validated tasks using either automated tools or human-friendly guidance.
+
+### Implementation Approaches
+
+Choose your implementation style:
+
+#### Automated Implementation (`/implement`)
+```bash
+/implement Execute the task list automatically using AI-driven development
+```
+
+Use when:
+- Tasks are well-defined and specific
+- Working on standard patterns and structures
+- Want rapid prototyping or scaffolding
+- Have comprehensive test coverage
+
+#### Guided Implementation (`/guide`)
+```bash
+/guide Provide structured instructions for manual execution of tasks
+```
+
+Use when:
+- Tasks require human judgment or creativity
+- Working with complex business logic
+- Need to understand implementation details
+- Prefer step-by-step manual control
+
+### Implementation Best Practices
+
+- **Follow TDD cycle** - Tests first, then implementation
+- **Execute tasks in order** - Respect dependencies and priorities
+- **Validate continuously** - Run tests after each task completion
+- **Update documentation** - Keep plans and specs current with changes
+- **Constitutional compliance** - Ensure all implementations follow project principles
+
+### Quality Assurance
+
+During implementation:
+- **Run tests frequently** - Validate each completed task
+- **Review against specs** - Ensure implementation matches requirements
+- **Performance validation** - Meet non-functional requirements
+- **Security review** - Validate security requirements are met
+
 ## AI Assistant Integration
 
 SpecifyX generates AI-specific commands for your preferred assistant:
 
-### Claude Commands
+### Available Commands
 
 - `/specify` - Create detailed specifications
+- `/clarify` - Resolve ambiguities in specifications
 - `/plan` - Generate technical implementation plans
 - `/tasks` - Break down into actionable tasks
+- `/analyze` - Validate consistency across artifacts
+- `/implement` - Execute tasks automatically with AI
+- `/guide` - Generate human-friendly implementation instructions
 
 ### Workflow Integration
 

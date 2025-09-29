@@ -27,8 +27,10 @@ from specify_cli.core.constants import CONSTANTS
 from specify_cli.models.defaults.path_defaults import PATH_DEFAULTS
 from specify_cli.models.project import TemplateContext
 from specify_cli.services.template_registry import TEMPLATE_REGISTRY
+from specify_cli.utils.security import TemplateSecurityError, TemplateSecurityValidator
 
 from .models import RenderResult
+from .template_context_processor import TemplateContextProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,8 @@ class TemplateRenderer:
     def __init__(self):
         """Initialize template renderer."""
         self._console = Console()
+        self._security_validator = TemplateSecurityValidator()
+        self._context_processor = TemplateContextProcessor()
 
     def render_template(
         self, template: Template, context: TemplateContext, template_name: str = ""
@@ -79,8 +83,41 @@ class TemplateRenderer:
         context_dict = self._prepare_context(context)
 
         try:
-            # Render the template
-            rendered_content = template.render(context_dict)
+            # Security validation before rendering
+            try:
+                # Get template source for validation
+                template_source = getattr(template, "source", "")
+                if hasattr(template, "environment") and hasattr(
+                    template.environment, "get_template"
+                ):
+                    # For templates loaded from environment, we can't easily get source
+                    # So we'll validate the context only
+                    sanitized_context = (
+                        self._security_validator.sanitizer.sanitize_context_dict(
+                            context_dict
+                        )
+                    )
+                else:
+                    # For direct template strings, validate both template and context
+                    sanitized_context = (
+                        self._security_validator.sanitizer.sanitize_context_dict(
+                            context_dict
+                        )
+                    )
+                    if template_source:
+                        self._security_validator.sanitizer.validate_template_complexity(
+                            template_source
+                        )
+
+            except TemplateSecurityError as e:
+                error_msg = f"Security validation failed for {template_name}: {str(e)}"
+                logger.warning(error_msg)
+                return TemplateRenderResult(
+                    template_name=template_name, success=False, error=error_msg
+                )
+
+            # Render the template with sanitized context
+            rendered_content = template.render(sanitized_context)
             return TemplateRenderResult(
                 template_name=template_name, success=True, content=rendered_content
             )
@@ -136,8 +173,8 @@ class TemplateRenderer:
         Returns:
             Enhanced context dictionary
         """
-        # Start with base context attributes
-        context_dict = self._extract_context_attributes(context)
+        # Use the context processor for consistent context preparation
+        context_dict = self._context_processor.prepare_context(context)
 
         # Add platform-specific variables
         context_dict.update(self._get_platform_context())
@@ -300,15 +337,68 @@ class TemplateRenderer:
                                     : -len(CONSTANTS.FILE.TEMPLATE_J2_EXTENSION)
                                 ]
 
-                        output_file = target_path / output_name
+                        # Security validation for file operations
+                        try:
+                            safe_output_name = self._security_validator.path_validator.sanitize_filename(
+                                output_name
+                            )
+                            output_file = target_path / safe_output_name
+
+                            if not self._security_validator.path_validator.validate_safe_path(
+                                target_path.parent, output_file
+                            ):
+                                error_msg = (
+                                    f"Unsafe output path for {item.name}: {output_file}"
+                                )
+                                result.errors.append(error_msg)
+                                if verbose:
+                                    self._console.print(
+                                        f"[red]Security Error:[/red] {error_msg}"
+                                    )
+                                continue
+
+                            if safe_output_name != output_name and verbose:
+                                self._console.print(
+                                    f"[yellow]Filename sanitized:[/yellow] {output_name} → {safe_output_name}"
+                                )
+
+                        except TemplateSecurityError as e:
+                            error_msg = f"Path security validation failed for {item.name}: {str(e)}"
+                            result.errors.append(error_msg)
+                            if verbose:
+                                self._console.print(
+                                    f"[red]Security Error:[/red] {error_msg}"
+                                )
+                            continue
 
                         if verbose:
                             self._console.print(
                                 f"[green]Rendering:[/green] {item.name} → {output_name}"
                             )
 
-                        render_context = self._prepare_context(context)
-                        rendered = template.render(**render_context)
+                        # Secure template rendering
+                        try:
+                            render_context = self._prepare_context(context)
+                            sanitized_context = (
+                                self._security_validator.validate_template_render(
+                                    template_content,
+                                    render_context,
+                                    output_file,
+                                    target_path,
+                                )
+                            )
+                            rendered = template.render(**sanitized_context)
+                        except TemplateSecurityError as e:
+                            error_msg = (
+                                f"Security validation failed for {item.name}: {str(e)}"
+                            )
+                            result.errors.append(error_msg)
+                            if verbose:
+                                self._console.print(
+                                    f"[red]Security Error:[/red] {error_msg}"
+                                )
+                            continue
+
                         output_file.write_text(rendered, encoding="utf-8")
 
                         if TEMPLATE_REGISTRY.should_be_executable(output_file):

@@ -37,11 +37,14 @@ Choose your path to get started with SpecifyX:
 
 Specification-Driven Development **flips the script** on traditional software development. Instead of code being king, **specifications become executable**, directly generating working implementations through AI assistants.
 
-### The 3-Phase Process
+### The 6-Phase Process
 
 1. **Specify** - Define what to build using `/specify` commands
-2. **Plan** - Design how to build it using `/plan` commands  
-3. **Tasks** - Break down into actionable tasks using `/tasks` commands
+2. **Clarify** - Resolve ambiguities using `/clarify` commands
+3. **Plan** - Design how to build it using `/plan` commands
+4. **Tasks** - Break down into actionable tasks using `/tasks` commands
+5. **Analyze** - Validate consistency using `/analyze` commands
+6. **Implement** - Execute tasks using `/implement` or `/guide` commands
 
 ## Key Features
 

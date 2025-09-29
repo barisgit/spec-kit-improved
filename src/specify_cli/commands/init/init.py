@@ -567,7 +567,9 @@ def init_command(
             steps_lines.append("   • Run gemini /specify for specifications")
         if "copilot" in selected_assistants:
             steps_lines.append(f"{step_num}. Use GitHub Copilot in your IDE")
-            steps_lines.append("   • Use /specify, /plan, /tasks commands")
+            steps_lines.append(
+                "   • Use /specify, /clarify, /plan, /tasks, /analyze, /implement commands"
+            )
 
         steps_lines.append(
             f"{step_num + 1}. Update [bold magenta]CONSTITUTION.md[/bold magenta] with your project's principles"

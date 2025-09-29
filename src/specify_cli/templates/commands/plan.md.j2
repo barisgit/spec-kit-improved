@@ -1,13 +1,13 @@
 ---
 name: plan
-description: "Plan how to implement the specified feature. This is the second step in the Spec-Driven Development lifecycle."
+description: "Plan how to implement the specified feature. This is the third step in the Spec-Driven Development lifecycle."
 ai_assistant: "{{ ai_assistant }}"
 command_prefix: "{{ assistant_command_prefix if assistant_command_prefix else '' }}"
 ---
 
 Plan how to implement the specified feature.
 
-This is the second step in the Spec-Driven Development lifecycle.
+This is the third step in the Spec-Driven Development lifecycle.
 
 Given the implementation details provided as an argument, do this:
 
@@ -67,3 +67,8 @@ Use absolute paths with the repository root for all file operations to avoid pat
 
 **Command Prefix:** `{{ assistant_command_prefix }}`
 {% endif %}
+
+**Next Steps After Planning:**
+- **Continue workflow**: Use `/tasks` to break down plans into executable tasks (auto-detect from branch)
+- **No-branch workflow**: Use `/tasks` with `--spec-id` parameter if working on main branch
+- **Review plans**: Re-run `/clarify` if implementation planning reveals new ambiguities in requirements
