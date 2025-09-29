@@ -31,7 +31,7 @@ Choose your path to get started with SpecifyX:
 - **[Development Workflow](./guides/workflow)** - Complete specification-driven development process
 
 ### Reference Documentation
-- **[CLI Reference](./reference/cli/init)** - Command-line interface documentation
+- **[API Reference](./reference/)** - Auto-generated API documentation
 
 ## What is Specification-Driven Development?
 

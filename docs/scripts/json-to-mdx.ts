@@ -139,8 +139,8 @@ function sanitizeContent(content: string): string {
     .replace(/0x[0-9a-f]+/g, '...')
     // Wrap remaining angle bracket content in code
     .replace(/<([^>]+)>/g, '`<$1>`')
-    // Wrap curly braces in code
-    .replace(/\{([^}]+)\}/g, '`{$1}`')
+    // Wrap curly braces in code - escape for MDX safety
+    .replace(/\{([^}]+)\}/g, '`\\{$1\\}`')
     // Handle markdown links - validate and clean
     .replace(/\[([^\]]*)\]\(([^)]*)\)/g, (match, text, url) => {
       // Check if it's a relative link that starts with ../ (going up directories)
@@ -162,7 +162,7 @@ function sanitizeSignature(signature: string): string {
   return signature
     .replace(/0x[0-9a-f]+/g, '...')  // Replace memory addresses
     .replace(/<([^>]+)>/g, '`<$1>`')  // Wrap angle bracket content in code
-    .replace(/\{([^}]+)\}/g, '`{$1}`'); // Wrap curly braces in code
+    .replace(/\{([^}]+)\}/g, '`\\{$1\\}`'); // Wrap curly braces in code - escape for MDX safety
 }
 
 function cleanModuleName(moduleName: string): string {
@@ -612,7 +612,7 @@ ${categories.map(cat => {
 
 ---
 
-*Generated on ${new Date().toISOString()} from ${metadata.project.name} v${metadata.project.version}*
+*Generated on ${new Date().toISOString()} from ${metadata.project.name}*
 `;
 
     await writeFile(join(outputDir, 'docs/reference/index.mdx'), mainIndexContent, 'utf-8');

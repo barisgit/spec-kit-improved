@@ -144,7 +144,7 @@ const config: Config = {
             },
             {
               label: 'Reference',
-              to: '/docs/reference/cli/init',
+              to: '/docs/reference/',
             },
           ],
         },
