@@ -399,7 +399,8 @@ class TemplateRenderer:
                                 )
                             continue
 
-                        output_file.write_text(rendered, encoding="utf-8")
+                        if output_name and output_name not in result.rendered_files:
+                            output_file.write_text(rendered, encoding="utf-8")
 
                         if TEMPLATE_REGISTRY.should_be_executable(output_file):
                             output_file.chmod(CONSTANTS.FILE.EXECUTABLE_PERMISSIONS)

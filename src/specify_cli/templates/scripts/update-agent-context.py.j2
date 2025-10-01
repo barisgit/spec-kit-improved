@@ -247,20 +247,6 @@ def main(
         for assistant_name in target_assistants:
             echo_debug(f"Processing assistant: {assistant_name}", debug)
 
-            # Validate assistant type
-            if assistant_name != "{{ ai_assistant }}" and assistant:
-                if json_output:
-                    print(
-                        json.dumps(
-                            {"error": f"Unsupported assistant type: {assistant_name}"}
-                        )
-                    )
-                else:
-                    echo_error(
-                        f"This script is configured for {{ ai_assistant }}, but processing {assistant_name}"
-                    )
-                continue
-
             # Get context file path from assistant registry (no hardcoding!)
             try:
                 assistant_provider = get_assistant(assistant_name)

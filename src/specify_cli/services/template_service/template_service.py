@@ -80,19 +80,22 @@ class JinjaTemplateService(TemplateService):
         """Load template package for specified AI assistant"""
         try:
             if not template_dir.exists() or not template_dir.is_dir():
+                logging.warning("Template directory does not exist: %s", template_dir)
                 return False
 
             # Check if directory contains template files
-            template_files = list(
+            has_templates = any(
                 template_dir.glob(f"*{CONSTANTS.FILE.TEMPLATE_J2_EXTENSION}")
             )
-            if not template_files:
-                # Also check for templates without .j2 extension
-                template_files = [
-                    f
+            if not has_templates:
+                # Also check for plain files if policy permits
+                has_templates = any(
+                    f.is_file() and not f.name.startswith(".")
                     for f in template_dir.iterdir()
-                    if f.is_file() and not f.name.startswith(".")
-                ]
+                )
+            if not has_templates:
+                logging.warning("No templates found in %s", template_dir)
+                return False
 
             self._template_dir = template_dir
             self._ai_assistant = ai_assistant
@@ -113,6 +116,11 @@ class JinjaTemplateService(TemplateService):
             return self._loader.load_template_package(ai_assistant, template_dir)
 
         except Exception:
+            logging.exception(
+                "Failed to load template package for %s from %s",
+                ai_assistant,
+                template_dir,
+            )
             return False
 
     def render_template(
@@ -284,7 +292,10 @@ class JinjaTemplateService(TemplateService):
     def load_template(self, template_name: str) -> GranularTemplate:
         """Load individual template object"""
         # Use fallback implementation for now
-        search_name = template_name.replace(CONSTANTS.FILE.TEMPLATE_J2_EXTENSION, "")
+        if template_name.endswith(CONSTANTS.FILE.TEMPLATE_J2_EXTENSION):
+            search_name = template_name[: -len(CONSTANTS.FILE.TEMPLATE_J2_EXTENSION)]
+        else:
+            search_name = template_name
         templates = self.discover_templates()
         template = next((t for t in templates if t.name == search_name), None)
 
@@ -970,6 +981,7 @@ class JinjaTemplateService(TemplateService):
         ai_assistants: List[str],
         project_name: str,
         branch_pattern: str,
+        selected_agents: Optional[List[str]] = None,
     ) -> RenderResult:
         """Render templates from a given path for multiple AI assistants"""
         from specify_cli.services.project_manager import ProjectManager
@@ -993,9 +1005,21 @@ class JinjaTemplateService(TemplateService):
                     ai_assistant=ai_assistant,
                     project_path=destination_path,
                     branch_naming_config=BranchNamingConfig(),
+                    selected_agents=selected_agents or [],
                 )
 
-                folder_mappings = manager._get_default_folder_mappings(ai_assistant)
+                # Filter agent-specific templates if selected_agents provided
+                if selected_agents:
+                    folder_mappings = [
+                        mapping
+                        for mapping in manager._get_default_folder_mappings(
+                            ai_assistant
+                        )
+                        if mapping.source not in ["agent-prompts", "agent-templates"]
+                        or any(agent in mapping.source for agent in selected_agents)
+                    ]
+                else:
+                    folder_mappings = manager._get_default_folder_mappings(ai_assistant)
 
                 result = self.render_all_templates_from_mappings(
                     folder_mappings, context, verbose=True

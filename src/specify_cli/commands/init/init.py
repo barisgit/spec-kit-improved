@@ -395,6 +395,7 @@ def init_command(
                                     ai_assistants=selected_assistants,
                                     project_name=project_name or project_path.name,
                                     branch_pattern=branch_pattern,
+                                    selected_agents=selected_agents,
                                 )
 
                                 if template_result and template_result.success:

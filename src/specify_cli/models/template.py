@@ -193,10 +193,10 @@ class TemplatePackage:
         """Validate AI assistant is supported"""
         from specify_cli.assistants import list_assistant_names
 
-        valid_assistants = set(list_assistant_names())
-        if self.ai_assistant not in valid_assistants:
+        valid_assistants = {name.lower() for name in list_assistant_names()}
+        if self.ai_assistant.lower() not in valid_assistants:
             raise ValueError(
-                f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"
+                f"ai_assistant must be one of {sorted(valid_assistants)}, got: {self.ai_assistant}"
             )
 
     def _validate_templates(self) -> None:

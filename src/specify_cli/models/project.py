@@ -163,6 +163,7 @@ class TemplateContext:
             # AI assistant configuration
             "ai_assistant": self.ai_assistant,
             "ai_context": self.ai_context.copy(),
+            "selected_agents": self.selected_agents.copy(),
             # Branch naming configuration
             "branch_naming_config": self.branch_naming_config.to_dict(),
             # Configuration settings
@@ -204,6 +205,7 @@ class TemplateContext:
             "creation_year",
             "ai_assistant",
             "ai_context",
+            "selected_agents",
             "branch_naming_config",
             "config_directory",
             "git_remote_url",
@@ -255,6 +257,7 @@ class TemplateContext:
             creation_year=self.creation_year,
             ai_assistant=self.ai_assistant,
             ai_context=self.ai_context.copy(),
+            selected_agents=self.selected_agents.copy(),
             branch_naming_config=self.branch_naming_config,
             config_directory=self.config_directory,
             git_remote_url=self.git_remote_url,

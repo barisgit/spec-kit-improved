@@ -9,7 +9,7 @@ with proper enum-based validation and manipulation.
 import re
 from typing import Dict, List, Optional, Set
 
-from specify_cli.core.constants import Constants
+from specify_cli.core.constants import CONSTANTS
 
 from .injection_points import (
     InjectionPoint,
@@ -85,11 +85,11 @@ def validate_injection_values(
     long_values = [
         p.name
         for p, v in injection_values.items()
-        if len(v) > Constants.VALIDATION.MAX_INJECTION_VALUE_LENGTH
+        if len(v) > CONSTANTS.VALIDATION.MAX_INJECTION_VALUE_LENGTH
     ]
     if long_values:
         errors.append(
-            f"Injection point values exceed maximum length ({Constants.VALIDATION.MAX_INJECTION_VALUE_LENGTH}): {long_values}"
+            f"Injection point values exceed maximum length ({CONSTANTS.VALIDATION.MAX_INJECTION_VALUE_LENGTH}): {long_values}"
         )
 
     return errors
@@ -155,4 +155,4 @@ def validate_injection_point_name(name: str) -> bool:
         >>> validate_injection_point_name("assistant_")
         False
     """
-    return bool(re.match(Constants.ASSISTANT.INJECTION_POINT_NAME_PATTERN, name))
+    return bool(re.match(CONSTANTS.ASSISTANT.INJECTION_POINT_NAME_PATTERN, name))
