@@ -18,6 +18,8 @@ import httpx
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from specify_cli.core.constants import CONSTANTS
+
 
 class DownloadService(ABC):
     """Abstract base class for download services."""
@@ -113,7 +115,7 @@ class HttpxDownloadService(DownloadService):
     def __init__(
         self,
         console: Optional[Console] = None,
-        timeout: int = 30,
+        timeout: int = CONSTANTS.NETWORK.DEFAULT_REQUEST_TIMEOUT,
         default_repo_owner: str = "barisgit",
         default_repo_name: str = "spec-kit-improved",
     ):
@@ -151,7 +153,10 @@ class HttpxDownloadService(DownloadService):
             return False
 
     def download_github_repo(
-        self, repo_url: str, destination_path: Path, _branch: str = "main"
+        self,
+        repo_url: str,
+        destination_path: Path,
+        _branch: str = CONSTANTS.DOWNLOAD.DEFAULT_BRANCH,
     ) -> bool:
         """Download a GitHub repository to the specified destination.
 
@@ -247,10 +252,7 @@ class HttpxDownloadService(DownloadService):
 
             # Find the generic template asset (single package for all AI assistants)
             # Look for specifyx-templates or spec-kit-template patterns
-            patterns = [
-                "specifyx-templates",  # New SpecifyX format
-                "spec-kit-template",  # Generic format
-            ]
+            patterns = CONSTANTS.DOWNLOAD.EXPECTED_TEMPLATE_ASSETS
 
             matching_assets = []
             for pattern in patterns:
@@ -318,7 +320,9 @@ class HttpxDownloadService(DownloadService):
                 with open(destination, "wb") as f:
                     if total_size == 0:
                         # No content-length header, download without progress
-                        for chunk in response.iter_bytes(chunk_size=8192):
+                        for chunk in response.iter_bytes(
+                            chunk_size=8192
+                        ):  # TODO: Make download chunk size configurable for performance tuning
                             f.write(chunk)
                     else:
                         # Show progress bar
@@ -356,7 +360,12 @@ class HttpxDownloadService(DownloadService):
             # Determine archive type and extract
             if archive_path.suffix.lower() == ".zip":
                 return self._extract_zip(archive_path, destination_path)
-            elif archive_path.suffix.lower() in [".tar", ".tar.gz", ".tgz", ".tar.bz2"]:
+            elif archive_path.suffix.lower() in [
+                ".tar",
+                ".tar.gz",
+                ".tgz",
+                ".tar.bz2",
+            ]:  # TODO: Make supported archive formats configurable
                 return self._extract_tar(archive_path, destination_path)
             else:
                 self.console.print(
@@ -467,7 +476,10 @@ class HttpxDownloadService(DownloadService):
             return False, f"Template path is not a directory: {template_path}"
 
         # Basic validation - check for common template files
-        expected_files = ["README.md", "CONSTITUTION.md"]
+        expected_files = [
+            "README.md",
+            "CONSTITUTION.md",
+        ]  # TODO: Make expected template validation files configurable
         missing_files = []
 
         for expected_file in expected_files:

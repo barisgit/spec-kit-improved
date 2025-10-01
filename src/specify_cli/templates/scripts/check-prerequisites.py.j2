@@ -271,9 +271,7 @@ def check(
                         break
                     except (OSError, MemoryError) as e:
                         success = False
-                        result = {
-                            "error": f"Failed to read {contract_file}: {e}"
-                        }
+                        result = {"error": f"Failed to read {contract_file}: {e}"}
                         break
 
         # Output results

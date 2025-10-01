@@ -124,9 +124,9 @@ class GranularTemplate:
 
         # AI-aware templates are designed to work with all supported AI assistants
         # through conditional logic ({% if ai_assistant == 'claude' %}, etc.)
-        from .defaults.ai_defaults import AI_DEFAULTS
+        from specify_cli.assistants import list_assistant_names
 
-        supported_assistants = set(AI_DEFAULTS.get_all_assistant_names())
+        supported_assistants = set(list_assistant_names())
         return ai_assistant.lower() in supported_assistants
 
     def to_dict(self) -> Dict[str, Any]:
@@ -191,12 +191,12 @@ class TemplatePackage:
 
     def _validate_ai_assistant(self) -> None:
         """Validate AI assistant is supported"""
-        from .defaults.ai_defaults import AI_DEFAULTS
+        from specify_cli.assistants import list_assistant_names
 
-        valid_assistants = set(AI_DEFAULTS.get_all_assistant_names())
-        if self.ai_assistant not in valid_assistants:
+        valid_assistants = {name.lower() for name in list_assistant_names()}
+        if self.ai_assistant.lower() not in valid_assistants:
             raise ValueError(
-                f"ai_assistant must be one of {valid_assistants}, got: {self.ai_assistant}"
+                f"ai_assistant must be one of {sorted(valid_assistants)}, got: {self.ai_assistant}"
             )
 
     def _validate_templates(self) -> None:

@@ -31,17 +31,20 @@ Choose your path to get started with SpecifyX:
 - **[Development Workflow](./guides/workflow)** - Complete specification-driven development process
 
 ### Reference Documentation
-- **[CLI Reference](./reference/cli/init)** - Command-line interface documentation
+- **[API Reference](./reference/)** - Auto-generated API documentation
 
 ## What is Specification-Driven Development?
 
 Specification-Driven Development **flips the script** on traditional software development. Instead of code being king, **specifications become executable**, directly generating working implementations through AI assistants.
 
-### The 3-Phase Process
+### The 6-Phase Process
 
 1. **Specify** - Define what to build using `/specify` commands
-2. **Plan** - Design how to build it using `/plan` commands  
-3. **Tasks** - Break down into actionable tasks using `/tasks` commands
+2. **Clarify** - Resolve ambiguities using `/clarify` commands
+3. **Plan** - Design how to build it using `/plan` commands
+4. **Tasks** - Break down into actionable tasks using `/tasks` commands
+5. **Analyze** - Validate consistency using `/analyze` commands
+6. **Implement** - Execute tasks using `/implement` or `/guide` commands
 
 ## Key Features
 

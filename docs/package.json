@@ -5,7 +5,7 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "pnpm sync && docusaurus build",
+    "build": "pnpm generate && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -14,10 +14,9 @@
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
     "test": "vitest",
-    "sync": "tsx scripts/sync-docs.ts sync",
-    "sync:watch": "tsx scripts/sync-docs.ts watch",
-    "sync:clean": "tsx scripts/sync-docs.ts clean",
-    "dev": "concurrently \"pnpm sync:watch\" \"docusaurus start\" --names \"sync,docs\" --prefix-colors \"blue,green\""
+    "generate": "uv run scripts/generate-metadata.py && tsx scripts/json-to-mdx.ts",
+    "generate:watch": "tsx scripts/generate-watch.ts",
+    "dev": "concurrently \"pnpm run generate:watch\" \"docusaurus start\" --names \"docs,serve\" --prefix-colors \"cyan,green\""
   },
   "dependencies": {
     "@docusaurus/core": "3.8.1",
@@ -35,6 +34,7 @@
     "@docusaurus/tsconfig": "3.8.1",
     "@docusaurus/types": "3.8.1",
     "@types/node": "^24.3.1",
+    "chalk": "^5.3.0",
     "chokidar": "^4.0.3",
     "concurrently": "^9.2.1",
     "glob": "^11.0.3",

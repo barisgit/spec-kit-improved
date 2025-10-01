@@ -1,0 +1,61 @@
+---
+description: Generate structured human instructions for manual task execution as an alternative to automated /implement
+scripts:
+  python: scripts/check_implementation_prerequisites.py --json
+---
+
+Given the current feature context, do this:
+
+1. Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
+
+2. Load and analyze the implementation context:
+   - **REQUIRED**: Read tasks.md for the complete task list and execution plan
+   - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **IF EXISTS**: Read data-model.md for entities and relationships
+   - **IF EXISTS**: Read contracts/ for API specifications and test requirements
+   - **IF EXISTS**: Read research.md for technical decisions and constraints
+   - **IF EXISTS**: Read quickstart.md for integration scenarios
+
+3. Parse tasks.md structure and extract:
+   - **Task phases**: Setup, Tests, Core, Integration, Polish
+   - **Task dependencies**: Sequential vs parallel execution rules
+   - **Task details**: ID, description, file paths, parallel markers [P]
+   - **Manual complexity**: Identify tasks requiring human judgment vs automatable tasks
+
+4. Generate structured human-readable instructions:
+   - **Phase organization**: Group tasks by logical implementation phases
+   - **Dependency guidance**: Clear ordering with "Prerequisites" sections
+   - **Parallel opportunities**: Mark tasks that can be done simultaneously
+   - **Command examples**: Provide specific CLI commands where applicable
+   - **Validation steps**: Include checkpoints after each major phase
+   - **Context switching**: Minimize cognitive load between different types of work
+
+5. Human instruction formatting:
+   - **Checklist format**: Each task as a checkable item
+   - **Estimated effort**: Time estimates for planning purposes
+   - **Skill requirements**: Note if tasks require specific expertise
+   - **Tool requirements**: List necessary development tools
+   - **Reference links**: Point to relevant documentation or examples
+
+6. Generate guide sections:
+   - **Overview**: High-level summary of what will be built
+   - **Prerequisites**: Tools, knowledge, and setup required
+   - **Phase-by-phase instructions**: Detailed step-by-step guidance
+   - **Troubleshooting**: Common issues and solutions
+   - **Validation**: How to verify each phase is complete
+   - **Resources**: Links to documentation and examples
+
+7. Output format options:
+   - **Markdown checklist**: Default format for easy tracking
+   - **Detailed guide**: Extended version with explanations
+   - **Quick reference**: Condensed version for experienced developers
+   - **Printable format**: Version optimized for offline reference
+
+8. Create the human implementation guide:
+   - Write to `{FEATURE_DIR}/implementation-guide.md`
+   - Include progress tracking checkboxes
+   - Provide estimated timeline
+   - Add troubleshooting section
+   - Include validation criteria for each phase
+
+Note: This command provides a human-centric alternative to automated implementation, suitable for complex tasks requiring creativity, judgment, or when automation is not feasible.

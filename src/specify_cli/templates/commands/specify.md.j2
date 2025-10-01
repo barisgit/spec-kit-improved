@@ -32,8 +32,9 @@ Given the feature description provided as an argument, do this:
 4. Report completion with branch name, spec file path, and readiness for the next phase.
 
 **Next Steps After Specification:**
-- **Traditional workflow**: Use `/plan` and `/tasks` commands (auto-detect from branch)
-- **No-branch workflow**: Use `/plan` and `/tasks` with `--spec-id` parameter from the JSON output above
+- **Recommended workflow**: Use `/clarify` to resolve ambiguities, then `/plan` and `/tasks` commands (auto-detect from branch)
+- **Skip clarification**: Use `/plan` directly if specification is very clear (auto-detect from branch)
+- **No-branch workflow**: Use `/clarify` then `/plan` and `/tasks` with `--spec-id` parameter from the JSON output above
 
 Note: The `specifyx run create-feature` command creates and checks out the new branch and initializes the spec file before writing. Use `--no-branch` to skip branch creation and work on the current branch.
 

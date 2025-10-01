@@ -105,7 +105,7 @@ environment = "development"
         self,
         config_service: ConfigService,
         complex_project_structure: Tuple[Path, Path],
-    ):
+    ) -> None:
         """Test loading complex nested TOML configuration"""
         project_root, global_root = complex_project_structure
 
@@ -237,7 +237,9 @@ environment = "development"
             if "HOME" in os.environ:
                 del os.environ["HOME"]
 
-    def test_configuration_validation_workflow(self, config_service: ConfigService):
+    def test_configuration_validation_workflow(
+        self, config_service: ConfigService
+    ) -> None:
         """Test configuration validation in complete workflow"""
         # Test valid branch patterns
         valid_patterns = [
@@ -281,7 +283,9 @@ environment = "development"
             assert isinstance(error, str)
             assert len(error) > 0
 
-    def test_branch_name_expansion_workflow(self, config_service: ConfigService):
+    def test_branch_name_expansion_workflow(
+        self, config_service: ConfigService
+    ) -> None:
         """Test branch name expansion with various patterns and contexts"""
         test_cases: List[Dict[str, Any]] = [
             {

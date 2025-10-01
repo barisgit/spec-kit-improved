@@ -28,12 +28,12 @@ from specify_cli.assistants.types import (
 class TestAbstractBaseClassEnforcement:
     """Test that ABC contracts are properly enforced."""
 
-    def test_assistant_provider_is_abstract(self):
+    def test_assistant_provider_is_abstract(self) -> None:
         """Test that AssistantProvider cannot be instantiated directly."""
         with pytest.raises(TypeError):
             AssistantProvider()
 
-    def test_assistant_provider_has_required_methods(self):
+    def test_assistant_provider_has_required_methods(self) -> None:
         """Test that AssistantProvider defines required abstract methods."""
         # Check that these methods exist and are abstract
         assert hasattr(AssistantProvider, "config")
@@ -51,7 +51,7 @@ class TestAbstractBaseClassEnforcement:
             AssistantProvider.get_setup_instructions, "__isabstractmethod__", False
         )
 
-    def test_concrete_implementations_must_implement_all_methods(self):
+    def test_concrete_implementations_must_implement_all_methods(self) -> None:
         """Test that concrete implementations must implement all abstract methods."""
 
         class IncompleteProvider(AssistantProvider):
@@ -122,12 +122,16 @@ class TestConcreteProviderCompliance:
             GeminiProvider(),
         ]
 
-    def test_all_providers_are_assistant_providers(self, providers):
+    def test_all_providers_are_assistant_providers(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that all providers inherit from AssistantProvider."""
         for provider in providers:
             assert isinstance(provider, AssistantProvider)
 
-    def test_all_providers_implement_config_property(self, providers):
+    def test_all_providers_implement_config_property(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that all providers implement config property correctly."""
         for provider in providers:
             config = provider.config
@@ -140,9 +144,13 @@ class TestConcreteProviderCompliance:
             assert config.base_directory
             assert config.context_file.file
             assert config.command_files.directory
-            assert config.agent_files.directory
+            # agent_files is optional - only check if present
+            if config.agent_files:
+                assert config.agent_files.directory
 
-    def test_all_providers_implement_get_injection_values(self, providers):
+    def test_all_providers_implement_get_injection_values(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that all providers implement get_injection_values correctly."""
         for provider in providers:
             injections = provider.get_injection_values()
@@ -161,13 +169,17 @@ class TestConcreteProviderCompliance:
                 # Note: Some assistants like Cursor may have empty command prefix (no CLI)
                 # We validate presence but allow empty values for specific assistants
 
-    def test_all_providers_implement_validate_setup(self, providers):
+    def test_all_providers_implement_validate_setup(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that all providers implement validate_setup correctly."""
         for provider in providers:
             result = provider.validate_setup()
             assert isinstance(result, ValidationResult)
 
-    def test_injection_values_type_safety(self, providers):
+    def test_injection_values_type_safety(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that injection values conform to type annotations."""
         for provider in providers:
             injections = provider.get_injection_values()
@@ -179,7 +191,9 @@ class TestConcreteProviderCompliance:
                 assert isinstance(key, InjectionPointMeta)
                 assert isinstance(value, str)
 
-    def test_config_validation_consistency(self, providers):
+    def test_config_validation_consistency(
+        self, providers: List[AssistantProvider]
+    ) -> None:
         """Test that config validation is consistent with provider validation."""
         for provider in providers:
             config = provider.config
@@ -201,7 +215,9 @@ class TestInjectionValueValidation:
         """Sample provider for testing."""
         return ClaudeProvider()
 
-    def test_required_injection_points_present(self, sample_provider):
+    def test_required_injection_points_present(
+        self, sample_provider: ClaudeProvider
+    ) -> None:
         """Test that required injection points are always present."""
         injections = sample_provider.get_injection_values()
 
@@ -215,14 +231,18 @@ class TestInjectionValueValidation:
             assert point in injections
             assert injections[point]  # Non-empty
 
-    def test_injection_values_are_strings(self, sample_provider):
+    def test_injection_values_are_strings(
+        self, sample_provider: ClaudeProvider
+    ) -> None:
         """Test that all injection values are strings."""
         injections = sample_provider.get_injection_values()
 
         for value in injections.values():
             assert isinstance(value, str)
 
-    def test_injection_keys_are_valid_enum_values(self, sample_provider):
+    def test_injection_keys_are_valid_enum_values(
+        self, sample_provider: ClaudeProvider
+    ) -> None:
         """Test that all injection keys are valid InjectionPoint enum values."""
         injections = sample_provider.get_injection_values()
 
@@ -231,7 +251,7 @@ class TestInjectionValueValidation:
         for key in injections:
             assert key in valid_points
 
-    def test_no_empty_injection_values(self, sample_provider):
+    def test_no_empty_injection_values(self, sample_provider: ClaudeProvider) -> None:
         """Test that injection values are not empty or whitespace-only."""
         injections = sample_provider.get_injection_values()
 
@@ -242,7 +262,7 @@ class TestInjectionValueValidation:
 class TestProviderIsolation:
     """Test that providers are properly isolated from each other."""
 
-    def test_providers_have_different_configs(self):
+    def test_providers_have_different_configs(self) -> None:
         """Test that different providers have different configurations."""
         providers = [
             ClaudeProvider(),
@@ -261,7 +281,7 @@ class TestProviderIsolation:
         base_dirs = [config.base_directory for config in configs]
         assert len(set(base_dirs)) == len(base_dirs)
 
-    def test_providers_have_different_injections(self):
+    def test_providers_have_different_injections(self) -> None:
         """Test that different providers have different injection values."""
         providers = [
             ClaudeProvider(),
@@ -279,7 +299,7 @@ class TestProviderIsolation:
         # All prefixes should be unique
         assert len(set(prefixes)) == len(prefixes)
 
-    def test_provider_modifications_dont_affect_others(self):
+    def test_provider_modifications_dont_affect_others(self) -> None:
         """Test that modifying one provider doesn't affect others."""
         provider1 = ClaudeProvider()
         provider2 = ClaudeProvider()
@@ -303,13 +323,17 @@ class TestMethodReturnTypes:
         """Sample provider for testing."""
         return ClaudeProvider()
 
-    def test_config_property_returns_assistant_config(self, provider):
+    def test_config_property_returns_assistant_config(
+        self, provider: ClaudeProvider
+    ) -> None:
         """Test that config property returns AssistantConfig."""
         config = provider.config
         assert isinstance(config, AssistantConfig)
         assert type(config) is AssistantConfig
 
-    def test_get_injections_returns_injection_values(self, provider):
+    def test_get_injections_returns_injection_values(
+        self, provider: ClaudeProvider
+    ) -> None:
         """Test that get_injections returns InjectionValues (dict)."""
         injections = provider.get_injection_values()
         assert isinstance(injections, dict)
@@ -319,7 +343,9 @@ class TestMethodReturnTypes:
             assert isinstance(key, InjectionPointMeta)
             assert isinstance(value, str)
 
-    def test_validate_setup_returns_validation_result(self, provider):
+    def test_validate_setup_returns_validation_result(
+        self, provider: ClaudeProvider
+    ) -> None:
         """Test that validate_setup returns ValidationResult."""
         result = provider.validate_setup()
         assert isinstance(result, ValidationResult)

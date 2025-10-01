@@ -226,9 +226,10 @@ class AssistantManagementService:
         commands_dir = config.command_files.directory
         files.append(f"{commands_dir}/")
 
-        # Agents directory (will contain multiple files)
-        agents_dir = config.agent_files.directory
-        files.append(f"{agents_dir}/")
+        # Agents directory (will contain multiple files) - only if enabled
+        if config.agent_files:
+            agents_dir = config.agent_files.directory
+            files.append(f"{agents_dir}/")
 
         return files
 

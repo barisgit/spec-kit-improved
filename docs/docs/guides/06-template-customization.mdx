@@ -1,0 +1,211 @@
+---
+title: Template Customization
+description: Learn to customize runtime and agent templates in SpecifyX
+category: guide
+sidebar_label: Template Customization
+tags: [templates, jinja2, customization, ai-assistant]
+---
+
+# Template Customization
+
+SpecifyX allows you to customize two types of templates to fit your project workflow and AI assistant preferences.
+
+## What You Can Customize
+
+### 1. Runtime Templates
+These templates define the structure of your specifications, plans, and tasks. Located in your project's `.specify/templates/` directory.
+
+**Available Runtime Templates:**
+- `spec-template.md.j2` - Feature specification structure
+- `plan-template.md.j2` - Implementation plan format
+- `tasks-template.md.j2` - Task breakdown template
+
+### 2. Agent Templates
+These templates generate AI assistant-specific prompt files. Located in `src/specify_cli/templates/agent-templates/`.
+
+## Customizing Runtime Templates
+
+Runtime templates are copied to your project during `specifyx init` and can be freely modified.
+
+### Project Template Structure
+```
+.specify/
+└── templates/
+    ├── spec-template.md.j2
+    ├── plan-template.md.j2
+    ├── tasks-template.md.j2
+    ├── ...
+```
+
+### Example: Customizing Specification Template
+
+Edit `.specify/templates/spec-template.md.j2`:
+
+```jinja2
+# Feature Specification: {{ feature_name | default('[FEATURE NAME]') }}
+
+**Feature Branch**: `{{ branch_name | default('[###-feature-name]') }}`
+**Created**: {{ date | default('[DATE]') }}
+**Author**: {{ template_variables.author_name | default('[AUTHOR]') }}
+
+## Overview
+{{ feature_description | default('[Describe what this feature does and why it\'s needed]') }}
+
+## User Stories
+
+### Primary User Story
+As a [user type], I want [goal] so that [benefit].
+
+## Requirements
+- **FR-001**: System MUST [capability]
+- **FR-002**: Users MUST be able to [action]
+
+{% if template_variables.include_security_section %}
+## Security Considerations
+- Authentication requirements
+- Authorization rules
+- Data protection needs
+{% endif %}
+
+## Success Criteria
+- [ ] [Measurable outcome]
+- [ ] [User feedback metric]
+
+## Implementation Notes
+{% if ai_assistant == 'claude' %}
+- Use Claude Code subagents for complex implementations
+- Leverage `/tasks` command to break down work
+{% elif ai_assistant == 'gemini' %}
+- Use Gemini Code for implementation assistance
+{% elif ai_assistant == 'copilot' %}
+- Use GitHub Copilot for code completion
+{% endif %}
+```
+
+### Available Template Variables
+
+**Built-in Variables:**
+- `project_name` - Current project name
+- `feature_name` - Current feature name
+- `branch_name` - Current branch name
+- `date` - Current date (YYYY-MM-DD)
+- `ai_assistant` - Selected AI assistant (claude, gemini, copilot)
+- `feature_description` - User-provided feature description
+
+**Custom Variables from `.specify/config.toml`:**
+- `template_variables.author_name` - Your name
+- `template_variables.company_name` - Your company
+- `template_variables.include_security_section` - Boolean for security sections
+- Any other variables you define in config
+
+### Configuration Example
+
+Add custom variables in `.specify/config.toml`:
+
+```toml
+[template_variables]
+author_name = "Your Name"
+company_name = "Your Company"
+include_security_section = true
+default_tech_stack = "Python + FastAPI"
+include_api_design = true
+```
+
+Use in templates:
+```jinja2
+**Author**: {{ template_variables.author_name | default('[AUTHOR]') }}
+**Company**: {{ template_variables.company_name | default('[COMPANY]') }}
+
+{% if template_variables.include_api_design %}
+## API Design
+[API endpoints and design]
+{% endif %}
+```
+
+## Customizing Agent Templates
+
+Agent templates generate AI assistant-specific files and are modified in the SpecifyX source code.
+
+### When to Customize Agent Templates
+- Adding support for a new AI assistant
+- Modifying prompts for existing assistants
+- Customizing agent behavior and instructions
+
+### Agent Template Structure
+```
+src/specify_cli/templates/agent-templates/
+├── claude/
+│   ├── agent-prompt.md.j2
+│   └── commands.md.j2
+├── gemini/
+│   ├── agent-prompt.md.j2
+│   └── commands.md.j2
+└── copilot/
+    ├── agent-prompt.md.j2
+    └── commands.md.j2
+```
+
+## Template Syntax (Jinja2)
+
+### Conditionals
+```jinja2
+{% if ai_assistant == 'claude' %}
+Use Claude Code specific instructions
+{% elif ai_assistant == 'gemini' %}
+Use Gemini specific instructions
+{% else %}
+Use generic instructions
+{% endif %}
+```
+
+### Defaults for Missing Variables
+```jinja2
+{{ feature_name | default('[FEATURE NAME]') }}
+{{ template_variables.author_name | default('[AUTHOR]') }}
+```
+
+### Text Transformations
+```jinja2
+{{ feature_name | title }}     <!-- Title Case -->
+{{ feature_name | lower }}     <!-- lowercase -->
+{{ feature_name | upper }}     <!-- UPPERCASE -->
+```
+
+## Best Practices
+
+### 1. Always Provide Defaults
+```jinja2
+{# ✅ Good #}
+{{ feature_name | default('[FEATURE NAME]') }}
+
+{# ❌ Bad #}
+{{ feature_name }}
+```
+
+### 2. Keep Conditionals Simple
+```jinja2
+{# ✅ Good #}
+{% if ai_assistant == 'claude' %}
+Claude-specific content
+{% endif %}
+
+{# ❌ Too Complex #}
+{% if ai_assistant == 'claude' and template_variables.advanced_mode and project_name != 'legacy' %}
+Complex conditional
+{% endif %}
+```
+
+### 3. Use Meaningful Placeholders
+```jinja2
+{# ✅ Good #}
+{{ feature_description | default('[Describe what this feature does and why it\'s needed]') }}
+
+{# ❌ Bad #}
+{{ feature_description | default('[TODO]') }}
+```
+
+## Getting Help
+
+- View existing templates: `.specify/templates/`
+
+Need more customization? Consider contributing agent templates for new AI assistants or suggesting improvements to runtime templates.

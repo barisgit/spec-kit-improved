@@ -1,0 +1,344 @@
+# {{ agent_type.title() }} Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Agent**: {{ agent_type.title() }} Agent
+**Generated**: {{ timestamp }}
+**Analysis Scope**: {{ scope | default("General analysis") }}
+
+## Analysis Overview
+
+### Summary
+{{ analysis_summary | default("Analysis summary not provided") }}
+
+### Overall Assessment
+**Status**: {{ overall_status | default("PENDING") }}
+**Quality Score**: {{ quality_score | default("N/A") }}/10
+**Completion**: {{ completion_percentage | default("N/A") }}%
+
+### Key Findings
+{% if key_findings %}
+{% for finding in key_findings %}
+- **{{ finding.category | default("General") }}**: {{ finding.description }}
+  {% if finding.impact %}
+  - **Impact**: {{ finding.impact }}
+  {% endif %}
+  {% if finding.recommendation %}
+  - **Recommendation**: {{ finding.recommendation }}
+  {% endif %}
+{% endfor %}
+{% else %}
+No specific findings documented
+{% endif %}
+
+## Detailed Analysis
+
+### Critical Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() | default("HIGH") }}: {{ issue.title }}
+{% if issue.location %}
+**Location**: {{ issue.location }}
+{% endif %}
+**Description**: {{ issue.description }}
+
+{% if issue.details %}
+**Details**:
+{{ issue.details }}
+{% endif %}
+
+{% if issue.code_example %}
+**Example**:
+```{{ issue.language | default("text") }}
+{{ issue.code_example }}
+```
+{% endif %}
+
+**Impact**: {{ issue.impact | default("Not specified") }}
+**Recommended Action**: {{ issue.recommendation | default("Further investigation needed") }}
+
+{% if issue.dependencies %}
+**Dependencies**: {{ issue.dependencies | join(", ") }}
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical issues identified
+{% endif %}
+
+### Observations
+{% if observations %}
+{% for observation in observations %}
+#### {{ observation.category | default("General") }}
+{{ observation.description }}
+
+{% if observation.supporting_data %}
+**Supporting Data**:
+{% for data_point in observation.supporting_data %}
+- {{ data_point }}
+{% endfor %}
+{% endif %}
+
+{% if observation.implications %}
+**Implications**: {{ observation.implications }}
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+No specific observations recorded
+{% endif %}
+
+### Quality Metrics
+{% if quality_metrics %}
+{% for metric_name, metric_data in quality_metrics.items() %}
+- **{{ metric_name.replace('_', ' ').title() }}**: {{ metric_data.value }}{{ metric_data.unit | default("") }}
+  {% if metric_data.target %}
+  - **Target**: {{ metric_data.target }}{{ metric_data.unit | default("") }}
+  {% endif %}
+  {% if metric_data.status %}
+  - **Status**: {{ metric_data.status }}
+  {% endif %}
+  {% if metric_data.trend %}
+  - **Trend**: {{ metric_data.trend }}
+  {% endif %}
+{% endfor %}
+{% else %}
+No quality metrics available
+{% endif %}
+
+### Analysis Data
+{% if analysis_data %}
+{% for data_category, data_items in analysis_data.items() %}
+#### {{ data_category.replace('_', ' ').title() }}
+{% if data_items is iterable and data_items is not string %}
+{% for item in data_items %}
+- {{ item }}
+{% endfor %}
+{% else %}
+{{ data_items }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## Risk Assessment
+
+### Identified Risks
+{% if risks %}
+{% for risk in risks %}
+- **{{ risk.level.upper() | default("MEDIUM") }} Risk**: {{ risk.description }}
+  - **Probability**: {{ risk.probability | default("Unknown") }}
+  - **Impact**: {{ risk.impact | default("Not assessed") }}
+  {% if risk.mitigation %}
+  - **Mitigation**: {{ risk.mitigation }}
+  {% endif %}
+  {% if risk.contingency %}
+  - **Contingency**: {{ risk.contingency }}
+  {% endif %}
+{% endfor %}
+{% else %}
+✅ No significant risks identified
+{% endif %}
+
+### Risk Mitigation Strategies
+{% if risk_mitigations %}
+{% for mitigation in risk_mitigations %}
+- **Strategy**: {{ mitigation.strategy }}
+  - **Target Risk**: {{ mitigation.target_risk }}
+  - **Implementation**: {{ mitigation.implementation_approach }}
+  - **Success Criteria**: {{ mitigation.success_criteria }}
+  - **Timeline**: {{ mitigation.timeline | default("TBD") }}
+{% endfor %}
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  {% if rec.category %}
+  - **Category**: {{ rec.category }}
+  {% endif %}
+  {% if rec.justification %}
+  - **Justification**: {{ rec.justification }}
+  {% endif %}
+  {% if rec.expected_impact %}
+  - **Expected Impact**: {{ rec.expected_impact }}
+  {% endif %}
+  {% if rec.effort_estimate %}
+  - **Effort**: {{ rec.effort_estimate }}
+  {% endif %}
+  {% if rec.timeline %}
+  - **Timeline**: {{ rec.timeline }}
+  {% endif %}
+  {% if rec.dependencies %}
+  - **Dependencies**: {{ rec.dependencies | join(", ") }}
+  {% endif %}
+{% endfor %}
+{% else %}
+✅ No high priority recommendations at this time
+{% endif %}
+
+### Medium Priority
+{% if medium_priority_recommendations %}
+{% for rec in medium_priority_recommendations %}
+- [ ] {{ rec.action }}
+  {% if rec.benefit %}
+  - **Benefit**: {{ rec.benefit }}
+  {% endif %}
+  {% if rec.effort_estimate %}
+  - **Effort**: {{ rec.effort_estimate }}
+  {% endif %}
+  {% if rec.timeline %}
+  - **Timeline**: {{ rec.timeline }}
+  {% endif %}
+{% endfor %}
+{% else %}
+✅ No medium priority recommendations
+{% endif %}
+
+### Improvements
+{% if improvements %}
+{% for improvement in improvements %}
+- [ ] {{ improvement.description }}
+  {% if improvement.type %}
+  - **Type**: {{ improvement.type }}
+  {% endif %}
+  {% if improvement.benefit %}
+  - **Benefit**: {{ improvement.benefit }}
+  {% endif %}
+  {% if improvement.implementation %}
+  - **Implementation**: {{ improvement.implementation }}
+  {% endif %}
+{% endfor %}
+{% else %}
+No specific improvements identified
+{% endif %}
+
+## Action Plan
+
+### Immediate Actions
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   {% if action.owner %}
+   - **Owner**: {{ action.owner }}
+   {% endif %}
+   {% if action.deadline %}
+   - **Deadline**: {{ action.deadline }}
+   {% endif %}
+   {% if action.success_criteria %}
+   - **Success Criteria**: {{ action.success_criteria }}
+   {% endif %}
+   {% if action.dependencies %}
+   - **Dependencies**: {{ action.dependencies | join(", ") }}
+   {% endif %}
+{% endfor %}
+{% else %}
+1. Review findings and recommendations
+2. Prioritize action items
+3. Assign ownership for implementation
+4. Schedule follow-up analysis
+{% endif %}
+
+### Follow-up Activities
+{% if followup_activities %}
+{% for activity in followup_activities %}
+- [ ] {{ activity.description }}
+  {% if activity.timeline %}
+  - **Timeline**: {{ activity.timeline }}
+  {% endif %}
+  {% if activity.purpose %}
+  - **Purpose**: {{ activity.purpose }}
+  {% endif %}
+  {% if activity.stakeholders %}
+  - **Stakeholders**: {{ activity.stakeholders | join(", ") }}
+  {% endif %}
+{% endfor %}
+{% else %}
+- [ ] Monitor implementation of recommendations
+- [ ] Schedule next analysis cycle
+- [ ] Track improvement metrics
+{% endif %}
+
+## Success Metrics
+
+### Key Performance Indicators
+{% if success_metrics %}
+{% for metric in success_metrics %}
+- **{{ metric.name }}**: {{ metric.description }}
+  {% if metric.current_value %}
+  - **Current**: {{ metric.current_value }}
+  {% endif %}
+  {% if metric.target_value %}
+  - **Target**: {{ metric.target_value }}
+  {% endif %}
+  {% if metric.measurement_method %}
+  - **Measurement**: {{ metric.measurement_method }}
+  {% endif %}
+{% endfor %}
+{% else %}
+Success metrics to be defined based on implementation
+{% endif %}
+
+### Monitoring Plan
+{% if monitoring_plan %}
+{% for monitor in monitoring_plan %}
+- **{{ monitor.area }}**: {{ monitor.monitoring_approach }}
+  {% if monitor.frequency %}
+  - **Frequency**: {{ monitor.frequency }}
+  {% endif %}
+  {% if monitor.tools %}
+  - **Tools**: {{ monitor.tools | join(", ") }}
+  {% endif %}
+  {% if monitor.alerts %}
+  - **Alerts**: {{ monitor.alerts }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Conclusion
+
+### Summary of Findings
+{{ conclusion_summary | default("Analysis completed. Review recommendations and action items for next steps.") }}
+
+### Next Review Schedule
+{% if next_review %}
+**Next Analysis**: {{ next_review.date | default("TBD") }}
+**Focus Areas**: {{ next_review.focus_areas | join(", ") | default("To be determined") }}
+**Participants**: {{ next_review.participants | join(", ") | default("To be assigned") }}
+{% else %}
+Next review schedule to be determined based on implementation progress
+{% endif %}
+
+## Analysis Metadata
+
+**Analysis Duration**: {{ analysis_duration | default("N/A") }}
+**Data Sources**: {{ data_sources | join(", ") | default("Not specified") }}
+**Analysis Type**: {{ analysis_type | default("General Analysis") }}
+**Confidence Level**: {{ confidence_level | default("N/A") }}
+
+{% if analyst_notes %}
+### Analyst Notes
+{{ analyst_notes }}
+{% endif %}
+
+{% if methodology %}
+### Analysis Methodology
+{{ methodology }}
+{% endif %}
+
+{% if limitations %}
+### Analysis Limitations
+{{ limitations }}
+{% endif %}
+
+{% if additional_context %}
+### Additional Context
+{{ additional_context }}
+{% endif %}
+
+---
+*Generated by SpecifyX {{ agent_type.title() }} Agent v{{ agent_version | default("1.0.0") }}*

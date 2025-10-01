@@ -227,6 +227,50 @@ def multiselect_ai_assistants() -> list[str]:
         raise
 
 
+def multiselect_agent_types() -> list[str]:
+    """
+    Interactive multi-selection of agent types for project initialization.
+
+    Returns:
+        list[str]: List of selected agent type names (without .md.j2 extension)
+
+    Raises:
+        KeyboardInterrupt: If user cancels selection
+    """
+    ui = InteractiveUI()
+
+    # Available agent types with descriptions
+    agent_choices = {
+        "code-reviewer": "Code Reviewer\n[dim]Reviews code quality, type safety, and professional standards[/dim]",
+        "documentation-reviewer": "Documentation Reviewer\n[dim]Reviews documentation quality, completeness, and accuracy[/dim]",
+        "implementer": "Implementer\n[dim]Handles systematic feature implementation using TDD principles[/dim]",
+        "spec-reviewer": "Spec Reviewer\n[dim]Reviews specifications for completeness and feasibility[/dim]",
+        "architecture-reviewer": "Architecture Reviewer\n[dim]Reviews system architecture and design patterns[/dim]",
+        "test-reviewer": "Test Reviewer\n[dim]Reviews test coverage, quality, and testing strategies[/dim]",
+    }
+
+    # Default to commonly used agents
+    default_selection = ["code-reviewer", "implementer", "test-reviewer"]
+
+    # Create header text
+    header_text = (
+        "Select which AI agents to include in your project. Agents provide specialized assistance for different development tasks.\n\n"
+        "[dim]You can generate additional agents later using the scaffold-agent script.[/dim]"
+    )
+
+    try:
+        return ui.multiselect(
+            "Choose AI agents:",
+            choices=agent_choices,
+            default=default_selection,
+            min_selections=0,  # Allow no agents if user prefers
+            header=header_text,
+        )
+    except KeyboardInterrupt:
+        # Re-raise to allow caller to handle cancellation
+        raise
+
+
 def select_template_source() -> Tuple[bool, Optional[str]]:
     """
     Interactive selection of template source (embedded vs remote).

@@ -2,6 +2,44 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+// Omit index documents from the sidebar
+function omitIndexDocuments(items: any[], parentCategoryLink: any = null): any[] {
+  // Process items in categories
+  const result = items.map((item) => {
+    if (item.type === 'category') {
+      return {...item, items: omitIndexDocuments(item.items || [], item.link)};
+    }
+    return item;
+  });
+  
+  // Omit index documents at current level
+  return result.filter((item) => {
+    // Filter out items with docId 'index' or items that end with '/index'
+    if (item.docId === 'index' || item.docId?.endsWith('/index')) {
+      return false;
+    }
+    
+    // Also check the id property for index documents
+    if (item.id === 'index' || item.id?.endsWith('/index')) {
+      return false;
+    }
+    
+    // Filter out items that have the same URL as the parent category
+    if (parentCategoryLink && item.type === 'doc') {
+      const itemId = item.docId || item.id;
+      if (itemId) {
+        const itemUrl = `/${itemId}/`;
+        const categoryUrl = parentCategoryLink.type === 'doc' ? `/${parentCategoryLink.id}/` : null;
+        if (categoryUrl && itemUrl === categoryUrl) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  });
+}
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
@@ -46,6 +84,10 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/barisgit/spec-kit-improved/tree/main/docs/',
+          async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
+            const sidebarItems = await defaultSidebarItemsGenerator(args);
+            return omitIndexDocuments(sidebarItems);
+          },
         },
         blog: false,
         theme: {
@@ -70,12 +112,6 @@ const config: Config = {
           sidebarId: 'docsSidebar',
           position: 'left',
           label: 'Docs',
-        },
-        {
-          type: 'doc',
-          docId: 'architecture/index',
-          position: 'left',
-          label: 'Architecture',
         },
         {
           type: 'docSidebar',
@@ -108,7 +144,7 @@ const config: Config = {
             },
             {
               label: 'Reference',
-              to: '/docs/reference/cli/init',
+              to: '/docs/reference/',
             },
           ],
         },

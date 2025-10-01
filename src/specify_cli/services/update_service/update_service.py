@@ -158,7 +158,7 @@ Command that would be executed:
             )
         )
 
-        return dry_run_info["supports_auto_update"]
+        return bool(dry_run_info["supports_auto_update"])
 
     def get_installation_info(self) -> Dict[str, Any]:
         """

@@ -9,6 +9,8 @@ with proper enum-based validation and manipulation.
 import re
 from typing import Dict, List, Optional, Set
 
+from specify_cli.core.constants import CONSTANTS
+
 from .injection_points import (
     InjectionPoint,
     InjectionPointMeta,
@@ -40,16 +42,7 @@ __all__ = [
     "get_injection_point_by_value",
     "validate_assistant_injections",
     "validate_injection_point_name",
-    "MAX_INJECTION_VALUE_LENGTH",
-    "INJECTION_POINT_NAME_PATTERN",
 ]
-
-# Validation constants
-MAX_INJECTION_VALUE_LENGTH: int = 1000
-"""Maximum length for injection point values to prevent template bloat."""
-
-INJECTION_POINT_NAME_PATTERN: str = r"^assistant_[a-z][a-z0-9_]*[a-z0-9]$"
-"""Regex pattern for valid injection point names (assistant_* with snake_case)."""
 
 
 def get_all_injection_points() -> Set[InjectionPointMeta]:
@@ -92,11 +85,11 @@ def validate_injection_values(
     long_values = [
         p.name
         for p, v in injection_values.items()
-        if len(v) > MAX_INJECTION_VALUE_LENGTH
+        if len(v) > CONSTANTS.VALIDATION.MAX_INJECTION_VALUE_LENGTH
     ]
     if long_values:
         errors.append(
-            f"Injection point values exceed maximum length ({MAX_INJECTION_VALUE_LENGTH}): {long_values}"
+            f"Injection point values exceed maximum length ({CONSTANTS.VALIDATION.MAX_INJECTION_VALUE_LENGTH}): {long_values}"
         )
 
     return errors
@@ -162,4 +155,4 @@ def validate_injection_point_name(name: str) -> bool:
         >>> validate_injection_point_name("assistant_")
         False
     """
-    return bool(re.match(INJECTION_POINT_NAME_PATTERN, name))
+    return bool(re.match(CONSTANTS.ASSISTANT.INJECTION_POINT_NAME_PATTERN, name))

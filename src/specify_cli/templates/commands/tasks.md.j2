@@ -1,13 +1,13 @@
 ---
 name: tasks
-description: "Break down the plan into executable tasks. This is the third step in the Spec-Driven Development lifecycle."
+description: "Break down the plan into executable tasks. This is the fourth step in the Spec-Driven Development lifecycle."
 ai_assistant: "{{ ai_assistant }}"
 command_prefix: "{{ assistant_command_prefix if assistant_command_prefix else '' }}"
 ---
 
 Break down the plan into executable tasks.
 
-This is the third step in the Spec-Driven Development lifecycle.
+This is the fourth step in the Spec-Driven Development lifecycle.
 
 Given the context provided as an argument, do this:
 
@@ -89,3 +89,8 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **Code Review:** `{{ assistant_review_command }}`
 {% endif %}
+
+**Next Steps After Task Planning:**
+- **Continue workflow**: Use `/analyze` to validate consistency across spec, plan, and tasks (auto-detect from branch)
+- **Skip analysis**: Use `/implement` or `/guide` directly if confident in task consistency (auto-detect from branch)
+- **No-branch workflow**: Use `/analyze` with `--spec-id` parameter if working on main branch

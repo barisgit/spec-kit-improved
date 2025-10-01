@@ -187,7 +187,7 @@ specifyx init my-awesome-project`}
                     <ul>
                       <li><Link to="/docs/guides/installation">Installation Guide</Link></li>
                       <li><Link to="/docs/guides/workflow">Development Workflow</Link></li>
-                      <li><Link to="/docs/reference/cli/init">CLI Reference</Link></li>
+                      <li><Link to="/docs/reference">CLI Reference</Link></li>
                     </ul>
                   </div>
                 </div>

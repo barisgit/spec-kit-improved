@@ -185,6 +185,7 @@ class TestCrossFieldValidation:
         all_paths = config.get_all_paths()
 
         # Should include base directory and all configured paths
+        assert config.agent_files is not None
         expected_paths = {
             config.base_directory,
             config.context_file.file,
@@ -275,6 +276,7 @@ class TestCrossFieldValidation:
         # All file formats should be valid enum values
         assert isinstance(config.context_file.file_format, FileFormat)
         assert isinstance(config.command_files.file_format, FileFormat)
+        assert config.agent_files is not None
         assert isinstance(config.agent_files.file_format, FileFormat)
 
         # File formats should be consistent with file extensions

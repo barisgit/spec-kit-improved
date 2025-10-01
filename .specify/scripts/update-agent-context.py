@@ -195,7 +195,7 @@ def main(
             else:
                 echo_error("No spec directory found")
                 echo_info(
-                    "Run this from a spec directory or after running /specify, /plan, or /tasks commands"
+                    "Run this from a spec directory or after running /specify, /clarify, /plan, /tasks, or /analyze commands"
                 )
             raise typer.Exit(1) from None
 

@@ -14,10 +14,7 @@ from .config import (
 
 # Developer defaults (immutable, packaged with SpecifyX)
 from .defaults import (
-    AI_DEFAULTS,
     PATH_DEFAULTS,
-    AIAssistant,
-    AIAssistantDefaults,
     PathDefaults,
 )
 
@@ -66,9 +63,6 @@ __all__ = [
     "TemplatePackage",
     "TemplateState",
     # Developer defaults
-    "AI_DEFAULTS",
-    "AIAssistant",
-    "AIAssistantDefaults",
     "PATH_DEFAULTS",
     "PathDefaults",
 ]

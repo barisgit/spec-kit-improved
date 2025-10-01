@@ -106,6 +106,22 @@ class CategoryDefaults:
                 is_ai_specific=True,
                 description="AI assistant context files (CLAUDE.md, main.mdc, etc.)",
             ),
+            CategoryMapping(
+                name="agent-prompts",
+                source="agent-prompts",
+                target_pattern="{ai_dir}/agents",
+                render_templates=True,
+                is_ai_specific=True,
+                description="AI assistant agent prompt definitions for Claude Code",
+            ),
+            CategoryMapping(
+                name="agent-templates",
+                source="agent-templates",
+                target_pattern=".specify/agent-templates",
+                render_templates=False,  # These are runtime templates, copied as-is
+                is_ai_specific=False,
+                description="Agent runtime templates for scaffold scripts",
+            ),
         ]
     )
 

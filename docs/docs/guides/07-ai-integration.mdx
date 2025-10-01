@@ -1,0 +1,192 @@
+---
+sidebar_position: 7
+title: AI Assistant Integration
+description: Integrate AI assistants with SpecifyX for enhanced spec-driven development
+---
+
+# AI Assistant Integration
+
+SpecifyX integrates with popular AI assistants to enhance your spec-driven development workflow. This guide shows you how to configure AI assistants to understand and follow SpecifyX conventions.
+
+## Universal System Prompt Generation
+
+The `get-prompt` command generates a **universal** system prompt that works with any AI assistant to teach SpecifyX workflow across all projects:
+
+### Basic Usage
+
+```bash
+# Generate universal SpecifyX prompt
+specifyx get-prompt
+```
+
+### Save to Global Configuration
+
+```bash
+# Save to any AI assistant configuration
+specifyx get-prompt --output ~/.claude/CLAUDE.md
+specifyx get-prompt --output ~/cursor-settings/specifyx-prompt.md
+specifyx get-prompt --output ~/.config/ai/specifyx-workflow.md
+```
+
+### Universal Benefits
+
+The prompt is designed for **universal compatibility**:
+- Works with ANY AI assistant (Claude, Cursor, Copilot, etc.)
+- Works across ALL projects on your computer
+- Automatically detects SpecifyX projects
+- Adapts behavior only when SpecifyX is detected
+- No per-project setup required
+- No assistant-specific customization needed
+
+## What the Universal System Prompt Includes
+
+The generated system prompt teaches any AI assistant:
+
+### 1. SpecifyX Project Detection
+- Automatic detection of SpecifyX projects
+- Recognition of `.specify/` directories and `specs/` folders
+- Adaptive behavior based on project type
+- Graceful handling of non-SpecifyX projects
+
+### 2. Spec-Driven Development Rules (SpecifyX Projects Only)
+- Always encourage specification creation before implementation
+- Guide users through Specify → Clarify → Plan → Tasks → Analyze → Implement lifecycle
+- Push back on vague requests requiring clear specifications
+- Reference existing spec files for implementation decisions
+
+### 3. Quality Practices
+- **NEVER hardcode values** - use constants, configuration, or environment variables
+- Extract magic numbers and strings into named constants
+- Encourage testing when appropriate for the project
+- Maintain consistent project structure
+- Follow existing patterns
+
+### 4. SpecifyX Commands & Workflow
+- Available `specifyx` commands and their usage
+- File organization conventions
+- Template-based consistency requirements
+- Project structure standards
+
+### 5. Universal Compatibility
+- Works with any AI assistant without customization
+- No hardcoded assistant behaviors
+- Respectful of existing workflows
+- Professional but not pushy approach
+
+## Advanced Configuration
+
+### Project-Specific Context
+
+The system prompt automatically includes:
+
+```markdown
+## Project Context
+- **Project**: your-project-name
+- **Location**: /path/to/project
+- **Spec-Driven Workflow**: Enabled/Disabled
+- **Test-First Approach**: Enabled/Disabled
+- **Current Feature**: feature-name (if detected)
+```
+
+### Custom Injection Points
+
+Extend assistant behavior through injection points:
+
+```python
+# .specify/custom_injections.py
+from specify_cli.assistants.injection_points import InjectionPoint
+
+# Custom workflow integration
+custom_workflow = """
+- Use project-specific linting rules
+- Follow team code review process
+- Integrate with custom CI/CD pipeline
+"""
+
+# Add to assistant configuration
+```
+
+## Universal Integration Workflow
+
+### 1. Generate Universal System Prompt
+```bash
+# One-time setup for any AI assistant
+specifyx get-prompt --output ~/.claude/CLAUDE.md
+# or
+specifyx get-prompt --output ~/.cursor/specifyx-workflow.md
+# or any other AI assistant configuration
+```
+
+### 2. Work Across All Projects
+Your AI assistant now:
+- Automatically detects SpecifyX projects
+- Adapts behavior when SpecifyX is found
+- Works normally with non-SpecifyX projects
+- Strongly emphasizes no hardcoding in all projects
+- Encourages SpecifyX workflow when appropriate
+
+### 3. Per-Project Setup (when needed)
+```bash
+# Only when starting new SpecifyX projects
+specifyx init my-project
+cd my-project
+# No AI-specific setup needed - universal prompt handles everything
+```
+
+### 4. Verify Project Integration
+```bash
+specifyx check  # Only in SpecifyX projects
+```
+
+### 5. Universal Benefits
+- **Works with ANY AI assistant**
+- **No per-project prompt setup needed**
+- **Automatic SpecifyX detection and behavior adaptation**
+- **Strong anti-hardcoding guidance across all projects**
+- **One prompt serves all your projects and assistants**
+
+## Best Practices
+
+### 1. Update Prompts Regularly
+- Regenerate universal prompt when SpecifyX version changes
+- Update global configuration as workflow evolves
+- Keep one universal prompt up-to-date for all assistants
+
+### 2. Universal Configuration
+- Use the same universal prompt across all AI assistants
+- Maintain consistency across your development environment
+- No need for assistant-specific customizations
+
+### 3. Global Deployment
+- Set up universal prompt once in each AI assistant's global config
+- Works automatically across all projects
+- No per-project configuration needed
+
+### 4. Quality Focus
+- Emphasize the anti-hardcoding principle in all development
+- Let the prompt guide quality practices across all projects
+- Trust the universal detection and adaptation logic
+
+## Troubleshooting
+
+### Prompt Not Working
+1. Regenerate universal prompt: `specifyx get-prompt`
+2. Verify global configuration file exists and is loaded
+3. Check AI assistant's configuration documentation
+
+### Assistant Not Following Workflow
+1. Ensure universal prompt is properly configured in AI assistant
+2. Verify SpecifyX project indicators are present (`.specify/` directory)
+3. Check that AI assistant is loading global configuration
+
+### Missing SpecifyX Detection
+1. Initialize SpecifyX project: `specifyx init`
+2. Verify `.specify/` directory exists in project root
+3. Universal prompt will automatically detect and adapt
+
+## Support
+
+For universal AI assistant integration issues:
+- Check `specifyx get-prompt --help` for command reference
+- Review your AI assistant's global configuration documentation
+- Report issues to SpecifyX GitHub repository

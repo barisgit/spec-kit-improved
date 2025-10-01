@@ -60,7 +60,7 @@ class TestTemplateServiceContract:
 
     def test_load_template_package_contract(
         self, template_service: TemplateService, temp_template_dir: Path
-    ):
+    ) -> None:
         """Test load_template_package method contract."""
         # Contract: Should return boolean for success/failure
         result = template_service.load_template_package("claude", temp_template_dir)
@@ -78,7 +78,7 @@ class TestTemplateServiceContract:
         template_service: TemplateService,
         sample_context: TemplateContext,
         temp_template_dir: Path,
-    ):
+    ) -> None:
         """Test render_template method contract."""
         template_service.load_template_package("claude", temp_template_dir)
 
@@ -98,7 +98,7 @@ class TestTemplateServiceContract:
         sample_context: TemplateContext,
         temp_template_dir: Path,
         tmp_path: Path,
-    ):
+    ) -> None:
         """Test render_project_templates method contract."""
         template_service.load_template_package("claude", temp_template_dir)
         output_dir = tmp_path / "output"
@@ -118,7 +118,7 @@ class TestTemplateServiceContract:
 
     def test_validate_template_syntax_contract(
         self, template_service: TemplateService, temp_template_dir: Path
-    ):
+    ) -> None:
         """Test validate_template_syntax method contract."""
         valid_template = temp_template_dir / "readme.md.j2"
 
@@ -139,7 +139,7 @@ class TestTemplateServiceContract:
 
     def test_get_template_variables_contract(
         self, template_service: TemplateService, temp_template_dir: Path
-    ):
+    ) -> None:
         """Test get_template_variables method contract."""
         template_path = temp_template_dir / "readme.md.j2"
 
@@ -154,7 +154,7 @@ class TestTemplateServiceContract:
 
     def test_set_custom_template_dir_contract(
         self, template_service: TemplateService, temp_template_dir: Path
-    ):
+    ) -> None:
         """Test set_custom_template_dir method contract."""
         # Contract: Should return boolean for success/failure
         result = template_service.set_custom_template_dir(temp_template_dir)
@@ -184,7 +184,7 @@ class TestTemplateServiceIntegration:
 
     def test_complete_template_workflow(
         self, template_service: TemplateService, tmp_path: Path
-    ):
+    ) -> None:
         """Test complete template processing workflow."""
         # Setup template and output directories
         template_dir = tmp_path / "templates"
@@ -249,7 +249,7 @@ class TestAssistantInjectionIntegration:
         template_service: TemplateService,
         injection_context: TemplateContext,
         tmp_path: Path,
-    ):
+    ) -> None:
         """Test that injection points work in templates."""
         template_dir = tmp_path / "templates"
         template_dir.mkdir()

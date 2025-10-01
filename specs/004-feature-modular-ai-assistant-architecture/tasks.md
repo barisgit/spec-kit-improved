@@ -75,11 +75,11 @@
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 - [x] T022 [P] Write Pydantic model validation tests for AssistantConfig in `tests/contract/test_assistant_config.py` - [x] T023 [P] Write ABC contract enforcement tests for AssistantProvider in `tests/contract/test_injection_provider.py` ✅ *(Covers all 4 providers)*
-- [ ] T024 [P] Write ABC contract tests for AssistantRegistry in `tests/contract/test_assistant_registry.py`
-- [x] T025 [P] Write Pydantic field validation tests in `tests/unit/test_pydantic_validation.py` - [ ] T026 [P] Write enum-based injection point validation tests in `tests/unit/test_enum_validation.py`
+- [x] T024 [P] Write ABC contract tests for AssistantRegistry in `tests/contract/test_assistant_registry.py`
+- [x] T025 [P] Write Pydantic field validation tests in `tests/unit/test_pydantic_validation.py` - [x] T026 [P] Write enum-based injection point validation tests in `tests/unit/test_enum_validation.py`
 - [ ] T027 [P] Write JSON schema generation tests in `tests/unit/test_schema_generation.py`
-- [ ] T028 [P] Write runtime type safety tests in `tests/unit/test_runtime_validation.py`
-- [ ] T029 [P] Write cross-field validation tests in `tests/unit/test_cross_field_validation.py`
+- [x] T028 [P] Write runtime type safety tests in `tests/unit/test_runtime_validation.py`
+- [x] T029 [P] Write cross-field validation tests in `tests/unit/test_cross_field_validation.py`
 - [ ] T030 [P] Write error handling tests in `tests/unit/test_error_handling.py`
 - [ ] T031 [P] Write assistant organization tests in `tests/integration/test_assistant_organization.py`
 - [ ] T032 [P] Write template injection tests in `tests/integration/test_template_injection.py`
@@ -108,7 +108,7 @@
 - [x] T043 ~~Identify conditionals in scripts templates~~ *Skipped: Template conditionals work well, injection points unnecessary*
 - [x] T044 ~~Identify conditionals in memory templates~~ *Skipped: Template conditionals work well, injection points unnecessary*
 - [x] T045 ~~Convert template conditionals to injection points~~ *Skipped: Template conditionals work well, injection points unnecessary*
-- [ ] T046 Update TemplateService to use injections in `src/specify_cli/services/template_service/template_service.py`
+- [x] T046 Update TemplateService to use injections in `src/specify_cli/services/template_service/template_service.py`
 
 ## Phase 10: CLI Integration
 **Focus: Integrate with existing CLI without breaking changes**

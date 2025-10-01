@@ -15,17 +15,16 @@ from .defaults import BRANCH_DEFAULTS
 
 
 def _get_default_ai_assistants() -> List[str]:
-    """Get default AI assistants list from PATH_DEFAULTS"""
-    from .defaults.path_defaults import PATH_DEFAULTS
+    """Get default AI assistants list"""
+    from specify_cli.assistants import get_all_assistants
 
-    return [PATH_DEFAULTS.PROJECT_DEFAULTS.default_ai_assistant]
+    assistants = get_all_assistants()
+    return [assistants[0].config.name] if assistants else ["claude"]
 
 
 def _get_default_config_directory() -> str:
-    """Get default config directory from PATH_DEFAULTS"""
-    from .defaults.path_defaults import PATH_DEFAULTS
-
-    return PATH_DEFAULTS.PROJECT_DEFAULTS.config_directory
+    """Get default config directory"""
+    return ".specify"
 
 
 @dataclass

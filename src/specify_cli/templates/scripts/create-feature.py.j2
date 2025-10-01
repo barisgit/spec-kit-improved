@@ -99,7 +99,9 @@ def create_feature(
 
     # Get branch naming configuration
     branch_config = helpers.get_branch_naming_config()
-    patterns = branch_config.get("patterns", [f"{feature_num}-{{ '{{' }}feature-name{{ '}}' }}"])
+    patterns = branch_config.get(
+        "patterns", [f"{feature_num}-{{ '{{' }}feature-name{{ '}}' }}"]
+    )
     validation_rules = branch_config.get("validation_rules", [])
 
     if branch_name:
@@ -132,7 +134,11 @@ def create_feature(
         derived_feature_name = "-".join(words) if words else "feature"
 
         # Use first pattern from configuration
-        pattern = patterns[0] if patterns else f"{feature_num}-{{ '{{' }}feature-name{{ '}}' }}"
+        pattern = (
+            patterns[0]
+            if patterns
+            else f"{feature_num}-{{ '{{' }}feature-name{{ '}}' }}"
+        )
 
         # Build context for pattern expansion
         context = {

@@ -1,0 +1,137 @@
+---
+name: guide
+description: "Human-oriented alternative to implement that provides structured instructions for manual execution. Use when tasks require human intervention or mixed AI/human workflows."
+ai_assistant: "{{ ai_assistant }}"
+command_prefix: "{{ assistant_command_prefix if assistant_command_prefix else '' }}"
+---
+
+Provide structured human instructions for manual execution of feature implementation.
+
+This is a human-oriented alternative to the `/implement` command for when tasks require manual developer intervention or mixed AI/human workflows.
+
+Given the execution context provided as an argument, do this:
+
+1. Run `specifyx run check-implementation-status --json` (or `uvx specifyx run check-implementation-status --json` if specifyx not found) from repo root to get current status.
+
+   **For No-Branch Workflow:**
+   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run check-implementation-status --spec-id 001 --json`
+   - The error message will show available spec IDs if `--spec-id` is required
+
+   Parse the JSON output for TASKS_FILE, CONSTITUTION, FEATURE_DIR, BRANCH, and PREREQUISITES_STATUS.
+
+   **Troubleshooting:**
+   - If command fails, check: `specifyx run check-implementation-status --help`
+   - If prerequisites missing, use `/constitution`, `/specify`, `/clarify`, `/plan`, `/tasks`, or `/analyze` commands first
+   - If not in git repo: run `git init` first
+
+2. Analyze the current implementation state:
+   - Read TASKS_FILE to understand all tasks and their current status
+   - Read CONSTITUTION to understand project principles and development guidelines
+   - Identify pending tasks: `- [ ]` markers in tasks.md
+   - Note parallel tasks: marked with `[P]` indicator
+   - Check dependency chains: tasks that must complete before others can start
+
+3. Provide structured manual execution guide:
+
+   **A. Setup and Prerequisites**
+   - Verify all prerequisite files exist (constitution, spec, plan, tasks)
+   - Confirm development environment is ready
+   - Ensure git branch is correct and working directory is clean
+
+   **B. Task Execution Strategy**
+   - **Sequential Tasks**: Execute in order, waiting for each to complete
+   - **Parallel Tasks [P]**: Can be executed simultaneously if resources allow
+   - **Dependency Enforcement**: Always complete prerequisite tasks before dependent ones
+   - **TDD Approach**: For tasks marked as requiring tests, write tests first, ensure they fail, then implement
+
+   **C. Manual Progress Tracking**
+   For each completed task:
+   1. Mark as complete in TASKS_FILE: change `- [ ]` to `- [x]`
+   2. Commit changes with descriptive message
+   3. Update any related documentation
+   4. Run relevant tests to verify completion
+
+   **D. Task Categories and Guidance**
+
+   **Setup Tasks**:
+   - Usually sequential and must complete before implementation
+   - Focus on project structure, dependencies, and configuration
+
+   **Test Tasks [P]**:
+   - Can often run in parallel if testing different components
+   - Write tests before implementing features (TDD)
+   - Ensure tests fail initially, then make them pass
+
+   **Implementation Tasks**:
+   - Follow dependency order carefully
+   - Tasks affecting same files should be sequential
+   - Tasks affecting different files can be parallel [P]
+
+   **Integration Tasks**:
+   - Usually sequential and depend on core implementation
+   - Focus on connecting components and end-to-end functionality
+
+   **Polish Tasks [P]**:
+   - Often parallel and can be done after core features
+   - Include documentation, performance optimization, final testing
+
+   **E. Mixed AI/Human Workflow**
+   When combining AI assistance with manual work:
+   1. Use AI for code generation, testing, and documentation
+   2. Handle complex architectural decisions manually
+   3. Review all AI-generated code before integration
+   4. Use human judgment for design trade-offs and edge cases
+   5. Leverage AI for repetitive tasks like test creation
+
+   **F. Error Recovery and Blocked Tasks**
+   If a task fails or gets blocked:
+   1. Mark task as failed with notes: `- [ ] BLOCKED: reason`
+   2. Identify if failure blocks other dependent tasks
+   3. Consider alternative approaches or breaking task into smaller parts
+   4. Update tasks.md with recovery plan
+   5. Continue with non-dependent tasks while resolving blockages
+
+4. Generate execution checklist:
+   - List all pending tasks in dependency order
+   - Mark which can be done in parallel
+   - Provide estimated effort and complexity for each
+   - Include validation steps for each task completion
+   - Note any special requirements or considerations
+
+5. Provide monitoring and completion guidance:
+   - How to track overall progress
+   - When to commit intermediate changes
+   - How to validate task completion
+   - When implementation is considered complete
+   - Next steps after all tasks are finished
+
+Context for manual execution: {{ARGS}}
+
+**Important Notes:**
+- Always follow TDD approach: Tests first, ensure they fail, then implement
+- Respect task dependencies to avoid rework
+- Update progress in tasks.md as you complete each task
+- Commit frequently with descriptive messages
+- Validate each completed task before moving to the next
+
+{% if assistant_workflow_integration -%}
+
+**{{ ai_assistant | title }} Integration:**
+{{ assistant_workflow_integration }}
+{% endif %}
+
+{% if assistant_custom_commands -%}
+
+**Available Commands:**
+{{ assistant_custom_commands }}
+{% endif %}
+
+{% if assistant_review_command -%}
+
+**Code Review:** `{{ assistant_review_command }}`
+{% endif %}
+
+{% if assistant_command_prefix -%}
+
+**Command Prefix:** `{{ assistant_command_prefix }}`
+{% endif %}
