@@ -1,0 +1,442 @@
+# Agent Context Report
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Context Type**: {{ context_type | default("General Context") }}
+**Generated**: {{ timestamp }}
+**Agent**: {{ requesting_agent | default("System") }}
+
+## Project Context
+
+### Project Information
+{% if project_info %}
+- **Project Name**: {{ project_info.name | default(project_name) }}
+- **Project Type**: {{ project_info.type | default("Not specified") }}
+- **Version**: {{ project_info.version | default("N/A") }}
+- **Description**: {{ project_info.description | default("No description available") }}
+- **Repository**: {{ project_info.repository | default("Not specified") }}
+- **Main Branch**: {{ project_info.main_branch | default("main") }}
+- **Current Branch**: {{ project_info.current_branch | default("Unknown") }}
+{% else %}
+- **Project Name**: {{ project_name }}
+- **Feature**: {{ current_feature }}
+- **Context Generated**: {{ timestamp }}
+{% endif %}
+
+### Technology Stack
+{% if tech_stack %}
+{% for category, technologies in tech_stack.items() %}
+#### {{ category.title() }}
+{% for tech in technologies %}
+- **{{ tech.name }}**: {{ tech.version | default("Latest") }}
+  {% if tech.purpose %}
+  - **Purpose**: {{ tech.purpose }}
+  {% endif %}
+  {% if tech.status %}
+  - **Status**: {{ tech.status }}
+  {% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
+Technology stack information not available
+{% endif %}
+
+### Development Environment
+{% if dev_environment %}
+- **OS**: {{ dev_environment.operating_system | default("Not specified") }}
+- **Runtime**: {{ dev_environment.runtime | default("Not specified") }}
+- **Package Manager**: {{ dev_environment.package_manager | default("Not specified") }}
+- **IDE/Editor**: {{ dev_environment.ide | default("Not specified") }}
+- **Build Tool**: {{ dev_environment.build_tool | default("Not specified") }}
+{% endif %}
+
+## Current Feature Context
+
+### Feature Information
+{% if feature_info %}
+- **Feature Name**: {{ feature_info.name | default(current_feature) }}
+- **Feature Type**: {{ feature_info.type | default("Enhancement") }}
+- **Priority**: {{ feature_info.priority | default("Medium") }}
+- **Status**: {{ feature_info.status | default("In Progress") }}
+- **Owner**: {{ feature_info.owner | default("Not assigned") }}
+- **Target Release**: {{ feature_info.target_release | default("TBD") }}
+{% endif %}
+
+### Feature Specifications
+{% if specifications %}
+#### Current Specifications
+{% for spec_type, spec_data in specifications.items() %}
+- **{{ spec_type.title() }}**: {{ spec_data.status | default("Available") }}
+  {% if spec_data.file_path %}
+  - **Location**: `{{ spec_data.file_path }}`
+  {% endif %}
+  {% if spec_data.last_updated %}
+  - **Last Updated**: {{ spec_data.last_updated }}
+  {% endif %}
+  {% if spec_data.version %}
+  - **Version**: {{ spec_data.version }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Implementation Plan
+{% if implementation_plan %}
+- **Plan Status**: {{ implementation_plan.status | default("Draft") }}
+- **Total Phases**: {{ implementation_plan.total_phases | default("N/A") }}
+- **Current Phase**: {{ implementation_plan.current_phase | default("Planning") }}
+- **Progress**: {{ implementation_plan.progress_percentage | default("0") }}%
+- **Estimated Completion**: {{ implementation_plan.estimated_completion | default("TBD") }}
+
+{% if implementation_plan.phases %}
+#### Implementation Phases
+{% for phase in implementation_plan.phases %}
+- **{{ phase.name }}**: {{ phase.status }}
+  {% if phase.tasks_completed %}
+  - **Progress**: {{ phase.tasks_completed }}/{{ phase.total_tasks }} tasks
+  {% endif %}
+  {% if phase.description %}
+  - **Description**: {{ phase.description }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Current Tasks
+{% if current_tasks %}
+#### Active Tasks
+{% for task in current_tasks %}
+- **{{ task.id }}**: {{ task.title }}
+  - **Status**: {{ task.status }}
+  - **Priority**: {{ task.priority | default("Medium") }}
+  {% if task.assignee %}
+  - **Assignee**: {{ task.assignee }}
+  {% endif %}
+  {% if task.due_date %}
+  - **Due**: {{ task.due_date }}
+  {% endif %}
+  {% if task.dependencies %}
+  - **Dependencies**: {{ task.dependencies | join(", ") }}
+  {% endif %}
+  {% if task.progress %}
+  - **Progress**: {{ task.progress }}%
+  {% endif %}
+{% endfor %}
+{% else %}
+No active tasks currently defined
+{% endif %}
+
+## Project Constitution & Guidelines
+
+### Development Principles
+{% if constitution %}
+{% if constitution.principles %}
+{% for principle in constitution.principles %}
+- **{{ principle.name }}**: {{ principle.description }}
+  {% if principle.importance %}
+  - **Importance**: {{ principle.importance }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Development Guidelines
+{% if constitution.guidelines %}
+{% for guideline_category, guidelines in constitution.guidelines.items() %}
+#### {{ guideline_category.replace('_', ' ').title() }}
+{% for guideline in guidelines %}
+- {{ guideline }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+### Quality Standards
+{% if constitution.quality_standards %}
+{% for standard in constitution.quality_standards %}
+- **{{ standard.category }}**: {{ standard.requirement }}
+  {% if standard.measurement %}
+  - **Measurement**: {{ standard.measurement }}
+  {% endif %}
+  {% if standard.target %}
+  - **Target**: {{ standard.target }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Recent Activity
+
+### Recent Commits
+{% if recent_commits %}
+{% for commit in recent_commits %}
+- **{{ commit.hash[:8] }}**: {{ commit.message }}
+  - **Author**: {{ commit.author }}
+  - **Date**: {{ commit.date }}
+  {% if commit.files_changed %}
+  - **Files**: {{ commit.files_changed }} changed
+  {% endif %}
+{% endfor %}
+{% else %}
+Recent commit history not available
+{% endif %}
+
+### Recent Changes
+{% if recent_changes %}
+{% for change in recent_changes %}
+- **{{ change.type }}**: {{ change.description }}
+  {% if change.file_path %}
+  - **File**: `{{ change.file_path }}`
+  {% endif %}
+  {% if change.author %}
+  - **Author**: {{ change.author }}
+  {% endif %}
+  {% if change.timestamp %}
+  - **Time**: {{ change.timestamp }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Project Structure
+
+### Key Directories
+{% if project_structure %}
+{% for directory in project_structure.directories %}
+- **{{ directory.path }}**: {{ directory.purpose }}
+  {% if directory.file_count %}
+  - **Files**: {{ directory.file_count }}
+  {% endif %}
+  {% if directory.importance %}
+  - **Importance**: {{ directory.importance }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Important Files
+{% if important_files %}
+{% for file in important_files %}
+- **{{ file.path }}**: {{ file.purpose }}
+  {% if file.last_modified %}
+  - **Modified**: {{ file.last_modified }}
+  {% endif %}
+  {% if file.size %}
+  - **Size**: {{ file.size }}
+  {% endif %}
+  {% if file.owner %}
+  - **Owner**: {{ file.owner }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Dependencies & Integrations
+
+### External Dependencies
+{% if external_dependencies %}
+{% for dep in external_dependencies %}
+- **{{ dep.name }}**: {{ dep.version }}
+  - **Type**: {{ dep.type | default("Runtime") }}
+  - **Purpose**: {{ dep.purpose | default("Not specified") }}
+  {% if dep.status %}
+  - **Status**: {{ dep.status }}
+  {% endif %}
+  {% if dep.last_updated %}
+  - **Last Updated**: {{ dep.last_updated }}
+  {% endif %}
+  {% if dep.security_issues %}
+  - **Security Issues**: {{ dep.security_issues }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Internal Dependencies
+{% if internal_dependencies %}
+{% for dep in internal_dependencies %}
+- **{{ dep.component }}**: {{ dep.relationship_type }}
+  - **Owner**: {{ dep.owner | default("Not specified") }}
+  - **Status**: {{ dep.status | default("Active") }}
+  {% if dep.version %}
+  - **Version**: {{ dep.version }}
+  {% endif %}
+  {% if dep.api_contract %}
+  - **API Contract**: {{ dep.api_contract }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Integration Points
+{% if integrations %}
+{% for integration in integrations %}
+- **{{ integration.name }}**: {{ integration.type }}
+  - **Protocol**: {{ integration.protocol | default("Not specified") }}
+  - **Status**: {{ integration.status | default("Active") }}
+  {% if integration.endpoint %}
+  - **Endpoint**: {{ integration.endpoint }}
+  {% endif %}
+  {% if integration.authentication %}
+  - **Auth**: {{ integration.authentication }}
+  {% endif %}
+  {% if integration.rate_limits %}
+  - **Rate Limits**: {{ integration.rate_limits }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Team & Stakeholders
+
+### Team Members
+{% if team_members %}
+{% for member in team_members %}
+- **{{ member.name }}**: {{ member.role }}
+  {% if member.specialization %}
+  - **Specialization**: {{ member.specialization }}
+  {% endif %}
+  {% if member.contact %}
+  - **Contact**: {{ member.contact }}
+  {% endif %}
+  {% if member.responsibilities %}
+  - **Responsibilities**: {{ member.responsibilities | join(", ") }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Stakeholders
+{% if stakeholders %}
+{% for stakeholder in stakeholders %}
+- **{{ stakeholder.name }}**: {{ stakeholder.role }}
+  - **Interest**: {{ stakeholder.interest | default("Not specified") }}
+  - **Influence**: {{ stakeholder.influence_level | default("Medium") }}
+  {% if stakeholder.communication_preference %}
+  - **Communication**: {{ stakeholder.communication_preference }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Testing & Quality
+
+### Test Strategy
+{% if test_strategy %}
+- **Test Approach**: {{ test_strategy.approach | default("TDD") }}
+- **Coverage Target**: {{ test_strategy.coverage_target | default("80") }}%
+- **Test Types**: {{ test_strategy.test_types | join(", ") | default("Unit, Integration, E2E") }}
+- **CI/CD**: {{ test_strategy.cicd_integration | ternary("Integrated", "Not integrated") }}
+{% endif %}
+
+### Current Test Status
+{% if test_status %}
+- **Total Tests**: {{ test_status.total_tests | default("N/A") }}
+- **Passing**: {{ test_status.passing_tests | default("N/A") }}
+- **Failing**: {{ test_status.failing_tests | default("N/A") }}
+- **Coverage**: {{ test_status.coverage_percentage | default("N/A") }}%
+- **Last Run**: {{ test_status.last_run | default("Unknown") }}
+{% endif %}
+
+### Quality Metrics
+{% if quality_metrics %}
+{% for metric_name, metric_value in quality_metrics.items() %}
+- **{{ metric_name.replace('_', ' ').title() }}**: {{ metric_value }}
+{% endfor %}
+{% endif %}
+
+## Configuration & Environment
+
+### Environment Configuration
+{% if environment_config %}
+{% for env_name, config in environment_config.items() %}
+#### {{ env_name.title() }} Environment
+{% for config_key, config_value in config.items() %}
+- **{{ config_key.replace('_', ' ').title() }}**: {{ config_value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+### Feature Flags
+{% if feature_flags %}
+{% for flag in feature_flags %}
+- **{{ flag.name }}**: {{ flag.status }}
+  {% if flag.description %}
+  - **Description**: {{ flag.description }}
+  {% endif %}
+  {% if flag.environments %}
+  - **Environments**: {{ flag.environments | join(", ") }}
+  {% endif %}
+  {% if flag.rollout_percentage %}
+  - **Rollout**: {{ flag.rollout_percentage }}%
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Documentation & Resources
+
+### Available Documentation
+{% if documentation %}
+{% for doc in documentation %}
+- **{{ doc.title }}**: {{ doc.type }}
+  {% if doc.location %}
+  - **Location**: `{{ doc.location }}`
+  {% endif %}
+  {% if doc.last_updated %}
+  - **Updated**: {{ doc.last_updated }}
+  {% endif %}
+  {% if doc.status %}
+  - **Status**: {{ doc.status }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### Knowledge Base
+{% if knowledge_base %}
+{% for knowledge in knowledge_base %}
+- **{{ knowledge.topic }}**: {{ knowledge.type }}
+  {% if knowledge.location %}
+  - **Location**: {{ knowledge.location }}
+  {% endif %}
+  {% if knowledge.expert %}
+  - **Expert**: {{ knowledge.expert }}
+  {% endif %}
+  {% if knowledge.last_updated %}
+  - **Updated**: {{ knowledge.last_updated }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+### External Resources
+{% if external_resources %}
+{% for resource in external_resources %}
+- **{{ resource.title }}**: {{ resource.type }}
+  {% if resource.url %}
+  - **URL**: {{ resource.url }}
+  {% endif %}
+  {% if resource.relevance %}
+  - **Relevance**: {{ resource.relevance }}
+  {% endif %}
+  {% if resource.access_level %}
+  - **Access**: {{ resource.access_level }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+## Context Metadata
+
+**Context Generation**:
+- **Requested By**: {{ requesting_agent | default("System") }}
+- **Generation Time**: {{ context_generation_time | default("N/A") }}
+- **Context Version**: {{ context_version | default("1.0") }}
+- **Data Sources**: {{ data_sources | join(", ") | default("Not specified") }}
+- **Completeness**: {{ context_completeness | default("N/A") }}%
+
+{% if context_limitations %}
+**Context Limitations**:
+{{ context_limitations }}
+{% endif %}
+
+{% if refresh_schedule %}
+**Refresh Schedule**:
+- **Frequency**: {{ refresh_schedule.frequency }}
+- **Next Refresh**: {{ refresh_schedule.next_refresh }}
+- **Auto-refresh**: {{ refresh_schedule.auto_refresh | ternary("Enabled", "Disabled") }}
+{% endif %}
+
+{% if additional_notes %}
+## Additional Notes
+{{ additional_notes }}
+{% endif %}
+
+---
+*Generated by SpecifyX Context Agent v{{ agent_version | default("1.0.0") }}*
