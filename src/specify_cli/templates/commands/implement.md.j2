@@ -11,26 +11,28 @@ This is the sixth step in the Spec-Driven Development lifecycle - automated impl
 
 Given any implementation context provided as an argument, do this:
 
-1. Run `specifyx run execute-tasks --json` (or `uvx specifyx run execute-tasks --json` if specifyx not found) from repo root to start automated task execution.
+**If you have access to subagents** (like Task tool in Claude Code):
+1. Generate agent prompt(s) using `scaffold-agent`:
+   - Single agent: `specifyx run scaffold-agent implementer:feature-implementation --json`
+   - Multiple agents: `specifyx run scaffold-agent implementer:feature-impl code-reviewer:quality-check test-reviewer:coverage --json`
+2. Launch the subagent(s) with the generated prompt(s) to handle systematic task execution following TDD principles
+3. When dispatching multiple agents in parallel, consider creating shared context first:
+   - Create context: `specifyx run scaffold-agent context:shared-implementation-context --json`
+   - Reference the context file path when launching multiple agents to ensure they work with consistent information
+
+**If you do NOT have access to subagents**:
+1. Run `specifyx run check-implementation-status --json` from repo root to get current status
 
    **For No-Branch Workflow:**
-   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run execute-tasks --spec-id 001 --json`
+   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run check-implementation-status --spec-id 001 --json`
    - The error message will show available spec IDs if `--spec-id` is required
 
-   **Execution Modes:**
-   - **Full automation**: `specifyx run execute-tasks --json` (default - executes all pending tasks)
-   - **Interactive mode**: `specifyx run execute-tasks --interactive --json` (prompts for each task)
-   - **Dry run**: `specifyx run execute-tasks --dry-run --json` (shows execution plan without running)
-   - **Resume from failure**: `specifyx run execute-tasks --resume --json` (continues from last failed task)
-
    **Troubleshooting:**
-   - Check current task status: `specifyx run execute-tasks --status --json`
-   - View execution plan: `specifyx run execute-tasks --dry-run --json`
-   - If command unclear: `specifyx run execute-tasks --help`
+   - If command unclear: `specifyx run check-implementation-status --help`
 
-2. Parse the JSON output for TASKS_FILE, FEATURE_DIR, BRANCH, TOTAL_TASKS, and EXECUTION_PLAN.
+2. Parse the JSON output for TASKS_FILE, FEATURE_DIR, BRANCH, and TOTAL_TASKS.
 
-3. Monitor task execution progress and handle each phase:
+3. Execute tasks systematically following these phases:
 
    **Phase 1: Validation & Prerequisites**
    - Verify constitution exists (`.specify/memory/constitution.md`)
@@ -38,52 +40,32 @@ Given any implementation context provided as an argument, do this:
    - Check project structure and dependencies
    - Ensure all task dependencies form a valid DAG (no circular dependencies)
 
-   **Phase 2: TDD Enforcement**
-   - Execute all test tasks BEFORE their corresponding implementation tasks
+   **Phase 2: TDD Enforcement (MANDATORY)**
+   - Write and execute all test tasks BEFORE their corresponding implementation tasks
    - Tasks marked with [TEST] must pass before implementation can proceed
-   - Failed tests halt execution until manually resolved
+   - Failed tests must be resolved before continuing
 
-   **Phase 3: Parallel Task Execution**
-   - Execute tasks marked with [P] in parallel when dependencies allow
-   - Monitor parallel execution for conflicts (file access, resource contention)
-   - Respect dependency order even within parallel groups
-
-   **Phase 4: Sequential Task Execution**
-   - Execute remaining tasks in dependency order
-   - Mark completed tasks as [x] in tasks.md automatically
-   - Track progress and provide real-time status updates
+   **Phase 3: Task Execution**
+   - Execute tasks in dependency order
+   - Tasks marked with [P] can be done in parallel when dependencies allow
+   - Mark completed tasks as [x] in tasks.md as you finish them
+   - Track progress and document any blockers
 
 4. Handle errors and failures:
-   - **Critical failures**: Halt execution and provide recovery guidance
-   - **Non-critical failures**: Log warnings and continue with next available tasks
-   - **Test failures**: Stop all related implementation tasks until tests pass
-   - **Dependency failures**: Skip dependent tasks and mark as blocked
+   - **Critical failures**: Halt and document the issue in tasks.md
+   - **Test failures**: Stop related implementation tasks until tests pass
+   - **Dependency failures**: Mark dependent tasks as blocked
 
 5. Track implementation progress:
-   - Update task status in tasks.md: `- [ ]` → `- [x]`
-   - Provide percentage completion and ETA
-   - Log all executed commands and their outputs
-   - Generate implementation summary report
+   - Update task status in tasks.md: `- [ ]` → `- [x]` as you complete each task
+   - Document any deviations from the plan
+   - Log significant decisions and their rationale
 
-6. Final validation and cleanup:
+6. Final validation:
    - Run full test suite to verify implementation integrity
    - Validate that all acceptance criteria from spec.md are met
    - Check that no tasks remain in pending state
-   - Generate completion report with metrics and next steps
-
-**Error Recovery:**
-- Use `--resume` flag to continue from the last failed task
-- Check execution logs for detailed failure information
-- Manually fix blocking issues before resuming
-- Use `--skip-task T001` to skip problematic tasks if needed
-
-**Progress Monitoring:**
-Real-time progress display shows:
-- Current task being executed
-- Completed/Total tasks ratio
-- Parallel execution status
-- Failed tasks requiring attention
-- Estimated time remaining
+   - Update documentation as needed
 
 **Next Steps After Implementation:**
 - Review implementation against acceptance criteria
@@ -91,7 +73,10 @@ Real-time progress display shows:
 - Update documentation if needed
 - Prepare for deployment or next feature iteration
 
-Note: The `/implement` command enforces TDD by design - all tests must be written and pass before implementation tasks can execute. Use `/guide` command if you prefer manual step-by-step instructions instead of automated execution.
+**Important Notes:**
+- The `/implement` command enforces TDD by design - all tests must be written and pass before implementation tasks can execute
+- Use `/guide` command if you prefer detailed manual step-by-step instructions
+- If you have subagent support, leverage `scaffold-agent` to generate specialized agent prompts for complex tasks
 
 {% if assistant_workflow_integration -%}
 
@@ -103,15 +88,6 @@ Note: The `/implement` command enforces TDD by design - all tests must be writte
 
 **Available Commands:**
 {{ assistant_custom_commands }}
-{% endif %}
-
-{% if assistant_agents_available -%}
-
-**Agent Support:**
-Use the following agents during implementation:
-- `{{ assistant_command_prefix }}code-reviewer` - Review code quality and standards
-- `{{ assistant_command_prefix }}test-reviewer` - Validate test coverage and quality
-- `{{ assistant_command_prefix }}implementer` - Handle complex implementation tasks
 {% endif %}
 
 {% if assistant_command_prefix -%}
