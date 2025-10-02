@@ -1,0 +1,540 @@
+# Architecture Review Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Reviewer**: Architecture Reviewer Agent
+**Generated**: {{ timestamp }}
+**Review Scope**: {{ scope | default("System architecture") }}
+
+## Architecture Quality Assessment
+
+### Overall Architecture Score
+**Rating**: {{ quality_score | default("N/A") }}/10
+**Status**: {{ overall_status | default("PENDING") }}
+**Maturity Level**: {{ architecture_maturity | default("N/A") }}
+
+### Architecture Principles Compliance
+{% if principles_compliance %}
+{% for principle, compliance in principles_compliance.items() %}
+- **{{ principle.title() }}**: {{ compliance.score }}/10 ({{ compliance.status }})
+  {% if compliance.violations %}
+  - **Violations**: {{ compliance.violations | join(", ") }}
+  {% endif %}
+  {% if compliance.recommendations %}
+  - **Recommendations**: {{ compliance.recommendations | join("; ") }}
+  {% endif %}
+{% endfor %}
+{% else %}
+- SOLID Principles: Not analyzed
+- DRY (Don't Repeat Yourself): Not analyzed
+- KISS (Keep It Simple): Not analyzed
+- YAGNI (You Aren't Gonna Need It): Not analyzed
+- Separation of Concerns: Not analyzed
+- Single Responsibility: Not analyzed
+{% endif %}
+
+### Critical Architecture Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() }}: {{ issue.title }}
+**Component**: {{ issue.affected_component }}
+**Issue**: {{ issue.description }}
+**Impact**: {{ issue.business_impact }}
+
+{% if issue.current_design %}
+**Current Design**:
+```
+{{ issue.current_design }}
+```
+{% endif %}
+
+**Recommended Solution**: {{ issue.recommended_solution }}
+**Effort**: {{ issue.effort_estimate }}
+**Risk if Not Fixed**: {{ issue.risk_level }}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical architecture issues found
+{% endif %}
+
+## System Architecture Analysis
+
+### High-Level Architecture
+{% if system_architecture %}
+**Architecture Style**: {{ system_architecture.style }}
+**Deployment Model**: {{ system_architecture.deployment_model }}
+**Integration Pattern**: {{ system_architecture.integration_pattern }}
+**Data Flow**: {{ system_architecture.data_flow_pattern }}
+
+#### System Components
+{% for component in system_architecture.components %}
+- **{{ component.name }}**: {{ component.type }}
+  - **Responsibility**: {{ component.responsibility }}
+  - **Dependencies**: {{ component.dependencies | join(", ") }}
+  - **Health**: {{ component.health_status }}
+  - **Scalability**: {{ component.scalability_rating }}/10
+{% endfor %}
+{% endif %}
+
+### Layer Architecture
+{% if layer_architecture %}
+{% for layer in layer_architecture.layers %}
+#### {{ layer.name }} Layer
+**Purpose**: {{ layer.purpose }}
+**Components**: {{ layer.components | join(", ") }}
+**Coupling**: {{ layer.coupling_level }}
+**Cohesion**: {{ layer.cohesion_level }}
+
+{% if layer.violations %}
+**Layer Violations**:
+{% for violation in layer.violations %}
+- {{ violation.description }}
+  - **Impact**: {{ violation.impact }}
+  - **Fix**: {{ violation.recommended_fix }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Service Architecture
+{% if service_architecture %}
+**Service Count**: {{ service_architecture.service_count }}
+**Communication Pattern**: {{ service_architecture.communication_pattern }}
+**Service Mesh**: {{ service_architecture.service_mesh | ternary("Implemented", "Not Implemented") }}
+**Data Consistency**: {{ service_architecture.data_consistency_pattern }}
+
+{% if service_architecture.services %}
+#### Service Analysis
+{% for service in service_architecture.services %}
+- **{{ service.name }}**: {{ service.type }}
+  - **Domain Boundary**: {{ service.domain_boundary_clarity }}/10
+  - **Independence**: {{ service.independence_score }}/10
+  - **API Quality**: {{ service.api_quality_score }}/10
+  - **Data Ownership**: {{ service.data_ownership | ternary("Clear", "Unclear") }}
+
+  {% if service.issues %}
+  **Issues**:
+  {% for issue in service.issues %}
+  - {{ issue.description }}
+  {% endfor %}
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Design Pattern Analysis
+
+### Pattern Usage Assessment
+{% if design_patterns %}
+{% for pattern in design_patterns %}
+#### {{ pattern.name }} Pattern
+**Usage**: {{ pattern.usage_assessment }}
+**Appropriateness**: {{ pattern.appropriateness_score }}/10
+**Implementation Quality**: {{ pattern.implementation_score }}/10
+**Location**: {{ pattern.implemented_in | join(", ") }}
+
+{% if pattern.issues %}
+**Issues**:
+{% for issue in pattern.issues %}
+- {{ issue.description }}
+  - **Severity**: {{ issue.severity }}
+  - **Recommendation**: {{ issue.fix_recommendation }}
+{% endfor %}
+{% endif %}
+
+{% if pattern.benefits %}
+**Benefits Realized**: {{ pattern.benefits | join(", ") }}
+{% endif %}
+
+{% if pattern.alternatives %}
+**Alternative Patterns**: {{ pattern.alternatives | join(", ") }}
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+No design pattern analysis available
+{% endif %}
+
+### Anti-Pattern Detection
+{% if anti_patterns %}
+{% for anti_pattern in anti_patterns %}
+#### {{ anti_pattern.name }} Anti-Pattern Detected
+**Location**: {{ anti_pattern.location }}
+**Description**: {{ anti_pattern.description }}
+**Impact**: {{ anti_pattern.negative_impact }}
+**Refactoring Strategy**: {{ anti_pattern.refactoring_approach }}
+**Effort**: {{ anti_pattern.refactoring_effort }}
+
+---
+{% endfor %}
+{% else %}
+✅ No anti-patterns detected
+{% endif %}
+
+## Scalability & Performance
+
+### Scalability Assessment
+{% if scalability %}
+**Horizontal Scaling**: {{ scalability.horizontal_score }}/10
+**Vertical Scaling**: {{ scalability.vertical_score }}/10
+**Load Distribution**: {{ scalability.load_distribution_score }}/10
+**State Management**: {{ scalability.state_management_score }}/10
+
+#### Scalability Bottlenecks
+{% if scalability.bottlenecks %}
+{% for bottleneck in scalability.bottlenecks %}
+- **{{ bottleneck.component }}**: {{ bottleneck.description }}
+  - **Limit**: {{ bottleneck.scaling_limit }}
+  - **Solution**: {{ bottleneck.scaling_solution }}
+  - **Priority**: {{ bottleneck.priority }}
+{% endfor %}
+{% else %}
+✅ No scalability bottlenecks identified
+{% endif %}
+
+#### Performance Characteristics
+{% if scalability.performance %}
+- **Throughput**: {{ scalability.performance.throughput_capacity }}
+- **Latency**: {{ scalability.performance.average_latency }}ms
+- **Resource Utilization**: {{ scalability.performance.resource_efficiency }}/10
+- **Caching Strategy**: {{ scalability.performance.caching_effectiveness }}/10
+{% endif %}
+{% endif %}
+
+### Load Balancing & Distribution
+{% if load_balancing %}
+**Strategy**: {{ load_balancing.strategy }}
+**Effectiveness**: {{ load_balancing.effectiveness_score }}/10
+**Fault Tolerance**: {{ load_balancing.fault_tolerance_score }}/10
+
+{% if load_balancing.issues %}
+**Issues**:
+{% for issue in load_balancing.issues %}
+- {{ issue.description }}
+  - **Impact**: {{ issue.performance_impact }}
+  - **Resolution**: {{ issue.recommended_solution }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Security Architecture
+
+### Security Design Assessment
+{% if security_architecture %}
+**Overall Security Score**: {{ security_architecture.overall_score }}/10
+**Authentication**: {{ security_architecture.authentication_score }}/10
+**Authorization**: {{ security_architecture.authorization_score }}/10
+**Data Protection**: {{ security_architecture.data_protection_score }}/10
+**Network Security**: {{ security_architecture.network_security_score }}/10
+
+#### Security Controls
+{% for control in security_architecture.controls %}
+- **{{ control.name }}**: {{ control.implementation_status }}
+  - **Effectiveness**: {{ control.effectiveness_score }}/10
+  - **Coverage**: {{ control.coverage_percentage }}%
+  - **Compliance**: {{ control.compliance_status }}
+{% endfor %}
+
+#### Security Vulnerabilities
+{% if security_architecture.vulnerabilities %}
+{% for vuln in security_architecture.vulnerabilities %}
+- **{{ vuln.severity.upper() }}**: {{ vuln.description }}
+  - **Component**: {{ vuln.affected_component }}
+  - **OWASP Category**: {{ vuln.owasp_category }}
+  - **Mitigation**: {{ vuln.mitigation_strategy }}
+  - **Timeline**: {{ vuln.fix_timeline }}
+{% endfor %}
+{% else %}
+✅ No security vulnerabilities identified
+{% endif %}
+{% endif %}
+
+### Data Flow Security
+{% if data_flow_security %}
+{% for flow in data_flow_security %}
+#### {{ flow.name }} Data Flow
+**Security Level**: {{ flow.security_level }}
+**Encryption**: {{ flow.encryption_status }}
+**Access Control**: {{ flow.access_control_score }}/10
+**Data Integrity**: {{ flow.integrity_protection | ternary("Protected", "Unprotected") }}
+
+{% if flow.risks %}
+**Security Risks**:
+{% for risk in flow.risks %}
+- {{ risk.description }} ({{ risk.severity }})
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## Data Architecture
+
+### Data Management Assessment
+{% if data_architecture %}
+**Data Consistency**: {{ data_architecture.consistency_model }}
+**Storage Strategy**: {{ data_architecture.storage_strategy }}
+**Backup & Recovery**: {{ data_architecture.backup_score }}/10
+**Data Governance**: {{ data_architecture.governance_score }}/10
+
+#### Data Stores
+{% for store in data_architecture.data_stores %}
+- **{{ store.name }}**: {{ store.type }}
+  - **Purpose**: {{ store.purpose }}
+  - **Consistency Level**: {{ store.consistency_level }}
+  - **Performance**: {{ store.performance_score }}/10
+  - **Scalability**: {{ store.scalability_score }}/10
+  - **Reliability**: {{ store.reliability_score }}/10
+{% endfor %}
+
+#### Data Integration
+{% if data_architecture.integration %}
+**Integration Pattern**: {{ data_architecture.integration.pattern }}
+**Data Quality**: {{ data_architecture.integration.quality_score }}/10
+**Synchronization**: {{ data_architecture.integration.sync_strategy }}
+**Conflict Resolution**: {{ data_architecture.integration.conflict_resolution }}
+{% endif %}
+{% endif %}
+
+### Data Privacy & Compliance
+{% if data_privacy %}
+**GDPR Compliance**: {{ data_privacy.gdpr_score }}/10
+**Data Classification**: {{ data_privacy.classification_score }}/10
+**Retention Policies**: {{ data_privacy.retention_score }}/10
+**Audit Trail**: {{ data_privacy.audit_trail_score }}/10
+
+{% if data_privacy.compliance_gaps %}
+**Compliance Gaps**:
+{% for gap in data_privacy.compliance_gaps %}
+- {{ gap.regulation }}: {{ gap.gap_description }}
+  - **Risk**: {{ gap.risk_level }}
+  - **Remediation**: {{ gap.remediation_plan }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Integration Architecture
+
+### API Design Assessment
+{% if api_architecture %}
+**API Design Score**: {{ api_architecture.design_score }}/10
+**Consistency**: {{ api_architecture.consistency_score }}/10
+**Documentation**: {{ api_architecture.documentation_score }}/10
+**Versioning Strategy**: {{ api_architecture.versioning_score }}/10
+
+#### API Quality Issues
+{% if api_architecture.issues %}
+{% for issue in api_architecture.issues %}
+- **{{ issue.api_name }}**: {{ issue.issue_type }}
+  - **Description**: {{ issue.description }}
+  - **Impact**: {{ issue.impact_on_consumers }}
+  - **Fix**: {{ issue.recommended_fix }}
+{% endfor %}
+{% endif %}
+
+#### Integration Patterns
+{% for pattern in api_architecture.integration_patterns %}
+- **{{ pattern.name }}**: {{ pattern.usage_assessment }}
+  - **Appropriateness**: {{ pattern.fit_score }}/10
+  - **Implementation**: {{ pattern.implementation_quality }}/10
+{% endfor %}
+{% endif %}
+
+### Event-Driven Architecture
+{% if event_architecture %}
+**Event Design Score**: {{ event_architecture.design_score }}/10
+**Message Ordering**: {{ event_architecture.ordering_strategy }}
+**Event Store**: {{ event_architecture.storage_solution }}
+**Processing Model**: {{ event_architecture.processing_model }}
+
+{% if event_architecture.issues %}
+**Event Architecture Issues**:
+{% for issue in event_architecture.issues %}
+- {{ issue.description }}
+  - **Component**: {{ issue.affected_component }}
+  - **Impact**: {{ issue.system_impact }}
+  - **Solution**: {{ issue.recommended_solution }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Technology Architecture
+
+### Technology Stack Assessment
+{% if technology_stack %}
+**Stack Coherence**: {{ technology_stack.coherence_score }}/10
+**Technology Debt**: {{ technology_stack.debt_score }}/10
+**Upgrade Path**: {{ technology_stack.upgrade_score }}/10
+**Vendor Lock-in Risk**: {{ technology_stack.vendor_risk_score }}/10
+
+#### Technology Choices
+{% for tech in technology_stack.technologies %}
+- **{{ tech.name }}** ({{ tech.category }}): {{ tech.assessment }}
+  - **Version**: {{ tech.current_version }}
+  - **Support Status**: {{ tech.support_status }}
+  - **Alternatives**: {{ tech.alternatives | join(", ") }}
+  - **Migration Effort**: {{ tech.migration_effort }}
+{% endfor %}
+
+#### Dependencies & Vulnerabilities
+{% if technology_stack.dependencies %}
+{% for dep in technology_stack.dependencies %}
+- **{{ dep.name }}**: {{ dep.status }}
+  - **Version**: {{ dep.version }}
+  - **Vulnerabilities**: {{ dep.vulnerability_count }}
+  - **Update Recommended**: {{ dep.update_recommended | ternary("Yes", "No") }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Cloud Architecture
+{% if cloud_architecture %}
+**Cloud Strategy**: {{ cloud_architecture.strategy }}
+**Multi-Cloud**: {{ cloud_architecture.multi_cloud_score }}/10
+**Vendor Lock-in**: {{ cloud_architecture.vendor_independence_score }}/10
+**Cost Optimization**: {{ cloud_architecture.cost_optimization_score }}/10
+
+#### Cloud Services Usage
+{% for service in cloud_architecture.services %}
+- **{{ service.name }}**: {{ service.usage_assessment }}
+  - **Appropriateness**: {{ service.fit_score }}/10
+  - **Cost Efficiency**: {{ service.cost_score }}/10
+  - **Alternatives**: {{ service.alternatives | join(", ") }}
+{% endfor %}
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **Component**: {{ rec.affected_component }}
+  - **Impact**: {{ rec.expected_impact }}
+  - **Effort**: {{ rec.estimated_effort }}
+  - **Risk**: {{ rec.risk_level }}
+  - **Dependencies**: {{ rec.dependencies | default("None") }}
+{% endfor %}
+{% else %}
+✅ No high priority architectural recommendations
+{% endif %}
+
+### Architectural Improvements
+{% if architectural_improvements %}
+{% for improvement in architectural_improvements %}
+- [ ] {{ improvement.description }}
+  - **Category**: {{ improvement.category }}
+  - **Benefit**: {{ improvement.expected_benefit }}
+  - **Timeline**: {{ improvement.implementation_timeline }}
+  - **Success Criteria**: {{ improvement.success_criteria }}
+{% endfor %}
+{% else %}
+✅ Architecture meets current requirements
+{% endif %}
+
+### Technical Debt Reduction
+{% if technical_debt %}
+{% for debt in technical_debt %}
+- [ ] {{ debt.description }}
+  - **Debt Type**: {{ debt.debt_type }}
+  - **Component**: {{ debt.affected_component }}
+  - **Interest Rate**: {{ debt.interest_rate }}
+  - **Refactoring Effort**: {{ debt.refactoring_effort }}
+  - **Business Value**: {{ debt.business_value_gain }}
+{% endfor %}
+{% endif %}
+
+## Evolution & Roadmap
+
+### Architecture Evolution
+{% if evolution_roadmap %}
+{% for phase in evolution_roadmap %}
+#### {{ phase.name }} ({{ phase.timeline }})
+**Objectives**: {{ phase.objectives | join(", ") }}
+**Key Changes**: {{ phase.key_changes | join(", ") }}
+**Success Metrics**: {{ phase.success_metrics | join(", ") }}
+**Dependencies**: {{ phase.dependencies | join(", ") }}
+
+{% if phase.risks %}
+**Risks**:
+{% for risk in phase.risks %}
+- {{ risk.description }} ({{ risk.probability }}% probability)
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Future-Proofing
+{% if future_proofing %}
+- **Adaptability Score**: {{ future_proofing.adaptability_score }}/10
+- **Technology Evolution**: {{ future_proofing.tech_evolution_readiness }}/10
+- **Business Growth**: {{ future_proofing.business_growth_readiness }}/10
+- **Emerging Trends**: {{ future_proofing.emerging_trends_alignment }}/10
+
+{% if future_proofing.recommendations %}
+**Future-Proofing Recommendations**:
+{% for rec in future_proofing.recommendations %}
+- {{ rec.description }}
+  - **Timeline**: {{ rec.implementation_timeline }}
+  - **Investment**: {{ rec.investment_required }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions Required
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("Architecture Team") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+   - **Success Criteria**: {{ action.success_criteria }}
+{% endfor %}
+{% else %}
+1. Address critical architecture issues
+2. Implement high-priority recommendations
+3. Plan technical debt reduction
+4. Review and update architecture documentation
+{% endif %}
+
+### Architecture Governance
+- [ ] Establish architecture review board
+- [ ] Define architecture standards and guidelines
+- [ ] Implement architecture compliance monitoring
+- [ ] Create architecture decision records (ADRs)
+- [ ] Schedule regular architecture reviews
+
+### Quality Gates
+- [ ] All critical issues resolved
+- [ ] Security vulnerabilities addressed
+- [ ] Performance benchmarks met
+- [ ] Scalability requirements validated
+- [ ] Architecture documentation updated
+
+## Review Metadata
+
+**Review Duration**: {{ review_duration | default("N/A") }}
+**Components Reviewed**: {{ components_reviewed | length | default(0) }}
+**Architecture Complexity**: {{ architecture_complexity | default("N/A") }}
+**Review Type**: {{ review_type | default("Comprehensive Architecture Review") }}
+
+{% if reviewer_notes %}
+### Reviewer Notes
+{{ reviewer_notes }}
+{% endif %}
+
+{% if architecture_decisions %}
+### Key Architecture Decisions
+{% for decision in architecture_decisions %}
+- **{{ decision.title }}**: {{ decision.decision }}
+  - **Rationale**: {{ decision.rationale }}
+  - **Alternatives**: {{ decision.alternatives_considered }}
+  - **Consequences**: {{ decision.consequences }}
+{% endfor %}
+{% endif %}
+
+---
+*Generated by SpecifyX Architecture Reviewer Agent v{{ agent_version | default("1.0.0") }}*

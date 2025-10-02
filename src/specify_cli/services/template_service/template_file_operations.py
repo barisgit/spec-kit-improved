@@ -137,7 +137,12 @@ class TemplateFileOperations:
             assistant = get_assistant(ai_assistant)
             if assistant:
                 commands_dir = assistant.config.command_files.directory
-                return f"{commands_dir}/{filename}"
+                # Use determine_output_filename to properly convert file extensions
+                # Pass only the filename, not the full template_path, to avoid duplicating the category prefix
+                output_filename = self.determine_output_filename(
+                    filename, ai_assistant, category
+                )
+                return f"{commands_dir}/{output_filename}"
         elif category == "context":
             assistant = get_assistant(ai_assistant)
             if assistant:

@@ -1,0 +1,300 @@
+# Documentation Review Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Reviewer**: Documentation Reviewer Agent
+**Generated**: {{ timestamp }}
+**Review Scope**: {{ scope | default("All documentation") }}
+
+## Documentation Quality Assessment
+
+### Overall Quality Score
+**Rating**: {{ quality_score | default("N/A") }}/10
+**Status**: {{ overall_status | default("PENDING") }}
+**Completeness**: {{ completeness_percentage | default("N/A") }}%
+
+### Documentation Coverage
+{% if coverage_analysis %}
+{% for doc_type, coverage in coverage_analysis.items() %}
+- **{{ doc_type.title() }}**: {{ coverage.percentage }}% ({{ coverage.status }})
+  - **Files**: {{ coverage.files_count }}
+  - **Missing**: {{ coverage.missing_count }}
+{% endfor %}
+{% else %}
+- API Documentation: Not analyzed
+- User Guides: Not analyzed
+- Technical Specifications: Not analyzed
+- Code Comments: Not analyzed
+{% endif %}
+
+### Critical Documentation Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() }}: {{ issue.title }}
+**File**: `{{ issue.file_path }}`
+**Section**: {{ issue.section | default("N/A") }}
+**Issue**: {{ issue.description }}
+
+{% if issue.example %}
+**Example**:
+```
+{{ issue.example }}
+```
+{% endif %}
+
+**Recommended Fix**: {{ issue.recommendation }}
+**Impact**: {{ issue.user_impact }}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical documentation issues found
+{% endif %}
+
+### Content Quality Analysis
+
+#### Clarity & Readability
+{% if readability_issues %}
+{% for issue in readability_issues %}
+- **{{ issue.type }}**: {{ issue.description }}
+  - **Location**: {{ issue.file_path }}
+  - **Suggestion**: {{ issue.improvement_suggestion }}
+  - **Readability Score**: {{ issue.score | default("N/A") }}
+{% endfor %}
+{% else %}
+✅ Documentation meets readability standards
+{% endif %}
+
+#### Accuracy & Consistency
+{% if accuracy_issues %}
+{% for issue in accuracy_issues %}
+- **Inconsistency**: {{ issue.description }}
+  - **Files Affected**: {{ issue.affected_files | join(", ") }}
+  - **Type**: {{ issue.inconsistency_type }}
+  - **Fix**: {{ issue.resolution_strategy }}
+{% endfor %}
+{% else %}
+✅ Documentation is accurate and consistent
+{% endif %}
+
+#### Technical Depth
+{% if technical_issues %}
+{% for issue in technical_issues %}
+- **{{ issue.severity }}**: {{ issue.title }}
+  - **Description**: {{ issue.description }}
+  - **Missing Details**: {{ issue.missing_technical_details }}
+  - **Audience Impact**: {{ issue.audience_affected }}
+{% endfor %}
+{% else %}
+✅ Technical depth is appropriate for audience
+{% endif %}
+
+### Missing Documentation
+{% if missing_docs %}
+{% for missing in missing_docs %}
+#### {{ missing.type.title() }} - {{ missing.priority.upper() }} Priority
+**What's Missing**: {{ missing.description }}
+**Why Needed**: {{ missing.justification }}
+**Affected Users**: {{ missing.target_audience }}
+**Estimated Effort**: {{ missing.effort_estimate }}
+
+{% if missing.template_suggestion %}
+**Suggested Template**:
+```markdown
+{{ missing.template_suggestion }}
+```
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+✅ All required documentation is present
+{% endif %}
+
+### Outdated Documentation
+{% if outdated_docs %}
+{% for outdated in outdated_docs %}
+- **File**: {{ outdated.file_path }}
+  - **Last Updated**: {{ outdated.last_modified }}
+  - **Code Last Changed**: {{ outdated.code_last_changed }}
+  - **Staleness**: {{ outdated.staleness_days }} days
+  - **Required Updates**: {{ outdated.required_updates }}
+{% endfor %}
+{% else %}
+✅ All documentation is up-to-date
+{% endif %}
+
+## User Experience Analysis
+
+### Navigation & Structure
+{% if navigation_issues %}
+{% for issue in navigation_issues %}
+- **{{ issue.type }}**: {{ issue.description }}
+  - **User Impact**: {{ issue.user_frustration_level }}
+  - **Recommendation**: {{ issue.improvement_suggestion }}
+{% endfor %}
+{% else %}
+✅ Documentation structure supports good user experience
+{% endif %}
+
+### Accessibility
+{% if accessibility_issues %}
+{% for issue in accessibility_issues %}
+- **Accessibility Concern**: {{ issue.description }}
+  - **WCAG Level**: {{ issue.wcag_level }}
+  - **Users Affected**: {{ issue.affected_users }}
+  - **Fix**: {{ issue.remediation_steps }}
+{% endfor %}
+{% else %}
+✅ Documentation meets accessibility standards
+{% endif %}
+
+### Searchability
+{% if searchability_analysis %}
+- **Search Quality**: {{ searchability_analysis.quality_score }}/10
+- **Missing Keywords**: {{ searchability_analysis.missing_keywords | join(", ") }}
+- **SEO Score**: {{ searchability_analysis.seo_score | default("N/A") }}
+- **Recommendations**:
+{% for rec in searchability_analysis.recommendations %}
+  - {{ rec }}
+{% endfor %}
+{% endif %}
+
+## Content Standards Compliance
+
+### Writing Style Guide
+{% if style_violations %}
+{% for violation in style_violations %}
+- **Style Issue**: {{ violation.rule_name }}
+  - **Location**: {{ violation.file_path }}:{{ violation.line_number }}
+  - **Current**: "{{ violation.current_text }}"
+  - **Suggested**: "{{ violation.suggested_fix }}"
+  - **Rule**: {{ violation.style_rule_explanation }}
+{% endfor %}
+{% else %}
+✅ Writing style guide compliance verified
+{% endif %}
+
+### Formatting Standards
+{% if formatting_issues %}
+{% for issue in formatting_issues %}
+- **Formatting Problem**: {{ issue.type }}
+  - **Files**: {{ issue.affected_files | join(", ") }}
+  - **Standard**: {{ issue.expected_format }}
+  - **Current**: {{ issue.current_format }}
+  - **Auto-fixable**: {{ issue.auto_fixable | ternary("Yes", "No") }}
+{% endfor %}
+{% else %}
+✅ Formatting standards met
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **User Impact**: {{ rec.user_impact }}
+  - **Business Impact**: {{ rec.business_impact }}
+  - **Effort**: {{ rec.estimated_effort }}
+  - **Dependencies**: {{ rec.dependencies | default("None") }}
+{% endfor %}
+{% else %}
+✅ No high priority recommendations
+{% endif %}
+
+### Content Improvements
+{% if content_improvements %}
+{% for improvement in content_improvements %}
+- [ ] {{ improvement.description }}
+  - **Type**: {{ improvement.improvement_type }}
+  - **Files**: {{ improvement.affected_files | join(", ") }}
+  - **Expected Outcome**: {{ improvement.expected_benefit }}
+{% endfor %}
+{% else %}
+✅ Content quality meets standards
+{% endif %}
+
+### Structural Enhancements
+{% if structural_improvements %}
+{% for enhancement in structural_improvements %}
+- [ ] {{ enhancement.description }}
+  - **Scope**: {{ enhancement.scope }}
+  - **User Benefit**: {{ enhancement.user_benefit }}
+  - **Implementation**: {{ enhancement.implementation_approach }}
+{% endfor %}
+{% else %}
+✅ Documentation structure is optimal
+{% endif %}
+
+## Documentation Metrics
+
+### Quantitative Analysis
+{% if metrics %}
+- **Total Pages**: {{ metrics.total_pages }}
+- **Total Words**: {{ metrics.total_words }}
+- **Average Reading Time**: {{ metrics.avg_reading_time }} minutes
+- **Code Examples**: {{ metrics.code_examples_count }}
+- **Images/Diagrams**: {{ metrics.visual_elements_count }}
+- **External Links**: {{ metrics.external_links_count }}
+- **Broken Links**: {{ metrics.broken_links_count }}
+{% endif %}
+
+### Quality Indicators
+{% if quality_indicators %}
+{% for indicator, value in quality_indicators.items() %}
+- **{{ indicator.title() }}**: {{ value }}
+{% endfor %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions Required
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("Technical Writer") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+   - **Dependencies**: {{ action.dependencies | default("None") }}
+{% endfor %}
+{% else %}
+✅ No immediate actions required
+{% endif %}
+
+### Content Creation Pipeline
+{% if content_pipeline %}
+{% for item in content_pipeline %}
+- [ ] {{ item.title }}
+  - **Type**: {{ item.content_type }}
+  - **Priority**: {{ item.priority }}
+  - **Estimated Hours**: {{ item.effort_hours }}
+  - **Target Audience**: {{ item.audience }}
+{% endfor %}
+{% endif %}
+
+### Review Schedule
+- [ ] Next comprehensive review: {{ next_review_date | default("TBD") }}
+- [ ] Quarterly content audit
+- [ ] User feedback integration review
+- [ ] Technical accuracy verification
+
+## Review Metadata
+
+**Review Duration**: {{ review_duration | default("N/A") }}
+**Documents Reviewed**: {{ documents_reviewed | length | default(0) }}
+**Total Word Count**: {{ total_word_count | default("N/A") }}
+**Review Type**: {{ review_type | default("Comprehensive Review") }}
+
+{% if reviewer_notes %}
+### Reviewer Notes
+{{ reviewer_notes }}
+{% endif %}
+
+{% if user_feedback_summary %}
+### User Feedback Summary
+{{ user_feedback_summary }}
+{% endif %}
+
+---
+*Generated by SpecifyX Documentation Reviewer Agent v{{ agent_version | default("1.0.0") }}*

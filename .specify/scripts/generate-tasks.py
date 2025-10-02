@@ -330,6 +330,8 @@ def generate(
 
         echo_debug("Task generation completed", debug)
 
+    except typer.Exit:
+        raise
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
         if json_mode:

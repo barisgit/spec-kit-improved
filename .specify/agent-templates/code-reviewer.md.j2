@@ -1,0 +1,197 @@
+# Code Review Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Reviewer**: Code Reviewer Agent
+**Generated**: {{ timestamp }}
+**Review Scope**: {{ scope | default("Full codebase") }}
+
+## Code Quality Assessment
+
+### Overall Quality Score
+**Rating**: {{ quality_score | default("N/A") }}/10
+**Status**: {{ overall_status | default("PENDING") }}
+
+### Code Quality Metrics
+{% if metrics %}
+{% for metric, value in metrics.items() %}
+- **{{ metric.title() }}**: {{ value }}
+{% endfor %}
+{% else %}
+- Complexity: Not analyzed
+- Test Coverage: Not analyzed
+- Type Safety: Not analyzed
+- Performance: Not analyzed
+{% endif %}
+
+### Critical Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() }}: {{ issue.title }}
+**File**: `{{ issue.file_path }}`
+**Line**: {{ issue.line_number | default("N/A") }}
+**Description**: {{ issue.description }}
+
+{% if issue.code_snippet %}
+```{{ issue.language | default("python") }}
+{{ issue.code_snippet }}
+```
+{% endif %}
+
+**Recommended Fix**: {{ issue.recommendation }}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical issues found
+{% endif %}
+
+### Security Vulnerabilities
+{% if security_issues %}
+{% for vuln in security_issues %}
+- **{{ vuln.severity.upper() }}**: {{ vuln.description }}
+  - **Location**: {{ vuln.file_path }}:{{ vuln.line_number | default("N/A") }}
+  - **Fix**: {{ vuln.fix_recommendation }}
+{% endfor %}
+{% else %}
+✅ No security vulnerabilities detected
+{% endif %}
+
+### Code Style & Standards
+{% if style_violations %}
+{% for violation in style_violations %}
+- **{{ violation.type }}**: {{ violation.message }}
+  - **File**: {{ violation.file_path }}
+  - **Fix**: {{ violation.auto_fixable | ternary("Auto-fixable", "Manual fix required") }}
+{% endfor %}
+{% else %}
+✅ Code style compliance verified
+{% endif %}
+
+### Performance Concerns
+{% if performance_issues %}
+{% for issue in performance_issues %}
+- **{{ issue.severity }}**: {{ issue.description }}
+  - **Impact**: {{ issue.performance_impact }}
+  - **Recommendation**: {{ issue.optimization_suggestion }}
+{% endfor %}
+{% else %}
+✅ No performance issues identified
+{% endif %}
+
+### Test Coverage Analysis
+{% if test_coverage %}
+- **Overall Coverage**: {{ test_coverage.percentage }}%
+- **Lines Tested**: {{ test_coverage.lines_covered }}/{{ test_coverage.total_lines }}
+- **Missing Tests**:
+{% for missing in test_coverage.missing_tests %}
+  - {{ missing.function_name }} in {{ missing.file_path }}
+{% endfor %}
+{% else %}
+⚠️  Test coverage analysis not available
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **Reason**: {{ rec.justification }}
+  - **Impact**: {{ rec.expected_impact }}
+  - **Effort**: {{ rec.estimated_effort }}
+{% endfor %}
+{% else %}
+✅ No high priority recommendations
+{% endif %}
+
+### Medium Priority
+{% if medium_priority_recommendations %}
+{% for rec in medium_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **Benefit**: {{ rec.benefit }}
+  - **Effort**: {{ rec.estimated_effort }}
+{% endfor %}
+{% else %}
+✅ No medium priority recommendations
+{% endif %}
+
+### Code Quality Improvements
+{% if quality_improvements %}
+{% for improvement in quality_improvements %}
+- [ ] {{ improvement.description }}
+  - **Category**: {{ improvement.category }}
+  - **Files Affected**: {{ improvement.affected_files | join(", ") }}
+{% endfor %}
+{% else %}
+✅ Code quality meets standards
+{% endif %}
+
+## Architecture & Design
+
+### Design Patterns Analysis
+{% if design_patterns %}
+{% for pattern in design_patterns %}
+- **{{ pattern.name }}**: {{ pattern.usage_assessment }}
+  - **Appropriateness**: {{ pattern.appropriateness_score }}/10
+  - **Recommendation**: {{ pattern.recommendation }}
+{% endfor %}
+{% else %}
+- Design patterns analysis not performed
+{% endif %}
+
+### Dependency Analysis
+{% if dependencies %}
+- **Total Dependencies**: {{ dependencies.count }}
+- **Outdated**: {{ dependencies.outdated | length }}
+- **Security Risks**: {{ dependencies.security_risks | length }}
+- **Recommendations**:
+{% for rec in dependencies.recommendations %}
+  - {{ rec }}
+{% endfor %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions Required
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("TBD") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+{% endfor %}
+{% else %}
+✅ No immediate actions required
+{% endif %}
+
+### Follow-up Reviews
+{% if followup_reviews %}
+{% for review in followup_reviews %}
+- [ ] {{ review.scope }} ({{ review.timeline }})
+{% endfor %}
+{% else %}
+- [ ] Schedule next code review after implementation
+{% endif %}
+
+### Quality Gates
+- [ ] All critical issues resolved
+- [ ] Security vulnerabilities addressed
+- [ ] Test coverage meets minimum threshold ({{ min_test_coverage | default("80") }}%)
+- [ ] Performance benchmarks met
+- [ ] Code style compliance verified
+
+## Review Metadata
+
+**Review Duration**: {{ review_duration | default("N/A") }}
+**Files Reviewed**: {{ files_reviewed | length | default(0) }}
+**Lines of Code**: {{ total_lines | default("N/A") }}
+**Review Type**: {{ review_type | default("Full Review") }}
+
+{% if reviewer_notes %}
+### Reviewer Notes
+{{ reviewer_notes }}
+{% endif %}
+
+---
+*Generated by SpecifyX Code Reviewer Agent v{{ agent_version | default("1.0.0") }}*

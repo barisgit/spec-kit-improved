@@ -1,0 +1,563 @@
+# Test Review Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Reviewer**: Test Reviewer Agent
+**Generated**: {{ timestamp }}
+**Review Scope**: {{ scope | default("Full test suite") }}
+
+## Test Quality Assessment
+
+### Overall Test Quality Score
+**Rating**: {{ quality_score | default("N/A") }}/10
+**Status**: {{ overall_status | default("PENDING") }}
+**Test Coverage**: {{ coverage_percentage | default("N/A") }}%
+
+### Test Coverage Analysis
+{% if coverage_analysis %}
+{% for coverage_type, data in coverage_analysis.items() %}
+- **{{ coverage_type.title() }}**: {{ data.percentage }}%
+  - **Lines Covered**: {{ data.lines_covered }}/{{ data.total_lines }}
+  - **Status**: {{ data.status }}
+  - **Target**: {{ data.target_percentage }}%
+  {% if data.gaps %}
+  - **Coverage Gaps**: {{ data.gaps | length }} identified
+  {% endif %}
+{% endfor %}
+{% else %}
+- Unit Test Coverage: Not analyzed
+- Integration Test Coverage: Not analyzed
+- End-to-End Test Coverage: Not analyzed
+- API Test Coverage: Not analyzed
+{% endif %}
+
+### Critical Test Issues
+{% if critical_issues %}
+{% for issue in critical_issues %}
+#### {{ issue.severity.upper() }}: {{ issue.title }}
+**Test File**: `{{ issue.test_file }}`
+**Test Case**: {{ issue.test_case | default("N/A") }}
+**Issue**: {{ issue.description }}
+
+{% if issue.failing_test %}
+**Failing Test**:
+```{{ issue.test_language | default("python") }}
+{{ issue.failing_test }}
+```
+{% endif %}
+
+**Root Cause**: {{ issue.root_cause }}
+**Recommended Fix**: {{ issue.recommendation }}
+**Impact**: {{ issue.impact_on_quality }}
+
+---
+{% endfor %}
+{% else %}
+✅ No critical test issues found
+{% endif %}
+
+## Test Effectiveness Analysis
+
+### Test Quality Metrics
+{% if test_metrics %}
+- **Test Count**: {{ test_metrics.total_tests }}
+- **Passing Tests**: {{ test_metrics.passing_tests }}
+- **Failing Tests**: {{ test_metrics.failing_tests }}
+- **Skipped Tests**: {{ test_metrics.skipped_tests }}
+- **Test Execution Time**: {{ test_metrics.execution_time }}
+- **Flaky Tests**: {{ test_metrics.flaky_tests }}
+- **Test Maintenance Score**: {{ test_metrics.maintenance_score }}/10
+{% endif %}
+
+### Test Categories Assessment
+{% if test_categories %}
+{% for category in test_categories %}
+#### {{ category.name }} Tests
+**Count**: {{ category.test_count }}
+**Coverage**: {{ category.coverage_percentage }}%
+**Quality Score**: {{ category.quality_score }}/10
+**Execution Time**: {{ category.avg_execution_time }}
+
+{% if category.issues %}
+**Issues**:
+{% for issue in category.issues %}
+- {{ issue.description }}
+  - **Severity**: {{ issue.severity }}
+  - **Test**: {{ issue.test_name }}
+  - **Fix**: {{ issue.recommended_fix }}
+{% endfor %}
+{% endif %}
+
+{% if category.recommendations %}
+**Recommendations**:
+{% for rec in category.recommendations %}
+- {{ rec.description }}
+  - **Priority**: {{ rec.priority }}
+  - **Effort**: {{ rec.effort_estimate }}
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+{% endif %}
+
+### Test-Driven Development (TDD) Assessment
+{% if tdd_assessment %}
+**TDD Compliance**: {{ tdd_assessment.compliance_score }}/10
+**Test-First Percentage**: {{ tdd_assessment.test_first_percentage }}%
+**Red-Green-Refactor Cycles**: {{ tdd_assessment.cycles_completed }}
+
+#### TDD Cycle Quality
+{% for cycle in tdd_assessment.cycle_analysis %}
+- **{{ cycle.feature_name }}**:
+  - **Red Phase**: {{ cycle.red_phase_quality }}/10
+  - **Green Phase**: {{ cycle.green_phase_quality }}/10
+  - **Refactor Phase**: {{ cycle.refactor_phase_quality }}/10
+  - **Overall Cycle Quality**: {{ cycle.overall_quality }}/10
+{% endfor %}
+
+{% if tdd_assessment.violations %}
+**TDD Violations**:
+{% for violation in tdd_assessment.violations %}
+- {{ violation.description }}
+  - **Impact**: {{ violation.impact_on_quality }}
+  - **Recommendation**: {{ violation.corrective_action }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Test Code Quality
+
+### Test Code Maintainability
+{% if test_maintainability %}
+- **Code Duplication**: {{ test_maintainability.duplication_score }}/10
+- **Test Readability**: {{ test_maintainability.readability_score }}/10
+- **Test Organization**: {{ test_maintainability.organization_score }}/10
+- **Helper Usage**: {{ test_maintainability.helper_usage_score }}/10
+
+{% if test_maintainability.issues %}
+**Maintainability Issues**:
+{% for issue in test_maintainability.issues %}
+- **{{ issue.type }}**: {{ issue.description }}
+  - **Location**: {{ issue.test_file }}
+  - **Impact**: {{ issue.maintenance_impact }}
+  - **Solution**: {{ issue.refactoring_suggestion }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Test Design Patterns
+{% if test_patterns %}
+{% for pattern in test_patterns %}
+#### {{ pattern.name }} Pattern
+**Usage**: {{ pattern.usage_assessment }}
+**Implementation Quality**: {{ pattern.implementation_score }}/10
+**Appropriateness**: {{ pattern.appropriateness_score }}/10
+
+{% if pattern.violations %}
+**Pattern Violations**:
+{% for violation in pattern.violations %}
+- {{ violation.description }}
+  - **Test**: {{ violation.test_name }}
+  - **Fix**: {{ violation.correction_suggestion }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Test Data Management
+{% if test_data %}
+**Test Data Strategy**: {{ test_data.strategy }}
+**Data Quality**: {{ test_data.quality_score }}/10
+**Data Isolation**: {{ test_data.isolation_score }}/10
+**Data Setup Efficiency**: {{ test_data.setup_efficiency_score }}/10
+
+{% if test_data.issues %}
+**Test Data Issues**:
+{% for issue in test_data.issues %}
+- {{ issue.description }}
+  - **Category**: {{ issue.category }}
+  - **Impact**: {{ issue.impact_on_tests }}
+  - **Resolution**: {{ issue.resolution_strategy }}
+{% endfor %}
+{% endif %}
+
+{% if test_data.fixtures %}
+**Test Fixtures**:
+{% for fixture in test_data.fixtures %}
+- **{{ fixture.name }}**: {{ fixture.quality_assessment }}
+  - **Reusability**: {{ fixture.reusability_score }}/10
+  - **Maintainability**: {{ fixture.maintainability_score }}/10
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Test Automation & CI/CD
+
+### Test Automation Assessment
+{% if test_automation %}
+**Automation Coverage**: {{ test_automation.automation_percentage }}%
+**Pipeline Integration**: {{ test_automation.pipeline_score }}/10
+**Parallel Execution**: {{ test_automation.parallel_execution_score }}/10
+**Test Reliability**: {{ test_automation.reliability_score }}/10
+
+#### Automation Issues
+{% if test_automation.issues %}
+{% for issue in test_automation.issues %}
+- **{{ issue.category }}**: {{ issue.description }}
+  - **Impact**: {{ issue.impact_on_pipeline }}
+  - **Frequency**: {{ issue.occurrence_frequency }}
+  - **Solution**: {{ issue.automation_fix }}
+{% endfor %}
+{% endif %}
+
+#### Flaky Tests Analysis
+{% if test_automation.flaky_tests %}
+{% for flaky in test_automation.flaky_tests %}
+- **{{ flaky.test_name }}**: {{ flaky.flakiness_percentage }}% failure rate
+  - **Cause**: {{ flaky.probable_cause }}
+  - **Impact**: {{ flaky.impact_on_confidence }}
+  - **Fix Strategy**: {{ flaky.stabilization_approach }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### CI/CD Pipeline Testing
+{% if pipeline_testing %}
+**Pipeline Test Quality**: {{ pipeline_testing.quality_score }}/10
+**Deployment Testing**: {{ pipeline_testing.deployment_test_score }}/10
+**Environment Parity**: {{ pipeline_testing.environment_parity_score }}/10
+**Rollback Testing**: {{ pipeline_testing.rollback_test_score }}/10
+
+{% if pipeline_testing.gaps %}
+**Pipeline Testing Gaps**:
+{% for gap in pipeline_testing.gaps %}
+- {{ gap.stage }}: {{ gap.gap_description }}
+  - **Risk**: {{ gap.risk_level }}
+  - **Recommendation**: {{ gap.improvement_suggestion }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Test Environment & Infrastructure
+
+### Test Environment Assessment
+{% if test_environments %}
+{% for env in test_environments %}
+#### {{ env.name }} Environment
+**Environment Type**: {{ env.type }}
+**Data Quality**: {{ env.data_quality_score }}/10
+**Stability**: {{ env.stability_score }}/10
+**Performance**: {{ env.performance_score }}/10
+**Availability**: {{ env.availability_percentage }}%
+
+{% if env.issues %}
+**Environment Issues**:
+{% for issue in env.issues %}
+- {{ issue.description }}
+  - **Impact**: {{ issue.impact_on_testing }}
+  - **Resolution**: {{ issue.resolution_plan }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Test Infrastructure
+{% if test_infrastructure %}
+**Infrastructure Score**: {{ test_infrastructure.overall_score }}/10
+**Scalability**: {{ test_infrastructure.scalability_score }}/10
+**Resource Utilization**: {{ test_infrastructure.resource_efficiency }}/10
+**Cost Optimization**: {{ test_infrastructure.cost_score }}/10
+
+{% if test_infrastructure.bottlenecks %}
+**Infrastructure Bottlenecks**:
+{% for bottleneck in test_infrastructure.bottlenecks %}
+- {{ bottleneck.component }}: {{ bottleneck.description }}
+  - **Impact**: {{ bottleneck.performance_impact }}
+  - **Solution**: {{ bottleneck.optimization_plan }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Performance & Load Testing
+
+### Performance Test Coverage
+{% if performance_testing %}
+**Load Testing**: {{ performance_testing.load_test_coverage }}%
+**Stress Testing**: {{ performance_testing.stress_test_coverage }}%
+**Volume Testing**: {{ performance_testing.volume_test_coverage }}%
+**Endurance Testing**: {{ performance_testing.endurance_test_coverage }}%
+
+#### Performance Test Results
+{% for result in performance_testing.results %}
+- **{{ result.test_name }}**: {{ result.status }}
+  - **Metric**: {{ result.metric_name }}
+  - **Current**: {{ result.current_value }}
+  - **Target**: {{ result.target_value }}
+  - **Variance**: {{ result.variance_percentage }}%
+{% endfor %}
+
+#### Performance Issues
+{% if performance_testing.issues %}
+{% for issue in performance_testing.issues %}
+- **{{ issue.severity }}**: {{ issue.description }}
+  - **Component**: {{ issue.affected_component }}
+  - **Impact**: {{ issue.user_impact }}
+  - **Root Cause**: {{ issue.root_cause }}
+  - **Fix**: {{ issue.optimization_recommendation }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Load Testing Analysis
+{% if load_testing %}
+**Maximum Load Tested**: {{ load_testing.max_load_tested }}
+**Breaking Point**: {{ load_testing.breaking_point }}
+**Response Time**: {{ load_testing.avg_response_time }}ms
+**Throughput**: {{ load_testing.max_throughput }}
+
+{% if load_testing.bottlenecks %}
+**Load Testing Bottlenecks**:
+{% for bottleneck in load_testing.bottlenecks %}
+- {{ bottleneck.component }}: {{ bottleneck.description }}
+  - **Load Threshold**: {{ bottleneck.threshold }}
+  - **Optimization**: {{ bottleneck.scaling_recommendation }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Security Testing
+
+### Security Test Coverage
+{% if security_testing %}
+**OWASP Top 10 Coverage**: {{ security_testing.owasp_coverage }}%
+**Authentication Testing**: {{ security_testing.auth_testing_score }}/10
+**Authorization Testing**: {{ security_testing.authz_testing_score }}/10
+**Input Validation Testing**: {{ security_testing.input_validation_score }}/10
+**Data Protection Testing**: {{ security_testing.data_protection_score }}/10
+
+#### Security Test Results
+{% if security_testing.vulnerabilities %}
+{% for vuln in security_testing.vulnerabilities %}
+- **{{ vuln.severity.upper() }}**: {{ vuln.vulnerability_type }}
+  - **OWASP Category**: {{ vuln.owasp_category }}
+  - **Description**: {{ vuln.description }}
+  - **Test**: {{ vuln.test_that_found_it }}
+  - **Remediation**: {{ vuln.fix_recommendation }}
+  - **CVSS Score**: {{ vuln.cvss_score }}
+{% endfor %}
+{% else %}
+✅ No security vulnerabilities found in testing
+{% endif %}
+
+#### Security Testing Gaps
+{% if security_testing.gaps %}
+{% for gap in security_testing.gaps %}
+- **{{ gap.category }}**: {{ gap.gap_description }}
+  - **Risk**: {{ gap.security_risk }}
+  - **Test Needed**: {{ gap.required_test_type }}
+  - **Priority**: {{ gap.priority }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Penetration Testing
+{% if penetration_testing %}
+**Last Pentest**: {{ penetration_testing.last_test_date }}
+**Overall Score**: {{ penetration_testing.security_score }}/10
+**Findings**: {{ penetration_testing.findings_count }}
+**Critical Issues**: {{ penetration_testing.critical_findings }}
+
+{% if penetration_testing.recommendations %}
+**Pentest Recommendations**:
+{% for rec in penetration_testing.recommendations %}
+- {{ rec.description }}
+  - **Priority**: {{ rec.priority }}
+  - **Effort**: {{ rec.implementation_effort }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Test Strategy & Planning
+
+### Test Strategy Assessment
+{% if test_strategy %}
+**Strategy Clarity**: {{ test_strategy.clarity_score }}/10
+**Risk Coverage**: {{ test_strategy.risk_coverage_score }}/10
+**Resource Allocation**: {{ test_strategy.resource_allocation_score }}/10
+**Timeline Alignment**: {{ test_strategy.timeline_score }}/10
+
+{% if test_strategy.gaps %}
+**Strategy Gaps**:
+{% for gap in test_strategy.gaps %}
+- {{ gap.area }}: {{ gap.gap_description }}
+  - **Impact**: {{ gap.impact_on_quality }}
+  - **Recommendation**: {{ gap.strategy_improvement }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+### Test Planning Effectiveness
+{% if test_planning %}
+**Planning Score**: {{ test_planning.overall_score }}/10
+**Test Case Design**: {{ test_planning.test_case_quality }}/10
+**Risk Assessment**: {{ test_planning.risk_assessment_score }}/10
+**Resource Planning**: {{ test_planning.resource_planning_score }}/10
+
+{% if test_planning.issues %}
+**Planning Issues**:
+{% for issue in test_planning.issues %}
+- {{ issue.description }}
+  - **Category**: {{ issue.planning_category }}
+  - **Impact**: {{ issue.impact_on_execution }}
+  - **Resolution**: {{ issue.improvement_action }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Missing Test Coverage
+
+### Untested Code Analysis
+{% if untested_code %}
+{% for component in untested_code %}
+#### {{ component.name }}
+**Coverage**: {{ component.coverage_percentage }}%
+**Critical Paths Untested**: {{ component.critical_paths_uncovered }}
+**Risk Level**: {{ component.risk_level }}
+
+**Missing Tests**:
+{% for missing in component.missing_tests %}
+- {{ missing.function_name }}
+  - **Type**: {{ missing.suggested_test_type }}
+  - **Priority**: {{ missing.priority }}
+  - **Effort**: {{ missing.effort_estimate }}
+  - **Risk**: {{ missing.risk_if_not_tested }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+### Missing Test Types
+{% if missing_test_types %}
+{% for missing_type in missing_test_types %}
+- **{{ missing_type.test_type }}**: {{ missing_type.justification }}
+  - **Components Affected**: {{ missing_type.affected_components | join(", ") }}
+  - **Risk**: {{ missing_type.risk_level }}
+  - **Implementation Effort**: {{ missing_type.effort_estimate }}
+  - **Expected Benefit**: {{ missing_type.quality_benefit }}
+{% endfor %}
+{% endif %}
+
+## Recommendations
+
+### High Priority
+{% if high_priority_recommendations %}
+{% for rec in high_priority_recommendations %}
+- [ ] {{ rec.action }}
+  - **Category**: {{ rec.test_category }}
+  - **Impact**: {{ rec.expected_impact }}
+  - **Effort**: {{ rec.estimated_effort }}
+  - **Timeline**: {{ rec.implementation_timeline }}
+  - **Success Criteria**: {{ rec.success_criteria }}
+{% endfor %}
+{% else %}
+✅ No high priority test recommendations
+{% endif %}
+
+### Test Improvement Initiatives
+{% if test_improvements %}
+{% for improvement in test_improvements %}
+- [ ] {{ improvement.description }}
+  - **Type**: {{ improvement.improvement_type }}
+  - **Scope**: {{ improvement.scope }}
+  - **Benefit**: {{ improvement.expected_benefit }}
+  - **Resources**: {{ improvement.resource_requirements }}
+{% endfor %}
+{% else %}
+✅ Test quality meets current standards
+{% endif %}
+
+### Test Automation Enhancements
+{% if automation_improvements %}
+{% for enhancement in automation_improvements %}
+- [ ] {{ enhancement.description }}
+  - **Automation Type**: {{ enhancement.automation_category }}
+  - **ROI**: {{ enhancement.roi_estimate }}
+  - **Implementation**: {{ enhancement.implementation_approach }}
+  - **Maintenance**: {{ enhancement.maintenance_requirements }}
+{% endfor %}
+{% endif %}
+
+## Test Metrics & KPIs
+
+### Current Test Metrics
+{% if test_kpis %}
+{% for kpi, value in test_kpis.items() %}
+- **{{ kpi.replace('_', ' ').title() }}**: {{ value }}
+{% endfor %}
+{% endif %}
+
+### Quality Trends
+{% if quality_trends %}
+{% for trend in quality_trends %}
+- **{{ trend.metric }}**: {{ trend.direction }} ({{ trend.change_percentage }}%)
+  - **Period**: {{ trend.time_period }}
+  - **Target**: {{ trend.target_value }}
+  - **Status**: {{ trend.target_status }}
+{% endfor %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions Required
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("QA Team") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+   - **Dependencies**: {{ action.dependencies | default("None") }}
+{% endfor %}
+{% else %}
+1. Fix critical test failures
+2. Improve test coverage in identified gaps
+3. Implement recommended test automation
+4. Address flaky tests
+{% endif %}
+
+### Test Strategy Evolution
+{% if strategy_evolution %}
+{% for evolution in strategy_evolution %}
+- [ ] {{ evolution.initiative }}
+  - **Timeline**: {{ evolution.timeline }}
+  - **Investment**: {{ evolution.investment_required }}
+  - **Expected ROI**: {{ evolution.expected_roi }}
+{% endfor %}
+{% endif %}
+
+### Quality Gates
+- [ ] All critical tests passing
+- [ ] Minimum coverage thresholds met
+- [ ] Flaky tests stabilized
+- [ ] Performance benchmarks validated
+- [ ] Security tests passing
+- [ ] Test automation pipeline stable
+
+## Review Metadata
+
+**Review Duration**: {{ review_duration | default("N/A") }}
+**Tests Analyzed**: {{ tests_analyzed | default(0) }}
+**Test Files Reviewed**: {{ test_files_count | default(0) }}
+**Review Type**: {{ review_type | default("Comprehensive Test Review") }}
+
+{% if reviewer_notes %}
+### Reviewer Notes
+{{ reviewer_notes }}
+{% endif %}
+
+{% if test_team_feedback %}
+### QA Team Feedback
+{{ test_team_feedback }}
+{% endif %}
+
+---
+*Generated by SpecifyX Test Reviewer Agent v{{ agent_version | default("1.0.0") }}*

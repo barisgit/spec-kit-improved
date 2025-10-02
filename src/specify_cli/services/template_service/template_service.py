@@ -19,7 +19,7 @@ from jinja2 import (
 )
 from rich.console import Console
 
-from specify_cli.assistants import get_all_assistants, get_assistant
+from specify_cli.assistants import get_all_assistants
 from specify_cli.core.constants import CONSTANTS
 from specify_cli.models.config import BranchNamingConfig
 from specify_cli.models.defaults.path_defaults import PATH_DEFAULTS
@@ -678,49 +678,11 @@ class JinjaTemplateService(TemplateService):
         ai_assistant: str,
         project_path: Path,
     ) -> Optional[str]:
-        _ = project_path
-
         """Determine where a template would be rendered for a specific AI assistant."""
-        if "/" not in template_path:
-            return None
-
-        category = template_path.split("/")[0]
-        should_render = TEMPLATE_REGISTRY.should_render_category(category)
-
-        if should_render and template_path.endswith(
-            CONSTANTS.FILE.TEMPLATE_J2_EXTENSION
-        ):
-            base_path = template_path[: -len(CONSTANTS.FILE.TEMPLATE_J2_EXTENSION)]
-        else:
-            base_path = template_path
-
-        if "/" not in base_path:
-            return None
-
-        category, filename = base_path.split("/", 1)
-
-        if category == "commands":
-            assistant = get_assistant(ai_assistant)
-            if assistant:
-                commands_dir = assistant.config.command_files.directory
-                return f"{commands_dir}/{filename}"
-        elif category == "context":
-            assistant = get_assistant(ai_assistant)
-            if assistant:
-                return assistant.config.context_file.file
-        elif category == "scripts":
-            return f"{CONSTANTS.DIRECTORY.SPECIFY_SCRIPTS_DIR}/{filename}"
-        elif category == "memory":
-            return f"{CONSTANTS.DIRECTORY.SPECIFY_MEMORY_DIR}/{filename}"
-        elif category == "agent-prompts" or category == "agent-templates":
-            cat_info = TEMPLATE_REGISTRY.get_category(category)
-            if cat_info:
-                base_path = cat_info.resolve_target(ai_assistant)
-                if base_path:
-                    return f"{base_path}/{filename}"
-                return None
-
-        return None
+        # Delegate to the TemplateFileOperations method which handles file extension conversion properly
+        return self._file_operations.determine_output_path_for_ai(
+            template_path, ai_assistant, project_path
+        )
 
     def _should_skip_file_update(self, file_path: str, project_path: Path) -> bool:
         """Determine if a file should be skipped during updates."""
