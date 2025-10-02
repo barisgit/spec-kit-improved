@@ -1236,10 +1236,12 @@ class ScriptHelpers:
         return context_info
 
     def _generate_spec_tree(self, spec_dir: Path) -> str:
-        """Generate a tree structure of the spec directory."""
+        """Generate a tree structure of the spec directory, respecting .gitignore."""
         try:
+            # Try using /usr/bin/tree (real tree command) to avoid aliases
+            # -a shows all files, --gitignore respects .gitignore patterns
             result = subprocess.run(
-                ["tree", str(spec_dir), "-a", "-I", ".git"],
+                ["/usr/bin/tree", str(spec_dir), "-a", "--gitignore"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -1250,7 +1252,7 @@ class ScriptHelpers:
                 if len(lines) > 1:
                     return "\n".join(lines[1:])  # Skip the root directory name
 
-            # Fallback to simple listing if tree is not available
+            # Fallback to simple listing if tree doesn't support --gitignore or isn't installed
             return self._simple_directory_listing(spec_dir)
 
         except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -1261,8 +1263,14 @@ class ScriptHelpers:
         items = []
         try:
             for item in sorted(spec_dir.iterdir()):
-                if item.name.startswith("."):
+                # Always skip .git directory
+                if item.name == ".git":
                     continue
+
+                # Check if file is gitignored
+                if self._is_gitignored(item):
+                    continue
+
                 if item.is_file():
                     size = item.stat().st_size
                     size_str = f"{size // 1024}KB" if size > 1024 else f"{size}B"
@@ -1277,6 +1285,24 @@ class ScriptHelpers:
             return "\n".join(items)
         except Exception:
             return "└── (unable to read directory)"
+
+    def _is_gitignored(self, path: Path) -> bool:
+        """Check if a path is gitignored using git check-ignore."""
+        try:
+            result = subprocess.run(
+                ["git", "check-ignore", "-q", str(path)],
+                capture_output=True,
+                timeout=1,
+            )
+            # Exit code 0 means path is ignored
+            return result.returncode == 0
+        except (
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+            subprocess.SubprocessError,
+        ):
+            # If git is not available or errors, don't exclude the file
+            return False
 
     def _extract_from_spec(self, spec_file: Path) -> Dict[str, Any]:
         """Extract information from spec.md file."""
