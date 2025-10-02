@@ -22,6 +22,7 @@ All methods are fully type-hinted and include comprehensive error handling.
 
 import json
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -1238,24 +1239,38 @@ class ScriptHelpers:
     def _generate_spec_tree(self, spec_dir: Path) -> str:
         """Generate a tree structure of the spec directory, respecting .gitignore."""
         try:
-            # Try using /usr/bin/tree (real tree command) to avoid aliases
-            # -a shows all files, --gitignore respects .gitignore patterns
+            # Try to find tree command (platform-agnostic)
+            tree_cmd = shutil.which("tree")
+
+            # On Unix systems, prefer the real tree command over aliases
+            if tree_cmd and not tree_cmd.startswith("/usr"):
+                # If we got an alias or non-standard path, try /usr/bin/tree
+                usr_tree = Path("/usr/bin/tree")
+                if usr_tree.exists():
+                    tree_cmd = str(usr_tree)
+
+            if not tree_cmd:
+                # tree not found, use fallback
+                return self._simple_directory_listing(spec_dir)
+
+            # Try with --gitignore flag
             result = subprocess.run(
-                ["/usr/bin/tree", str(spec_dir), "-a", "--gitignore"],
+                [tree_cmd, str(spec_dir), "-a", "--gitignore"],
                 capture_output=True,
                 text=True,
                 timeout=5,
             )
+
             if result.returncode == 0:
                 # Clean up the tree output
                 lines = result.stdout.strip().split("\n")
                 if len(lines) > 1:
                     return "\n".join(lines[1:])  # Skip the root directory name
 
-            # Fallback to simple listing if tree doesn't support --gitignore or isn't installed
+            # If --gitignore not supported or failed, fallback to simple listing
             return self._simple_directory_listing(spec_dir)
 
-        except (subprocess.TimeoutExpired, FileNotFoundError):
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             return self._simple_directory_listing(spec_dir)
 
     def _simple_directory_listing(self, spec_dir: Path) -> str:
