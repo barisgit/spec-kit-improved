@@ -69,11 +69,12 @@ def generate_custom_reminders(context_info: Dict[str, Any]) -> str:
 
 
 def update_context_file(
-    context_file: Path, context_info: Dict[str, Any], assistant_type: str
+    context_file: Path, context_info: Dict[str, Any], assistant_type: str, json_output: bool = False
 ) -> bool:
     """Update the assistant context file with comprehensive project context."""
     if not context_file.exists():
-        console.print(f"[yellow]Context file not found: {context_file}[/yellow]")
+        if not json_output:
+            console.print(f"[yellow]Context file not found: {context_file}[/yellow]")
         return False
 
     content = context_file.read_text()
@@ -95,7 +96,8 @@ def update_context_file(
     reminders = generate_custom_reminders(context_info)
 
     if not sections:
-        console.print("[yellow]No project context found to add[/yellow]")
+        if not json_output:
+            console.print("[yellow]No project context found to add[/yellow]")
         return False
 
     # Build enhanced context section with reminders
@@ -128,9 +130,10 @@ def update_context_file(
             updated_content = content.rstrip() + "\n\n" + new_context_section + "\n"
 
     context_file.write_text(updated_content)
-    console.print(
-        f"[green]Updated {context_file.name} with comprehensive project context[/green]"
-    )
+    if not json_output:
+        console.print(
+            f"[green]Updated {context_file.name} with comprehensive project context[/green]"
+        )
     return True
 
 
@@ -164,36 +167,9 @@ def main(
         # Find current feature directory and plan
         helpers = ScriptHelpers()
 
-        # Find spec directory with any spec files
-        cwd = Path.cwd()
-        spec_dir = None
-
-        # Check if we're in a spec directory
-        if (cwd / "spec.md").exists() or (cwd / "plan.md").exists():
-            spec_dir = cwd
-        else:
-            # Look for most recent spec directory
-            spec_dirs = []
-            for pattern in ["specs/*/", "features/*/", "*/specs/"]:
-                spec_dirs.extend(cwd.glob(pattern))
-
-            # Filter to directories with spec files and find most recent
-            valid_dirs = []
-            for d in spec_dirs:
-                if any((d / f).exists() for f in ["spec.md", "plan.md", "tasks.md"]):
-                    # Get the most recently modified spec file
-                    spec_files = [
-                        f
-                        for f in [d / "spec.md", d / "plan.md", d / "tasks.md"]
-                        if f.exists()
-                    ]
-                    if spec_files:
-                        recent_time = max(f.stat().st_mtime for f in spec_files)
-                        valid_dirs.append((d, recent_time))
-
-            if valid_dirs:
-                # Use most recently modified spec directory
-                spec_dir = max(valid_dirs, key=lambda x: x[1])[0]
+        # Use ScriptHelpers utility to find the feature directory
+        # This handles both traditional and no-branch workflows correctly
+        spec_dir = helpers.find_feature_directory_for_workflow()
 
         if not spec_dir:
             if json_output:
@@ -208,7 +184,6 @@ def main(
         echo_debug(f"Found spec directory: {spec_dir}", debug)
 
         # Extract comprehensive context from spec files using ScriptHelpers
-        helpers = ScriptHelpers()
         context_info = helpers.extract_spec_context(spec_dir)
 
         echo_debug(f"Extracted context info: {context_info}", debug)
@@ -272,7 +247,7 @@ def main(
             echo_debug(f"Context file path for {assistant_name}: {context_file}", debug)
 
             # Update context file
-            success = update_context_file(context_file, context_info, assistant_name)
+            success = update_context_file(context_file, context_info, assistant_name, json_output=json_output)
             results[assistant_name] = {
                 "success": success,
                 "context_file": str(context_file),

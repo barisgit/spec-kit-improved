@@ -1,0 +1,314 @@
+# Implementation Analysis
+
+**Project**: {{ project_name }}
+**Feature**: {{ current_feature }}
+**Implementer**: Implementation Agent
+**Generated**: {{ timestamp }}
+**Implementation Scope**: {{ scope | default("Feature implementation") }}
+
+## Implementation Status
+
+### Overall Progress
+**Completion**: {{ completion_percentage | default("0") }}%
+**Status**: {{ overall_status | default("NOT_STARTED") }}
+**Phase**: {{ current_phase | default("Planning") }}
+
+### Task Breakdown
+{% if tasks %}
+{% for task in tasks %}
+#### {{ task.id }}: {{ task.title }}
+**Status**: {{ task.status | upper }}
+**Priority**: {{ task.priority | default("Medium") }}
+**Estimated Effort**: {{ task.effort_estimate | default("TBD") }}
+**Dependencies**: {{ task.dependencies | join(", ") | default("None") }}
+
+{% if task.status == "in_progress" %}
+**Current Work**: {{ task.current_work_description }}
+{% endif %}
+
+{% if task.status == "completed" %}
+✅ **Completed**: {{ task.completion_date }}
+**Deliverables**: {{ task.deliverables | join(", ") }}
+{% endif %}
+
+{% if task.status == "blocked" %}
+🚫 **Blocked By**: {{ task.blocking_issues | join(", ") }}
+**Resolution Required**: {{ task.resolution_steps }}
+{% endif %}
+
+{% if task.files_modified %}
+**Files Modified**:
+{% for file in task.files_modified %}
+- `{{ file.path }}` ({{ file.change_type }})
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+No tasks defined yet
+{% endif %}
+
+### Critical Path Analysis
+{% if critical_path %}
+**Critical Tasks**:
+{% for task in critical_path %}
+1. {{ task.id }}: {{ task.title }} ({{ task.duration }})
+{% endfor %}
+
+**Total Critical Path Duration**: {{ critical_path_duration | default("TBD") }}
+**Earliest Completion**: {{ earliest_completion_date | default("TBD") }}
+{% endif %}
+
+## Implementation Quality
+
+### Code Quality Metrics
+{% if code_quality %}
+- **Test Coverage**: {{ code_quality.test_coverage | default("N/A") }}%
+- **Code Complexity**: {{ code_quality.complexity_score | default("N/A") }}
+- **Type Safety**: {{ code_quality.type_safety_score | default("N/A") }}%
+- **Performance Score**: {{ code_quality.performance_score | default("N/A") }}/10
+- **Security Score**: {{ code_quality.security_score | default("N/A") }}/10
+{% endif %}
+
+### Technical Debt
+{% if technical_debt %}
+{% for debt in technical_debt %}
+- **{{ debt.severity.upper() }}**: {{ debt.description }}
+  - **Location**: {{ debt.file_path }}
+  - **Impact**: {{ debt.impact_description }}
+  - **Effort to Fix**: {{ debt.effort_estimate }}
+  - **Created During**: {{ debt.origin_task }}
+{% endfor %}
+{% else %}
+✅ No significant technical debt identified
+{% endif %}
+
+### Architecture Compliance
+{% if architecture_compliance %}
+- **Design Patterns**: {{ architecture_compliance.design_patterns_score }}/10
+- **SOLID Principles**: {{ architecture_compliance.solid_score }}/10
+- **Separation of Concerns**: {{ architecture_compliance.separation_score }}/10
+- **Testability**: {{ architecture_compliance.testability_score }}/10
+
+{% if architecture_compliance.violations %}
+**Violations**:
+{% for violation in architecture_compliance.violations %}
+- {{ violation.principle }}: {{ violation.description }}
+  - **File**: {{ violation.file_path }}
+  - **Recommendation**: {{ violation.fix_suggestion }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Test-Driven Development (TDD)
+
+### TDD Compliance
+{% if tdd_compliance %}
+**Overall TDD Score**: {{ tdd_compliance.overall_score }}/10
+**Test-First Percentage**: {{ tdd_compliance.test_first_percentage }}%
+
+### TDD Cycle Analysis
+{% for cycle in tdd_compliance.cycles %}
+#### {{ cycle.feature_name }}
+- **Red Phase**: {{ cycle.red_phase.status }} ({{ cycle.red_phase.duration }})
+- **Green Phase**: {{ cycle.green_phase.status }} ({{ cycle.green_phase.duration }})
+- **Refactor Phase**: {{ cycle.refactor_phase.status }} ({{ cycle.refactor_phase.duration }})
+- **Quality**: {{ cycle.quality_score }}/10
+{% endfor %}
+{% endif %}
+
+### Test Coverage Analysis
+{% if test_coverage %}
+- **Unit Tests**: {{ test_coverage.unit_tests }}%
+- **Integration Tests**: {{ test_coverage.integration_tests }}%
+- **End-to-End Tests**: {{ test_coverage.e2e_tests }}%
+- **Mutation Testing**: {{ test_coverage.mutation_score | default("N/A") }}%
+
+{% if test_coverage.missing_coverage %}
+**Missing Coverage**:
+{% for missing in test_coverage.missing_coverage %}
+- {{ missing.function_name }} in {{ missing.file_path }}
+  - **Risk Level**: {{ missing.risk_level }}
+  - **Reason**: {{ missing.reason_not_tested }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Implementation Challenges
+
+### Current Blockers
+{% if current_blockers %}
+{% for blocker in current_blockers %}
+#### {{ blocker.severity.upper() }}: {{ blocker.title }}
+**Description**: {{ blocker.description }}
+**Impact**: {{ blocker.impact_on_timeline }}
+**Affected Tasks**: {{ blocker.affected_tasks | join(", ") }}
+**Owner**: {{ blocker.assigned_to | default("Unassigned") }}
+
+**Resolution Plan**:
+{% for step in blocker.resolution_steps %}
+1. {{ step.action }} ({{ step.estimated_duration }})
+{% endfor %}
+
+**Alternative Approaches**:
+{% for alternative in blocker.alternatives %}
+- {{ alternative.description }} (Risk: {{ alternative.risk_level }})
+{% endfor %}
+
+---
+{% endfor %}
+{% else %}
+✅ No current blockers
+{% endif %}
+
+### Risk Assessment
+{% if risks %}
+{% for risk in risks %}
+- **{{ risk.level.upper() }} Risk**: {{ risk.description }}
+  - **Probability**: {{ risk.probability }}%
+  - **Impact**: {{ risk.impact_severity }}
+  - **Mitigation**: {{ risk.mitigation_strategy }}
+  - **Contingency**: {{ risk.contingency_plan }}
+{% endfor %}
+{% else %}
+✅ No significant risks identified
+{% endif %}
+
+### Dependencies
+{% if dependencies %}
+#### External Dependencies
+{% for dep in dependencies.external %}
+- **{{ dep.name }}**: {{ dep.status }}
+  - **Version Required**: {{ dep.version_required }}
+  - **Current Version**: {{ dep.current_version }}
+  - **Status**: {{ dep.integration_status }}
+  - **Risk**: {{ dep.risk_assessment }}
+{% endfor %}
+
+#### Internal Dependencies
+{% for dep in dependencies.internal %}
+- **{{ dep.component }}**: {{ dep.status }}
+  - **Owner Team**: {{ dep.owner_team }}
+  - **Required By**: {{ dep.required_date }}
+  - **Progress**: {{ dep.completion_percentage }}%
+{% endfor %}
+{% endif %}
+
+## Performance & Scalability
+
+### Performance Benchmarks
+{% if performance_benchmarks %}
+{% for benchmark in performance_benchmarks %}
+- **{{ benchmark.metric }}**: {{ benchmark.current_value }} (Target: {{ benchmark.target_value }})
+  - **Status**: {{ benchmark.status }}
+  - **Trend**: {{ benchmark.trend }}
+{% endfor %}
+{% endif %}
+
+### Scalability Analysis
+{% if scalability_analysis %}
+- **Horizontal Scaling**: {{ scalability_analysis.horizontal_ready | ternary("Ready", "Not Ready") }}
+- **Vertical Scaling**: {{ scalability_analysis.vertical_limits }}
+- **Bottlenecks Identified**: {{ scalability_analysis.bottlenecks | length }}
+- **Load Testing**: {{ scalability_analysis.load_testing_status }}
+
+{% if scalability_analysis.bottlenecks %}
+**Performance Bottlenecks**:
+{% for bottleneck in scalability_analysis.bottlenecks %}
+- {{ bottleneck.component }}: {{ bottleneck.description }}
+  - **Impact**: {{ bottleneck.performance_impact }}
+  - **Resolution**: {{ bottleneck.optimization_plan }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Security Implementation
+
+### Security Measures
+{% if security_measures %}
+{% for measure in security_measures %}
+- **{{ measure.category }}**: {{ measure.implementation_status }}
+  - **Standard**: {{ measure.security_standard }}
+  - **Testing**: {{ measure.testing_status }}
+  - **Compliance**: {{ measure.compliance_level }}
+{% endfor %}
+{% endif %}
+
+### Vulnerability Assessment
+{% if vulnerability_assessment %}
+- **Security Scan**: {{ vulnerability_assessment.scan_status }}
+- **Critical Vulnerabilities**: {{ vulnerability_assessment.critical_count }}
+- **High Risk**: {{ vulnerability_assessment.high_risk_count }}
+- **Penetration Testing**: {{ vulnerability_assessment.pentest_status }}
+
+{% if vulnerability_assessment.findings %}
+**Security Findings**:
+{% for finding in vulnerability_assessment.findings %}
+- **{{ finding.severity }}**: {{ finding.description }}
+  - **CVSS Score**: {{ finding.cvss_score }}
+  - **Remediation**: {{ finding.fix_recommendation }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Next Steps
+
+### Immediate Actions
+{% if immediate_actions %}
+{% for action in immediate_actions %}
+1. {{ action.description }}
+   - **Priority**: {{ action.priority }}
+   - **Owner**: {{ action.assigned_to | default("TBD") }}
+   - **Deadline**: {{ action.deadline | default("TBD") }}
+   - **Success Criteria**: {{ action.success_criteria }}
+{% endfor %}
+{% else %}
+1. Define implementation tasks
+2. Set up development environment
+3. Begin TDD cycle implementation
+{% endif %}
+
+### Upcoming Milestones
+{% if milestones %}
+{% for milestone in milestones %}
+- **{{ milestone.name }}**: {{ milestone.target_date }}
+  - **Deliverables**: {{ milestone.deliverables | join(", ") }}
+  - **Success Criteria**: {{ milestone.success_criteria }}
+  - **Dependencies**: {{ milestone.dependencies | join(", ") | default("None") }}
+{% endfor %}
+{% endif %}
+
+### Quality Gates
+- [ ] All unit tests passing
+- [ ] Integration tests completed
+- [ ] Code review approved
+- [ ] Security scan passed
+- [ ] Performance benchmarks met
+- [ ] Documentation updated
+- [ ] Deployment ready
+
+## Implementation Metadata
+
+**Implementation Duration**: {{ implementation_duration | default("N/A") }}
+**Team Size**: {{ team_size | default(1) }}
+**Total Files Modified**: {{ files_modified_count | default(0) }}
+**Lines of Code Added**: {{ lines_added | default(0) }}
+**Lines of Code Removed**: {{ lines_removed | default(0) }}
+
+{% if implementation_notes %}
+### Implementation Notes
+{{ implementation_notes }}
+{% endif %}
+
+{% if lessons_learned %}
+### Lessons Learned
+{% for lesson in lessons_learned %}
+- **{{ lesson.category }}**: {{ lesson.description }}
+  - **Impact**: {{ lesson.impact }}
+  - **Action**: {{ lesson.future_action }}
+{% endfor %}
+{% endif %}
+
+---
+*Generated by SpecifyX Implementation Agent v{{ agent_version | default("1.0.0") }}*
