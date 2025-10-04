@@ -21,16 +21,15 @@ Given any implementation context provided as an argument, do this:
    - Reference the context file path when launching multiple agents to ensure they work with consistent information
 
 **If you do NOT have access to subagents**:
-1. Run `specifyx run check-implementation-status --json` from repo root to get current status
+1. Navigate to your spec directory (e.g., `specs/001-feature-name/`) and examine the files:
+   - `tasks.md` - Contains your implementation tasks
+   - `plan.md` - Shows implementation phases and progress
+   - `spec.md` - Contains the feature specification
 
-   **For No-Branch Workflow:**
-   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run check-implementation-status --spec-id 001 --json`
-   - The error message will show available spec IDs if `--spec-id` is required
-
-   **Troubleshooting:**
-   - If command unclear: `specifyx run check-implementation-status --help`
-
-2. Parse the JSON output for TASKS_FILE, FEATURE_DIR, BRANCH, and TOTAL_TASKS.
+2. Review the current implementation status by examining:
+   - Task completion status in `tasks.md` (marked with `- [x]` for completed)
+   - Phase progress in `plan.md` (checkboxes for completed phases)
+   - Current branch and feature directory from your git status
 
 3. Execute tasks systematically following these phases:
 

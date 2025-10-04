@@ -11,16 +11,17 @@ This is a human-oriented alternative to the `/implement` command for when tasks 
 
 Given the execution context provided as an argument, do this:
 
-1. Run `specifyx run check-implementation-status --json` (or `uvx specifyx run check-implementation-status --json` if specifyx not found) from repo root to get current status.
+1. Navigate to your spec directory and examine the current implementation status:
+   - Check `tasks.md` for task completion status (marked with `- [x]` for completed)
+   - Review `plan.md` for phase progress and implementation status
+   - Verify `spec.md` contains the feature specification
+   - Ensure `.specify/memory/constitution.md` exists for project guidelines
 
    **For No-Branch Workflow:**
-   - If multiple specs exist on main branch, you must specify which spec to work with: `specifyx run check-implementation-status --spec-id 001 --json`
-   - The error message will show available spec IDs if `--spec-id` is required
-
-   Parse the JSON output for TASKS_FILE, CONSTITUTION, FEATURE_DIR, BRANCH, and PREREQUISITES_STATUS.
+   - If multiple specs exist on main branch, navigate to the specific spec directory (e.g., `specs/001-feature-name/`)
+   - Use `git status` to confirm current branch and working directory
 
    **Troubleshooting:**
-   - If command fails, check: `specifyx run check-implementation-status --help`
    - If prerequisites missing, use `/constitution`, `/specify`, `/clarify`, `/plan`, `/tasks`, or `/analyze` commands first
    - If not in git repo: run `git init` first
 

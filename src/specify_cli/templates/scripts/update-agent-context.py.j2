@@ -69,11 +69,12 @@ def generate_custom_reminders(context_info: Dict[str, Any]) -> str:
 
 
 def update_context_file(
-    context_file: Path, context_info: Dict[str, Any], assistant_type: str
+    context_file: Path, context_info: Dict[str, Any], assistant_type: str, json_output: bool = False
 ) -> bool:
     """Update the assistant context file with comprehensive project context."""
     if not context_file.exists():
-        console.print(f"[yellow]Context file not found: {context_file}[/yellow]")
+        if not json_output:
+            console.print(f"[yellow]Context file not found: {context_file}[/yellow]")
         return False
 
     content = context_file.read_text()
@@ -95,7 +96,8 @@ def update_context_file(
     reminders = generate_custom_reminders(context_info)
 
     if not sections:
-        console.print("[yellow]No project context found to add[/yellow]")
+        if not json_output:
+            console.print("[yellow]No project context found to add[/yellow]")
         return False
 
     # Build enhanced context section with reminders
@@ -128,9 +130,10 @@ def update_context_file(
             updated_content = content.rstrip() + "\n\n" + new_context_section + "\n"
 
     context_file.write_text(updated_content)
-    console.print(
-        f"[green]Updated {context_file.name} with comprehensive project context[/green]"
-    )
+    if not json_output:
+        console.print(
+            f"[green]Updated {context_file.name} with comprehensive project context[/green]"
+        )
     return True
 
 
@@ -244,7 +247,7 @@ def main(
             echo_debug(f"Context file path for {assistant_name}: {context_file}", debug)
 
             # Update context file
-            success = update_context_file(context_file, context_info, assistant_name)
+            success = update_context_file(context_file, context_info, assistant_name, json_output=json_output)
             results[assistant_name] = {
                 "success": success,
                 "context_file": str(context_file),

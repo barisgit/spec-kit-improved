@@ -77,7 +77,7 @@ def discover_agent_types(helpers: ScriptHelpers) -> Tuple[bool, List[AgentType]]
                 importlib.resources.files(templates_pkg) / "agent-prompts"
             )
             if agent_prompts_dir.is_dir():
-                for template_file in agent_prompts_dir.iterdir():
+                for template_file in sorted(agent_prompts_dir.iterdir(), key=lambda p: p.name):
                     if template_file.is_file() and template_file.name.endswith(
                         ".md.j2"
                     ):
@@ -456,9 +456,9 @@ def scaffold(
             else:
                 if not agent_types:
                     echo_info(
-                        "No agent templates found in .specify/agent-templates/", quiet
+                        "No agent prompts found in package resources (agent-prompts).", quiet
                     )
-                    echo_info("Create agent templates to use this feature", quiet)
+                    echo_info("Ensure your package includes agent-prompts or update to a version that does.", quiet)
                 else:
                     table = Table(title="Available Agents")
                     table.add_column("Name", style="cyan")
@@ -539,7 +539,10 @@ def scaffold(
                     }
                 )
                 if not json_mode:
-                    rel_path = Path(result).relative_to(helpers.get_repo_root())
+                    try:
+                        rel_path = Path(result).relative_to(helpers.get_repo_root())
+                    except ValueError:
+                        rel_path = Path(result)
                     echo_success(f"Generated: {rel_path}", quiet)
             else:
                 failed_agents.append({"agent": agent_spec, "error": result})
